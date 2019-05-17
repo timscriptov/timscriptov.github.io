@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 5. Символы и строки</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Символы представлены типом <b>Char</b>.</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var ch: Char = 'a';
+  println(ch);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+a
+</code></pre>
+<p>Набор символов представлен типом <b>String.</b><br>
+Давайте объявим переменную <b>String</b> и выведем её значение:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  // строковый литерал
+  println("Hello, world!");
+
+  var s: String = "Hello, world!";
+  // вывод содержимого переменной s
+  println(s);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+Hello, world!
+Hello, world!
+</code></pre>
+<p>В таких языках, как C ++, символы неявно рассматриваются как числа, однако в Kotlin это не так.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

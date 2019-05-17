@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 7. Вывод</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Вывод в Kotlin может быть выполнен с использованием функции <b>println</b>.</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  println("Hello, world!");
+}</code></pre>
+<p><b>println()</b> автоматически добавляет <b>новую строку</b> в конце вывода.
+<b>print()</b> может использоваться для вывода без новой строки:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  println("Line by");
+  println("line");
+
+  print("On the ");
+  print("same line");
+}</code></pre>
+<p>Чтобы включить значение переменной в строку, мы можем использовать либо оператор <b>+ (плюс)</b> или <b>строковые шаблоны</b>, который начинается со знака доллара ($).</p>
+<p>Ознакомьтесь с приведенными ниже примерами:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num: Int = 42;
+  println("Num is" + num);
+  // использование строковых шаблонов
+  println("Num is $num");
+
+  val dbl = 3.14;
+  println("Int value is $num, and double value is $dbl");
+}</code></pre>
+<p>Строковые шаблоны могут включать выражения в <b>фигурные скобки</b>.</p>
+<p>Пример:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var a: Int = 42;
+  var b: Int = 8;
+
+  println("Result: ${a+b}");
+}"</code></pre>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

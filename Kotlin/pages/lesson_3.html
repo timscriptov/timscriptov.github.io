@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+  <head>
+	  <meta charset="utf-8">
+	  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+	  <meta name="description" content="">
+	  <meta name="author" content="Иван Тимашков">
+	<title>Урок 3. Переменные</title>
+
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+	<div class="page__inner">
+	  <div class="main main_width-limit">
+		<div class="content">
+
+          <html>
+	
+<body><p>Объявление переменных выполняется с помощью <b>var</b> или <b>val</b>. <b>val </b> нельзя переназначить (он называется <b>неизменяемым</b>).</p>&#13;
+<p>Пример:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val num = 10;
+  println(num);
+  val str = "Hello";
+  println(str);
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+10 Hello
+</code></pre>
+<p>Присвоение нового значения <b>num</b> или <b>str</b> приводит к ошибке компиляции.</p>
+<p>Следующий код не будет компилироваться:</p>&#13;
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val num = 10;
+  num = 12; 
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+source.kt:3:3: error: val cannot be reassigned
+num = 12;
+^
+</code></pre>
+<p>Ключевое слово <b>var</b> позволяет объявлять переменные, которые можно переназначить:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var test = 10;
+  println(test);
+  test = 21;
+  println(test);
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+10 21
+</code></pre>
+<p>Как вы можете видеть, мы явно не задали тип переменных. Переменные получают соответствующий тип благодаря Kotlin's <b>type interference</b>, где тип автоматически выбирается из значения, присвоенного переменной.</p>
+<p>Чтобы явно указать тип переменной, используйте следующий синтаксис:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num: Int = 8;
+  val immutable_str: String = "Won't change";
+  println(num);
+  println(immutable_str);
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+8
+Won't change
+</code></pre>
+<p>Приведенный выше код объявляет переменную <b>num</b> типа <b>Int</b> и <b>str</b> переменной типа <b>String</b></p>
+			</body>
+		  </html>
+
+		</div>
+	  </div>               
+	</div>    
+
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

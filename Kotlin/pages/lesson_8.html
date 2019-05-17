@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 8. Ввод</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Простым способом чтения со стандартным вводом является функция <b>readLine()</b>:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val test = readLine();
+  println("Your input is $test");
+}</code></pre>
+<p>Все, что пользователь вводит автоматически, преобразуется в <b>String</b>.</p>
+<p>Чтобы преобразовать ввод целого числа, используйте функцию <b>toInt()</b>:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var age = readLine()!!.toInt();
+  println("Вам $age лет");
+}</code></pre>
+<p><b>!!</b> подразумевает, что ввод не может вернуть <b>null</b>, что необходимо для ввода чего-то. <b>null</b> означает отсутствие ценности.</p>
+<p>Такая же логика работает для Double и других типов, используя <b>toDouble()</b> и аналогичные функции.</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var intTest: Int;
+  intTest = readLine()!!.toInt();
+  var dblTest = readLine()!!.toDouble();
+  var longTest: Long = readLine()!!.toLong();
+
+  println("Int input is $intTest, double input is $dblTest, long input is $longTest");
+}</code></pre>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

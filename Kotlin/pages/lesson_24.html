@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+	  <title>Урок 24. Использование циклов с массивами</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Один из самых удобных способов организовать цикл по массиву-это цикл <b>for</b>:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  var nums: IntArray = intArrayOf(4, 5, -5, 12);
+  for (n in nums) {
+    println("Value: $n");
+  }
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+Value: 4
+Value: 5
+Value: -5
+Value: 12
+</code></pre>
+<p>Цикл while требует дополнительной индексной переменной для доступа к элементам массива.</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  var nums: IntArray = intArrayOf(4, 5, -5, 12);
+  var index: Int = 0;
+  while (index &lt; 4) {
+    println("Value: ${nums[index]}");
+    ++index;
+  }
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+Value: 4
+Value: 5
+Value: -5
+Value: 12
+</code></pre>
+<p>Для итерации по массиву с индексом вы можете использовать цикл for с индексами массива</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  var nums: IntArray = intArrayOf(4, 5, -5, 12);
+  for (ix in nums.indices) {
+    println("Value: ${nums[ix]}");
+  }
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+Value: 4
+Value: 5
+Value: -5
+Value: 12
+</code></pre>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

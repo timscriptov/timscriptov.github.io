@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 14. Операторы: if и else</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Условные операторы выполняют разные действия в зависимости от того, какое логическое условие значение true или false.</p>
+<p>Используйте оператор <b>if</b>, чтобы указать блок кода, который должен быть выполнен, если условие истинно.</p>
+<p>Давайте выведем приветствие "Good morning!", если значение переменной <b>hour</b> меньше 12:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val hour = 11;
+  if (hour &lt; 12) {
+    println("Good morning!");
+  }
+}</code></pre>
+<p>Что делать, если нам нужно вывести другое сообщение, если <b>hour</b> не менее 12?</p>
+<p>Оператор <b>else</b> используется для указания блока кода, который должен быть выполнен, если условие принимает значение false:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val hour = 15;
+  if (hour &lt; 12) {
+    println("Good morning!");
+  } else {
+    println("Good day!");
+  }
+}</code></pre>
+<p>Условием для оператора <b>if</b> может быть любое значение типа Boolean:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val hour = 11;
+  val isMorning: Boolean = (hour &lt; 12);
+
+  if (isMorning) {
+    println("Доброе утро!");
+  } else {
+      println("Добрый день!");
+  }
+}</code></pre>
+<p>В Kotlin <b>if</b> - это выражение, то есть оно возвращает значение. Это означает, что мы можем использовать, если присваивать значения переменной на основе условия. Пример:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  val a = 8;
+  val b = 42;
+  val max = if (a > b) a else b;
+
+  println(max);
+}</code></pre>
+<p>Из-за этого в Kotlin нет тернарного оператора, поскольку такое же поведение можно выполнить с помощью оператора <b>if</b>.</p>
+<p>Когда оператор <b>if</b> используется как выражение, предложение <b>else</b> является обязательным.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

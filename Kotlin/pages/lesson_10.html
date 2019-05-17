@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 10. Арифметические операции</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p><b>Kotlin</b> поддерживает следующие арифметические операции:</p>
+<p>+ (сложение)</p>
+<p>- (вычитание)</p>
+<p>* (умножение)</p>
+<p>/ (деление)</p>
+<p>% (модуль)</p>
+<p>Эти операции <b>бинарные</b>, что означает, что они работают с <b>двумя операндами э</b></p>
+<p>Приведенный ниже код объявляет две целые переменные и выводит их сумму, используя оператор + (сложение):</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num1: Int = 8;
+  var num2: Int = 3;
+
+  // Вычисление суммы
+  val sum = num1 + num2;
+  println("Сумма равна $sum");
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+Сумма равна 11
+</code></pre>
+<p>Деление</p>
+<p>Оператор деление <b>(/)</b> приводит к целому числу, удаляя любой остаток.</p>
+<p>Пример:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num1: Int = 10;
+  var num2: Int = 3;
+
+  var div = num1 / num2;
+  println(div);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+3
+</code></pre>
+<p>Чтобы получить остаток от деления, используйте оператор  % <b>(модуль)</b></p>
+<p>Пример:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num1: Int = 10;
+  var num2: Int = 3;
+
+  var remainder = num1 % num2;
+  println(remainder);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+1
+</code></pre>
+<p>Оператор <b>(модуль)</b> не может применяться к числам с плавающей запятой, однако оператор деления работает со значениями с плавающей запятой и приводит к результату с плавающей запятой:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num1: Double = 10.42;
+  var num2: Double = 5.14;
+
+  var res = num1 / num2;
+  println(res);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+2.027237354085603
+</code></pre>
+<p>Деление на ноль создает исключение.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

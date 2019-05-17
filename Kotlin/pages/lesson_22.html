@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 22. Интервалы</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Kotlin предоставляет уникальный тип для ряда значений.</p>
+<p>Диапазон имеет начало и конечное значение.</p>
+<p>Чтобы создать диапазон, вы можете использовать функцию <b>rangeTo ()</b>:</p>
+<pre><code class="kotlin">var myRange = 1.rangeTo(10);</code></pre>
+<p>Этот код определяет переменную диапазона <b>myRange</b>, содержащую значения от <b>1</b> до <b>10</b> включительно.</p>
+<p>Диапазоны в Kotlin <b>закрыты</b>, что означает, что начальное значение и конечное значение включены в диапазон.</p>
+<p>Чтобы создать уменьшающийся диапазон, используйте функцию <b>downTo ()</b>:</p>
+<pre><code class="kotlin">var decRange = 8.downTo(2);</code></pre>
+<p>decRange содержит значения: 8, 7, 6, 5, 4, 3, 2.</p>
+<p><b>Оператор ..</b></p>
+<p>Другой способ определения диапазона - использовать оператор .. (double dot):</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var myRange = 1..10;
+  println(myRange);
+}</code></pre>
+<p>Оператор <b>in</b> позволяет проверить, принадлежит ли значение диапазону:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var myRange = 1..10;
+  if (5 in myRange) {
+    println("5 находится в диапазоне");
+  }
+}</code></pre>
+<p>Аналогично, <b>!in</b> может использоваться для проверки того, не является ли число не принадлежащим диапазону.</p>
+<p>Диапазоны аналогичны массивам, они представляют собой совокупности значений, которые можно было бы повторить.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

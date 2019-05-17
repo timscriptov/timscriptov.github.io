@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 9. Комментарии</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Комментирующий код - хорошая практика, помогая вам и вашим коллегам-программистам понять и улучшить код.</p>
+<p>Kotlin есть два типа комментариев: <b>single-line</b> комментарии и <b>multi-line</b> комментарии.</p>
+<p><b>Single-line</b> комментарии начинаются с двух косых черт(//). Всё после них игнорируется компилятором:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String") {
+  println("Hello, World!"); // outputs Hello World!
+}</code></pre>
+<p>Комментарии разъясняют намерение программы читателю.</p>
+<p><b>Multi-line</b> комментарии могут охватывать несколько строк. Они начинаются с косой черты и звездочкой, заканчиваются звездочкой и косой чертой(/* */):</p>
+<pre><code class="kotlin">/* Это многострочный комментарий */
+fun main(args: Array&lt;String>) {
+  println("Hello, World!");
+  /* Multi-line комментарий
+  может охватывать
+  несколько строк */
+}</code></pre>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

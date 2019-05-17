@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+	  <title>Урок 26. Функции</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Функция представляет собой блок кода, который может быть выполнен путем вызова функции.</p>
+<p>Объявление функции выполняется с использованием ключевого слова fun.</p>
+<p>Основной синтаксис функции в Kotlin выглядит следующим образом:</p>
+<pre><code class="kotlin">fun name(parameter: type = default value): return type {
+  statements
+}</code></pre>
+<p>Функция имеет <b>имя</b>, которое используется для ссылки на неё, другими словами, на <b>вызов</b> функции.</p>
+<p>После имени появляется список функций <b>параметров</b>.</p>
+<p>Следуя скобкам, это тип данных, который должен быть возвращён функцией.</p>
+<p>Это может быть что угодно, если возвращаемая переменная соответствует типу.</p>
+<p>Когда функция вызывается, все операторы в фигурных скобках запускаются. Давайте объявим, а затем вызовем функцию, которая печатает приветственные сообщения:</p>
+<pre><code class="kotlin">fun greetUser() {
+  println("Hello user!");
+  println("Good morning.");
+}
+	  
+fun main(args: Array&lt;String&gt;) {
+  greetUser();
+}</code></pre>
+<p>Функция <b>greetUser ()</b> не принимает никаких параметров и не возвращает никакого значения, поскольку она только генерирует вывод.</p>
+<p>Определим функцию, которая принимает параметр Int и возвращает квадрат этого числа:</p>
+<pre><code class="kotlin">fun square(x: Int): Int {
+  return x * x
+}
+	  
+fun main(args: Array&lt;String&gt;) {
+  println(square(8));
+}</code></pre>
+<p>Ключевое слово return используется для возврата значения из функции.</p>
+<p>Вы можете вызывать функцию столько раз, сколько захотите.</p>
+<p>Если функция возвращает значение, вы можете назначить её переменной, например: var a = square (8);</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

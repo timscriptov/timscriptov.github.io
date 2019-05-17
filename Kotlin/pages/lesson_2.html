@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+  <head>
+	  <meta charset="utf-8">
+	  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+	  <meta name="description" content="">
+	  <meta name="author" content="Иван Тимашков">
+	<title>Урок 2. Базовый синтаксис</title>
+
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+	<div class="page__inner">
+	  <div class="main main_width-limit">
+		<div class="content">
+
+          <html>
+<body><p>Давайте начнем с создания простой программы, которая выводит на экран текст Hello, World!:</p>
+<p>Давайте разберём код:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  println("Hello, World!");    
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+Hello, World!
+</code></pre>
+<p>Каждая программа Kotlin должна иметь определенную функцию <b>main</b>, которая является стартовой точкой для программы и выполняется с помощью ключевого слова <b>fun</b>.</p>
+<p>Функция <b>println()</b> используется для генерации вывода. В нашем случае мы передали сообщение для вывода в двойных кавычках функции.</p>
+<p>Теперь поработайте с кодом и попробуйте напечатать своё имя.</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  println("Your name goes here");
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+Your name goes here
+</code></pre>
+<p>В большинстве случаев нет необходимости в точке с запятой, поскольку Kotlin предоставляет «вывод точки с запятой». Попробуйте запустить код без точки с запятой в конце инструкции <b>println()</b>.</p>
+			</body>
+		  </html>
+
+		</div>
+	  </div>               
+	</div>    
+
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>

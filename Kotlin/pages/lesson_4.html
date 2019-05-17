@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+		<title>Урок 4. Базовые типы</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+<body><p>Kotlin - это статически типизированный язык программирования с поддержкой базовых типов данных, таких как Numbers, Characters, Booleans, Arrays, and Strings.<br>
+Numbers представлены следующими встроенными типами:<br>
+- Double<br>
+- Float<br>
+- Long<br>
+- Int<br>
+- Short<br>
+- Byte<br>
+Давайте объявим <b>Integer</b> и выведем его значение:</p>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var num: Int = 42;
+  println(num);
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+42
+</code></pre>
+<p>Типы number отличаются объемом памяти, который они выделяют:<br>
+<b>Byte</b> выделяет <b>1 байт</b> памяти.<br>
+<b>Short</b> составляет <b>2 байта</b>,<br>
+<b>Int</b> составляет <b>4 байта</b>,<br>
+<b>Long</b> позволяет хранить <b>8 байтов</b> данных.<br>
+Если вам нужно сохранить значение с <b>плавающей точкой</b>, например, 3.14, вы можете использовать Float или Double.</p><br>
+<pre><code class="kotlin">fun main(args: Array&lt;String>) {
+  var pi: Float = 3.14f;
+  var e: Double = 2.71828;
+
+  println(pi);
+  println(e);
+}</code></pre>
+<pre><code>
+<b>Output:</b>
+3.14
+2.71828
+</code></pre>
+<p>Обратите внимание на <b>f</b> после 3.14. По умолчанию Котлин интерпретирует числа с плавающей запятой как <b>Doubles</b>, которые имеют более высокую точность по сравнению с <b>Floats</b>.<br>
+Чтобы объявить литерал Float, вы должны явно указать компилятору, что ваше значение Float, добавив <b>f</b> в конце значения.</p>
+<p>Для представления логических значений (true, false) используется тип <b>Boolean</b>.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

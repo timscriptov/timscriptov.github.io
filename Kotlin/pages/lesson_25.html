@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="Иван Тимашков">
+	  <title>Урок 25. Время практики: Циклы и Массивы</title>
+
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+					  <body><p>Давайте посмотрим пример массивов и циклов в действии.</p>
+						  <p>Имея массив чисел с плавающей запятой, и мы хотим вычислить сумму элементов массива.</p>
+							<p></p>
+							<p></p>
+<pre><code class="kotlin">fun main(args: Array&lt;String&gt;) {
+  var nums: DoubleArray = doubleArrayOf(3.14, 1.1, 2.2, 44.55, 21.3);
+  //Вычисление суммы
+  var sum: Double = 0.0;
+  for (num in nums) {
+    sum += num;
+  }
+  println(<font color="#FFBC0000">\"Сумма равна $sum\"</font>);\n
+}</code></pre>
+<p>Мы объявили переменную сумму с начальным значением 0.0. Затем эта переменная используется для накопления суммы элементов массива с использованием цикла for.</p>
+<p>Ваше домашнее задание:</p>
+<p>1. Определите массив целых чисел и вычислите произведение его элементов.</p>
+<p>2. Определите диапазон чисел от 0 до 100 и выведите только нечетные числа в этом диапазоне.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>               
+		</div>    
+
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

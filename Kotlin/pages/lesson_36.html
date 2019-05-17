@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="Иван Тимашков">
+	<title>Урок 36. Блок инициализатора</title>
+
+	<link href="../css/bootstrap.css" rel="stylesheet">
+	<link href="../css/article_style.css" rel="stylesheet">
+	<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+	<div class="page__inner">
+	  <div class="main main_width-limit">
+		<div class="content">
+
+		  <html>
+<body><p>Блок инициализатора может использоваться для автоматического запуска кода при создании объекта.
+Чтобы объявить блок инициализатора, используется ключевое слово init, за которым следуют фигурные скобки, содержащие код инициализации.
+Например:</p>
+<pre><code class="kotlin">class Student(var name: String, var age: Int) {
+  init {
+    println("Студент: $name");
+    println("Возраст: $age");
+  }
+}
+fun main(args: Array&lt;String&gt;) {
+  var ivan = Student("Иван", 18);
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+Студент: Иван
+Возраст: 18
+</code></pre>
+<p>Теперь, когда объект Student создан, код в блоке init будет запускаться автоматически.
+Класс может иметь более одного блока init. Они выполняются в том же порядке, что и в классе.
+Например:</p>
+<pre><code class="kotlin">class Student(name: String, age: Int){
+  init {
+    println("This will print first");
+  }
+  init {
+    var sname = name;
+    println("Using a variable declared above $sname");
+  }
+}
+fun main(args: Array&lt;String&gt;) {
+  val ivan = Student("Иван", 18)
+}
+</code></pre>
+<pre><code>
+<b>Output:</b>
+This will print first
+Using a variable declared above Иван
+</code></pre>
+<p>Параметры первичного конструктора могут использоваться в блоках инициализатора.</p>
+			</body>
+		  </html>
+
+		</div>
+	  </div>               
+	</div>    
+
+
+	<script src="../js/highlight.pack.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>
+ 
