@@ -1,0 +1,32 @@
+{
+	"data":[
+	{
+		"package_name":"guardian",
+		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/guardian/nmod_manifest.json",
+		"banner_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/guardian/banner.png",
+		"icon_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/guardian/icon.png",
+		"package_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/guardian/customblock.nmod"
+	},
+	{
+		"package_name":"com.mcal.customitem",
+		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.customitem/nmod_manifest.json",
+		"banner_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.customitem/banner.png",
+		"icon_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.customitem/icon.png",
+		"package_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.customitem/terrainplus.nmod"
+	},
+	{
+		"package_name":"com.mcal.stainedglass",
+		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.stainedglass/nmod_manifest.json",
+		"banner_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.stainedglass/banner.png",
+		"icon_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.stainedglass/icon.png",
+		"package_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.stainedglass/customblock.nmod"
+	},
+	{
+		"package_name":"com.mcal.terrainplus",
+		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.terrainplus/nmod_manifest.json",
+		"banner_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.terrainplus/banner.png",
+		"icon_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.terrainplus/icon.png",
+		"package_url":"https://raw.githubusercontent.com/TimScriptov/TimScriptov.github.io/master/nmod_server/com.mcal.terrainplus/terrainplus.nmod"
+	}
+	]
+}
