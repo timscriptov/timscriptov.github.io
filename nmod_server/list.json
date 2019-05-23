@@ -1,11 +1,11 @@
 {
 	"data":[
 	{
-		"package_name":"guardian",
-		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/guardian/nmod_manifest.json",
-		"banner_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/guardian/banner.png",
-		"icon_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/guardian/icon.png",
-		"package_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/guardian/customblock.nmod"
+		"package_name":"com.mcal.guardian",
+		"manifest_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.mcal.guardian/nmod_manifest.json",
+		"banner_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.mcal.guardian/banner.png",
+		"icon_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.mcal.guardian/icon.png",
+		"package_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.mcal.guardian/customblock.nmod"
 	}
 	]
 }
