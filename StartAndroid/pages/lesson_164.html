@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 164. Графика. Drawable. Level List, Transition, Inset, Clip, Scale</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- изучаем drawable теги: &lt;level-list&gt;, &lt;transition&gt;, &lt;inset&gt;, &lt;clip&gt;, &lt;scale&gt;</p>
+<p>Продолжаем разбирать типы Drawable, которые можно описывать с помощью XML-разметки. Проектов в этом уроке создавать не будем. Я просто буду в своем проекте создавать XML-файлы в папке drawable и ставить их фоном для View. А в тексте урока приведу код и скрины. Иногда буду вешать дополнительно серый фон, чтобы был виден реальный размер View.</p>
+<p>Чтобы программно добраться до Drawable, который вы для View повесили как фон, надо просто вызвать метод <a href="http://developer.android.com/reference/android/view/View.html#getBackground()" target="_blank" rel="noopener noreferrer">getBackground</a>.</p>
+<h2>Level List</h2>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#LevelList" target="_blank" rel="noopener noreferrer">&lt;level-list&gt;</a> позволяет отображать Drawable в зависимости от значения level. Рассмотрим пример, где будем отображать три разных Drawable: если level=0, то  зеленый прямогуольник; если 1, то желтый; если 2, то красный. Создадим три Drawable</p>
+<p><b>rect_red.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="#ff0000"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Красный прямоугольник</span></p>
+<p><b>rect_yellow.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="#ffff00"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Желтый прямоугольник</span></p>
+<p><b>rect_green.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="#00ff00"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Зеленый прямоугольник</span></p>
+<p><b>levels.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;level-list
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:drawable="@drawable/rect_green"
+		android:maxLevel="0"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:drawable="@drawable/rect_yellow"
+		android:maxLevel="1"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:drawable="@drawable/rect_red"
+		android:maxLevel="2"&gt;
+	&lt;/item&gt;
+&lt;/level-list&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Level List, в котором мы указываем какой Drawable при каком максимальном уровне (maxLevel) отображать.</span></p>
+<p>Менять уровень у Drawable мы можем методом <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#setLevel(int)" target="_blank" rel="noopener noreferrer">setLevel</a>. <span style="font-size: 12.1599998474121px;">Ставим 0 (по умолчанию)</span></p>
+<p><span style="font-size: 12.1599998474121px;">Результат:</span></p>
+<p><img src="images/lesson164/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Ставим 1</p>
+<p><img src="images/lesson164/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Ставим 2</p>
+<p><img src="images/lesson164/lesson3.png" alt="" width="640" height="385"/></p>
+<p>В соответствии с заданным уровнем отображается Drawable.</p>
+<p>Кроме атрибута maxLevel можно также использовать атрибут minLevel для указания минимального значения.</p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/LevelListDrawable.html" target="_blank" rel="noopener noreferrer">LevelListDrawable</a>.</p>
+<h2>Transition Drawable</h2>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Transition" target="_blank" rel="noopener noreferrer">&lt;transition&gt;</a> позволяет указать два Drawable и программно переключаться между ними с fade-эффектом и указанием продолжительности перехода.</p>
+<p>XML выглядит так:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;transition
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:drawable="@drawable/rect_green"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:drawable="@drawable/rect_yellow"&gt;
+	&lt;/item&gt;
+&lt;/transition&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Также у item есть атрибуты left, top, right, bottom для задания отступа.</span></p>
+<p>В коде, для переключения между Drawable используются методы <a href="http://developer.android.com/reference/android/graphics/drawable/TransitionDrawable.html#startTransition(int)" target="_blank" rel="noopener noreferrer">startTransition</a> и <a href="http://developer.android.com/reference/android/graphics/drawable/TransitionDrawable.html#reverseTransition(int)" target="_blank" rel="noopener noreferrer">reverseTransition</a>. Оба метода принимают на вход количество мсек, которое будет длиться переход.</p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/TransitionDrawable.html" target="_blank" rel="noopener noreferrer">TransitionDrawable</a>.</p>
+<h2>Inset Drawable</h2>
+<p>Насколько я понял – это просто обертка Drawable, которая позволяет указать padding-отступы. Корневой тег – <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Inset" target="_blank" rel="noopener noreferrer">&lt;inset&gt;</a>, атрибуты отступа insetLeft, insetTop, insetRight, insetBottom.</p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/InsetDrawable.html" target="_blank" rel="noopener noreferrer">InsetDrawable</a></p>
+<h2>Clip Drawable</h2>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Clip" target="_blank" rel="noopener noreferrer">&lt;clip&gt;</a> позволяет обрезать Drawable по горизонтальной и (или) вертикальной оси. Какая часть картинки будет обрезана зависит от значения level. Используемый диапазон тут от 0 до 10000, где 0 - картинка полностью обрезана и не видна, 10000  - картинка видна полностью. Атрибут gravity позволяет указать направление урезания.</p>
+<p>Рассмотрим несколько примеров.</p>
+<p>Устанавливаем программно (методом setLevel) уровень в 7000. А XML рисуем такой:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;clip
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:clipOrientation="horizontal"
+	android:drawable="@drawable/ic_launcher"
+	android:gravity="left"&gt;
+&lt;/clip&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Ось - горизонтальная, направление - влево. Т.е. картинка обрезается по горизонтали справа-налево до 70% (7000 от 10000).</span></p>
+<p><img src="images/lesson164/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Уровень установим в 2000, а xml делаем таким:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;clip
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:clipOrientation="vertical"
+	android:drawable="@drawable/ic_launcher"
+	android:gravity="top"&gt;
+&lt;/clip&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Картинка обрезается по вертикали снизу вверх до 20%</span></p>
+<p><img src="images/lesson164/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Уровень 5000, xml:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;clip
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:clipOrientation="horizontal|vertical"
+	android:drawable="@drawable/ic_launcher"
+	android:gravity="right|bottom"&gt;
+&lt;/clip&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Картинка обрезается по обоим осям вправо и вниз до 50%</span></p>
+<p><img src="images/lesson164/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Уровень 6000, xml:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;clip
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:clipOrientation="horizontal"
+	android:drawable="@drawable/ic_launcher"
+	android:gravity="center"&gt;
+&lt;/clip&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Картинка обрезается по горизонтали к центру до 60%</span></p>
+<p><img src="images/lesson164/lesson7.png" alt="" width="640" height="385"/></p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/ClipDrawable.html" target="_blank" rel="noopener noreferrer">ClipDrawable</a></p>
+<h2>Scale Drawable</h2>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Scale" target="_blank" rel="noopener noreferrer">&lt;scale&gt;</a> позволяет сжать картинку по горизонтальной (scaleWidth) и (или) вертикальной (scaleHeight) оси и сместить полученное изображение в указанную часть (scaleGravity) доступного пространства.</p>
+<p><em>У меня этот тип </em><em>Drawable</em><em> работал только, если установить ему </em><em>level</em><em> &gt; 0.</em></p>
+<p>Рассмотрим примеры</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;scale
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:drawable="@drawable/ic_launcher"
+	android:scaleGravity="left"
+	android:scaleWidth="30%"&gt;
+&lt;/scale&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Сжимаем на 30% по горизонтали и смещаем влево.</span></p>
+<p><img src="images/lesson164/lesson8.png" alt="" width="640" height="385"/></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;scale
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:drawable="@drawable/ic_launcher"
+	android:scaleGravity="bottom"
+	android:scaleHeight="70%"&gt;
+&lt;/scale&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Сжимаем на 70% по вертикали и смещаем вниз.</span></p>
+<p><img src="images/lesson164/lesson9.png" alt="" width="640" height="385"/></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;scale
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:drawable="@drawable/ic_launcher"
+	android:scaleGravity="bottom|right"
+	android:scaleHeight="50%"
+	android:scaleWidth="50%"&gt;
+&lt;/scale&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Сжимаем на 50% по обоим сторонам и смещаем вправо-вниз.</span></p>
+<p><img src="images/lesson164/lesson10.png" alt="" width="640" height="385"/></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;scale
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:drawable="@drawable/ic_launcher"
+	android:scaleGravity="center"
+	android:scaleHeight="60%"
+	android:scaleWidth="40%"&gt;
+&lt;/scale&gt;</code></pre>
+<p><span style="font-size: 12.1599998474121px;">Сжимаем на 40% по ширине и 60% по высоте, и смещаем в центр</span></p>
+<p><img src="images/lesson164/lesson11.png" alt="" width="640" height="385"/></p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/ScaleDrawable.html" target="_blank" rel="noopener noreferrer">ScaleDrawable</a></p>
+<h2>Animation drawable</h2>
+<p>Тег &lt;animation-list&gt; дает возможность устроить слайд-шоу из нескольких Drawable. Для этого надо указать все используемые Drawable и время отображения для каждого из них.</p>
+<p><b>anim.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;animation-list xmlns:android="http://schemas.android.com/apk/res/android" android:oneshot="true"&gt;
+	&lt;item android:drawable="@drawable/rect_green" android:duration="500"&gt;&lt;/item&gt;
+	&lt;item android:drawable="@drawable/rect_red" android:duration="500"&gt;&lt;/item&gt;
+	&lt;item android:drawable="@drawable/rect_yellow" android:duration="500"&gt;&lt;/item&gt;
+&lt;/animation-list&gt;</code></pre>
+<p>Список Drawable с указанием времени отображения для каждого. Атрибут oneShot установленный в true говорит системе о том, что воспроизведение нужно только один раз. Если поставить false, то анимация будет циклично повторяться.</p>
+<p>Чтобы запустить процесс анимации, необходимо получить Drawable, привести его к типу AnimationDrawable и вызвать метод <a href="http://developer.android.com/reference/android/graphics/drawable/AnimationDrawable.html#start()" target="_blank" rel="noopener noreferrer">start</a>.</p>
+<p>Java-реализация – класс <span style="font-size: 12.1599998474121px;"><a href="http://developer.android.com/reference/android/graphics/drawable/AnimationDrawable.html" target="_blank" rel="noopener noreferrer">AnimationDrawable</a>.</span></p>
+<div>
+</div>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

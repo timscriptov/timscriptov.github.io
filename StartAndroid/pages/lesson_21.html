@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 21. Создание и вызов Activity</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- создадим и вызовем второе Activity в приложении</p>
+<p>Мы подобрались к очень интересной теме. На всех предыдущих уроках мы создавали приложения, которые содержали только <b>один экран</b> (Activity). Но если вы пользуетесь смартфоном с Android, то вы замечали, что экранов в приложении обычно больше. Если рассмотреть, например, почтовое приложение, то в нем есть следующие экраны: список аккаунтов, список писем, просмотр письма, создание письма, настройки и т.д.  Пришла и нам пора научиться создавать <b>многоэкранные приложения</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0211_TwoActivity<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: TwoActivity<br><b>Package name</b>: ru.startandroid.develop.p0211twoactivity<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем main.xml и создадим такой экран:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Go to Activity Two"
+        android:id="@+id/btnActTwo"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране одна кнопка, по нажатию которой будем вызывать второй экран.</p>
+<p>Открываем MainActivity.java и пишем код:</p>
+<pre><code class="java">package ru.startandroid.develop.p0211twoactivity;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  Button btnActTwo;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    btnActTwo = (Button) findViewById(R.id.btnActTwo);
+    btnActTwo.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnActTwo:
+      // TODO Call second activity
+      break;
+    default:
+      break;
+    }
+  }
+}</code></pre>
+<p>Мы определили кнопку <b>btnActTwo </b>и присвоили ей Activity в качестве обработчика. Реализация метода <b>onClick </b>для кнопки пока заполнена частично - определяем, какая кнопка была нажата. Чуть позже здесь мы будем<b> вызывать второй экран</b>. Но сначала этот второй экран надо <b>создать</b>.</p>
+<p>Если помните, при создании проекта у нас по умолчанию создается Activity.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_0.png" alt="" width="509" height="159"></p>
+<p>От нас требуется только указать<b> имя</b> этого Activity – обычно мы пишем здесь MainActivity. Давайте разбираться, что при этом происходит. Мы уже знаем, что<b> создается одноименный класс</b> MainActivity.java – который отвечает за поведение Activity. Но, кроме этого, Activity «<b>регистрируется</b>» в системе с помощью <b>манифест-файла </b>- AndroidManifest.xml.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_1.png" alt="" width="301" height="333"></p>
+<p>Давайте откроем этот файл:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_2.png" alt="" width="640" height="220"></p>
+<p>Нас интересует вкладка <b>Application</b>. Слева мы видим <b>MainActivity</b>. Если его раскрыть, внутри видим Intent Filter с определенными параметрами. Пока мы не знаем что это и зачем, сейчас нам это не нужно. Забегая вперед, скажу, что android.intent.action.MAIN показывает системе, что Activity является основной и будет первой отображаться при запуске приложения. А android.intent.category.LAUNCHER означает, что приложение будет отображено в общем списке приложений Android.</p>
+<p>Справа в поле <b>Name </b>написано <b>.MainActivity</b>. Это имя класса, который отвечает за работу Activity (это же можно считать и именем Activity).</p>
+<p>Итак, если мы хотим<b> создать</b> еще одно <b>Activity</b>, надо <b>создать класс</b> и <b>прописать Activity в AndroidManifest.xml</b>. Чтобы создать класс, жмем правой кнопкой на package <b>ru.startandroid.develop.p0201twoactivity</b> в папке проекта и выбираем <b>New</b> -&gt; <b>Class</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_3.png" alt="" width="640" height="374"></p>
+<p>В появившемся окне вводим имя класса – <b>ActivityTwo</b>, и суперкласс – <b>android.app.Activity</b>.</p>
+<p><img src="images/lesson_20_4.png" alt="" width="542" height="637"></p>
+<p>Класс ActivityTwo создан. Он абсолютно пустой. Нам надо реализовать метод <b>onCreate</b>, который вызывается при создании Activity:</p>
+<pre><code class="java">package ru.startandroid.develop.p0211twoactivity;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+
+public class ActivityTwo extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+  }
+}</code></pre>
+<p>Не хватает вызова метода <b>setContentView</b>, который указал бы классу, чем заполнять экран. Этому методу на вход требуется<b> layout-файл</b>. Давайте создадим его в папке layout, там же где и main.xml. Назовем файл<b> two.xml</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_5.png" alt="" width="301" height="370"></p>
+<p>Заполним этот файл следующим кодом:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This is Activity Two"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Экран будет отображать <b>TextView </b>с текстом "This is Activity Two". Используем файл two.xml в методе setContentView в <b>ActivityTwo.java</b></p>
+<pre><code class="java">  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.two);
+  }</code></pre>
+<p>(добавляете только строку 3)</p>
+<p>Сохраните все. Класс ActivityTwo готов, при создании он выведет на экран то, что мы настроили в layout-файле two.xml. Теперь надо прописать Activity в манифесте. Открываем AndroidManifest.xml, вкладка Application. Жмем кнопку <b>Add</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_6.png" alt="" width="418" height="283"></p>
+<p>Далее, в появившемся окне сверху выберите пункт «Create a new element at the top level …» (если есть выбор) , а из списка выбираем <b>Activity</b>.</p>
+<p><img src="images/lesson_20_7.png" alt="" width="449" height="462"></p>
+<p>Жмем <b>OK</b>, Activity создалось и появилось в списке. Осталось указать ему класс, который будет отвечать за его работу. Справа в поле <b>Name </b>можем <b>написать вручную имя класса</b>, который создавали – "ActivityTwo". А можем<b> нажать Browse</b> и <b>выбрать</b> его же из списка (надо будет немного подождать пока список сформируется). Кроме этого больше ничего указывать и заполнять пока не надо. Сохраним все.</p>
+<p>Теперь в <b>манифесте </b>прописаны <b>два Activity</b>, и каждое ссылается на <b>свой класс</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_20_8.png" alt="" width="640" height="233"></p>
+<p>Нам осталось вернуться в MainActivity.java и довершить реализацию метода onClick (нажатие кнопки), а именно - прописать вызов ActivityTwo. Открываем MainActivity.java и добавляем строки:</p>
+<pre><code class="java">    case R.id.btnActTwo:
+      Intent intent = new Intent(this, ActivityTwo.class);
+      startActivity(intent);
+      break;</code></pre>
+<p>(добавляете только строки 2 и 3)</p>
+<p>Обновите импорт (CTRL+SHIFT+O), сохраните все и можем всю эту конструкцию запускать. При запуске появляется MainActivity</p>
+<p><img src="images/lesson_20_9.png" alt="" width="640" height="454"></p>
+<p>Нажимаем на кнопку и переходим на ActivityTwo</p>
+<p><img src="images/lesson_20_10.png" alt="" width="640" height="454"></p>
+<p>Код вызова Activity пока не объясняю и теорией не гружу, урок и так получился сложным. Получилось много текста и скриншотов, но на самом деле процедура минутная. Поначалу, возможно, будет непонятно, но постепенно втянемся. Создадим штук 5-6 новых Activity в разных проектах и тема уляжется в голове.</p>
+<p>Пока попробуйте несколько раз пройти мысленно эту цепочку действий и усвоить, что для создания Activity необходимо создать класс (который наследует android.app.Activity) и создать соответствующую запись в манифест-файле.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

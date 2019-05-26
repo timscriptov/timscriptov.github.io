@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 114. Android 3. Библиотека Support Library. Зачем нужна и как ее использовать на примере фрагментов</title>
+	
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- разбираемся, зачем нужна библиотека Support Library<br> - на примере фрагментов используем библиотеку v4</p>
+<p><a href="http://developer.android.com/tools/extras/support-library.html" target="_blank">Support Library</a> – библиотека, которая на старых версиях Android делает доступными возможности новых версий. Например, фрагменты появились только в третьей версии (API Level 11). Если вы хотите использовать их в своем приложении, это приложение не будет работать на более старых версиях Android, т.к. эти старые версии никогда не слышали про класс android.app.Fragment. Какие тут есть выходы?</p>
+<p>1) Добавить в код проверку версии системы и в зависимости от результата выполнять тот или иной код. Т.е. если версия 11 и выше, используем фрагменты, иначе Activity. Вполне выполнимо, но не совсем просто. Можно ошибиться и запутаться. Т.е. при запуске приложения на старых версиях приходится либо отказываться от новшеств и пользоваться тем, что есть, либо изобретать велосипед и реализовывать новшества самому.</p>
+<p>2) Можно забить на старые версии и позиционировать свое приложение только для новых версий. Тогда теряется ощутимая часть потенциальных пользователей вашей программы. На момент написания этого материала на версии Android ниже третьей сидит <a href="http://developer.android.com/about/dashboards/index.html" target="_blank">69,7% пользователей</a>. Ощутимая такая потеря получится - больше, чем две трети! Конечно, со временем все перейдут на третью и последующие версии, и смогут использовать ваше приложение. Но к тому времени выйдут новые версии Android с новыми возможностями, вы их реализуете в своем приложении и, тем самым, снова отсеете часть пользователей. В общем, вырисовывается постоянная дискриминация пользователей по версии.</p>
+<p>3) Использовать библиотеку Support Library. Она содержит классы - аналоги новшеств последних версий, которые будут работать на старых версиях.</p>
+<p>На данный момент есть две библиотеки v4 и v13. Цифра здесь указывает минимальный API Level на котором можно использовать эту библиотеку. Т.е. приложение, использующее v4, может быть запущено на API Level &gt;= 4 и ему будут доступны новшества, которые входят в эту библиотеку (например, фрагменты). </p>
+<p>Библиотеки эти периодически <a href="http://developer.android.com/tools/extras/support-library.html#Notes" target="_blank">обновляются</a>, в них добавляются новые классы, реализующие новые возможности. Так что, если вы не нашли в них сейчас то, что вам нужно, вполне возможно, что это появится в будущем. Самый яркий пример – ActionBar. Его, к сожалению, в v4 пока нет. И я, честно говоря, не знаю, появится ли. Умельцы пишут свои аналоги, т.е. реализуют первый вариант из рассмотренных нами выше и предоставляют нам возможность использовать его, как третий вариант. Ведь мы вовсе не обязаны ограничиваться стандартной Support Library от Google. Можно использовать и другие библиотеки от других разработчиков. Самая популярная реализация ActionBar – это <a href="http://actionbarsherlock.com/index.html" target="_blank">ActionBarSherlock</a>. </p>
+<p>Разобрались с тем, что такое Support Library и зачем она нужна. Теперь посмотрим, как ее использовать. Работать будем с v4.</p>
+<p>Если у вас библиотека загружена, а версия ADT одна из последних, то Eclipse сам автоматически добавит в проект эту библиотеку. И вы сразу после создания нового проекта сможете ее использовать.</p>
+<p>Если не все так радужно, то надо скачать и добавить самим. Несложный и недолгий процесс. На официальном сайте есть <a href="http://developer.android.com/training/basics/fragments/support-lib.html" target="_blank">инструкция</a>. И я здесь просто напишу перевод этой инструкции со своими дополнениями. Но не спешите все это проделывать! Возможно, вам это не понадобится.</p>
+<p>Чтобы <b>загрузить</b> библиотеку:</p>
+<p>Откройте <b>SDK Manager</b>, найдите там <b>Android Support Library</b> и установите ее</p>
+<p><img src="images/lesson_113_0.png" alt="" width="571" height="422"></p>
+<p>Библиотека v4 загрузится в папку: <i>&lt;путь к SDK&gt;/extras/android/support/v4/android-support-v4.jar</i></p>
+<p>Чтобы <b>добавить </b>библиотеку в ваш проект:</p>
+<p>В проекте создайте папку <b>libs</b>. Он должна быть в корне, на том же уровне, что и <b>res</b>, <b>bin</b> и прочие. Поместите в папку <b>libs</b> загруженную библиотеку <b>android-support-v4.jar</b>. Далее, правой кнопкой на этой библиотеке в папке <b>libs</b>, и в контекстном меню <b>Build Path</b> &gt; <b>Add to Build Path</b>.</p>
+<p>Обновите манифест, указав в нем, что минимальная требуемая версия для вашего приложения – API Level 4.</p>
+<p><i>android:minSdkVersion="4"</i></p>
+<p>При создании нового проекта проверьте - если папка libs с библиотекой в проекте есть, то выше приведенная инструкция вам не нужна.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_113_1.png" alt="" width="208" height="222"></p>
+<p>Из рассмотренных нами в прошлых уроках классов, библиотека <a href="http://developer.android.com/tools/extras/support-library.html#Using" target="_blank">содержит</a> Fragment, FragmentManager, FragmentTransaction, ListFragment, DialogFragment.</p>
+<p>Полный список объектов можно посмотреть, открыв API на сайте. Вот основной пакет - <a href="http://developer.android.com/reference/android/support/v4/app/package-summary.html" target="_blank">android.support.v4.app</a>. Слева видны остальные.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_113_2.png" alt="" width="640" height="458"></p>
+<p>Напишем простейший пример использования фрагмента в приложении для API Level 10.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1141_SupportLibrary<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SupportLibrary<br><b>Package name</b>: ru.startandroid.develop.p1141supportlibrary<br><b>Create Activity</b>: MainActivity</p>
+<p>Создаем фрагмент.</p>
+<p>Сначала layout <b>fragment.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#77ff0000"
+	android:orientation="vertical"&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Пустой красный LinearLayout.</p>
+<p>Далее создаем класс - MyFragment. Если мы сделаем это по старинке, наследуя <b>android.app.Fragment</b>, то в созданном классе получим ошибку <i>T<b>he import android.app.Fragment cannot be resolved</b></i>. И это логично, т.к. в Android 4.0 (API Level 10) нет такого класса.</p>
+<p>И, собственно, именно тут и пригодится нам библиотека v4. Будем наследовать ее класс <b>android.support.v4.app.Fragment</b> при создании фрагмента</p>
+<p><img src="images/lesson_113_3.png" alt="" width="495" height="598"></p>
+<p><b>MyFragment.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1141supportlibrary;
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class MyFragment extends Fragment {
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment, null);
+  }
+}</code></pre>
+<p>Правим <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;FrameLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/cont"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"&gt;
+&lt;/FrameLayout&gt;</code></pre>
+<p>Только FrameLayout, который будет контейнером для фрагмента.</p>
+<p>Далее есть один нюанс. Чтобы в старой версии Android использовать фрагменты из Support Library, нам необходимо использовать не стандартное Activity, а также из библиотеки – <b>android.support.v4.app.FragmentActivity</b>.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1141supportlibrary;
+
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+
+public class MainActivity extends FragmentActivity {
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    MyFragment myFrag = new MyFragment();
+    getSupportFragmentManager().beginTransaction()
+        .replace(R.id.cont, myFrag).commit();
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+}</code></pre>
+<p>В коде видим еще одно отличие. FragmentActivity использует метод <a href="http://developer.android.com/reference/android/support/v4/app/FragmentActivity.html#getSupportFragmentManager()" target="_blank">getSupportFragmentManager</a> (а не <a href="http://developer.android.com/reference/android/app/Activity.html#getFragmentManager()" target="_blank">getFragmentManager</a>) для получения <a href="http://developer.android.com/reference/android/support/v4/app/FragmentManager.html" target="_blank">FragmentManager</a>. В остальном, работа с фрагментами не будет отличаться от прошлых уроков. Различие будет только в секции <b>import</b>. Если раньше было, например так:</p>
+<p><i>import android.app.Fragment;</i><br><i>import android.app.FragmentManager;</i><br><i>import android.app.FragmentTransaction;</i><br><i>(это работает только на новых версиях)</i></p>
+<p>то с использованием v4 будет так:</p>
+<p><i>import android.support.v4.app.Fragment;</i><br><i>import android.support.v4.app.FragmentManager;</i><br><i>import android.support.v4.app.FragmentTransaction;</i><br><i>(это будет работать и на старых и на новых версиях)</i></p>
+<p>Цель проста - работоспособность вашего приложения на старых версиях, которые ничего не знают про фрагменты. Старые версии будут использовать для работы с фрагментами классы библиотеки v4. Но, разумеется, этот код без проблем сработает и на последних версиях Android.    </p>
+<p>Все сохраняем, запускаем приложение и видим работающий фрагмент на Android версии 4.0</p>
+<p><img src="images/lesson_113_4.png" alt="" width="640" height="449"></p>
+<p>Ради интереса запустим его же на Android 4.1</p>
+<p><img src="images/lesson_113_5.png" alt="" width="640" height="449"></p>
+<p>Итого, благодаря библиотеке, один и тот же код работает на старых и новых версиях и использует возможности новых версий. </p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

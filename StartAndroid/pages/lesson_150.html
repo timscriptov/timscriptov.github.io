@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 150. Рисование. PathMeasure – информация о Path-объекте</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем PathMeasure для работы c Path</p>
+<p>Объект <a href="http://developer.android.com/reference/android/graphics/Path.html" target="_blank">Path</a> мы подробно изучили в Уроке 143. Сейчас рассмотрим <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html" target="_blank">PathMeasure</a>, весьма полезный в некоторых случаях инструмент, который умеет:</p>
+<p>- вычислять длину сегментов Path</p>
+<p>- определять, закрыт или открыт сегмент</p>
+<p>- получать координаты и угол наклона для указанной точки Path</p>
+<p>- выделять часть Path в отдельный объект</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1501_PathMeasure<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: PathMeasure<br/> <b>Package name</b>: ru.startandroid.develop.p1501pathmeasure<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1501pathmeasure;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathMeasure;
+import android.os.Bundle;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+
+public class MainActivity extends Activity {
+
+  final String TAG = "myLogs";
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    requestWindowFeature(Window.FEATURE_NO_TITLE);
+    getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+        WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint paint;
+    Paint paintText;
+    Path path;
+    PathMeasure pMeasure;
+    float length;
+
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(3);
+
+      paintText = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paintText.setTextSize(30);
+
+      path = new Path();
+      path.moveTo(100, 300);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -100);
+      path.rQuadTo(150, 200, 300, 0);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -100);
+
+      pMeasure = new PathMeasure(path, false);
+      length = pMeasure.getLength();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.drawPath(path, paint);
+      canvas.drawText(String.format("Length: %s", length), 100, 100,
+          paintText);
+    }
+  }
+
+}</code></pre>
+<p>В <b>onCreate</b> мы флагами убираем заголовок окна и переводим приложение в полноэкранный режим. Позже я поясню, зачем это нужно.</p>
+<p>В конструкторе <b>DrawView</b> создаем Path, состоящий из нескольких линий и одной кривой. Далее создаем для него PathMeasure, флаг forceClosed при этом ставим false – нам не нужно закрывать Path. Методом <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#getLength()" target="_blank">getLength</a> получаем длину Path.</p>
+<p>В <b>onDraw</b> рисуем Path и выводим на экран его длину.</p>
+<p><img src="images/lesson150/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Теперь попробуем получить геометрическую инфу о произвольной точке Path.</p>
+<p>Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint paint;
+    Paint paintText;
+    Path path;
+    PathMeasure pMeasure;
+    Matrix matrix;
+    Rect rect;
+
+    float[] pos;
+    float[] tan;
+
+    float length;
+    float distance;
+
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(3);
+
+      paintText = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paintText.setTextSize(30);
+
+      path = new Path();
+      path.moveTo(100, 300);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -100);
+      path.rQuadTo(150, 200, 300, 0);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -100);
+
+      pMeasure = new PathMeasure(path, false);
+
+      length = pMeasure.getLength();
+      distance = length / 4;
+
+      matrix = new Matrix();
+      pMeasure.getMatrix(distance, matrix,
+          PathMeasure.POSITION_MATRIX_FLAG
+              + PathMeasure.TANGENT_MATRIX_FLAG);
+
+      pos = new float[2];
+      tan = new float[2];
+      pMeasure.getPosTan(distance, pos, tan);
+
+      rect = new Rect(-20, -10, 20, 10);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.drawPath(path, paint);
+      canvas.drawText(
+          String.format("Distance: %s of %s", distance, length), 100,
+          100, paintText);
+      canvas.drawText(
+          String.format("Position: %s. Tangent (cos,sin): %s",
+              Arrays.toString(pos), Arrays.toString(tan)), 100,
+          150, paintText);
+
+      canvas.setMatrix(matrix);
+      canvas.drawRect(rect, paint);
+    }
+  }</code></pre>
+<p>В конструкторе <b>DrawView</b> создаем тот же Path, далее создаем для него PathMeasure, измеряем длину и в переменную distance поместим значение равное четверти длины. Далее используем метод <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#getMatrix(float, android.graphics.Matrix, int)" target="_blank">getMatrix</a>, передаем в него:</p>
+<p>- расстояние от начала Path до точки, информация о которой нам необходима</p>
+<p>- матрицу, которая будет заполнена значениями, актуальными для указанной точки</p>
+<p>-  флаги. Их два <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#POSITION_MATRIX_FLAG" target="_blank">POSITION_MATRIX_FLAG</a> – в матрицу попадут данные только по позиции точки, <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#TANGENT_MATRIX_FLAG" target="_blank">TANGENT_MATRIX_FLAG</a> – в матрицу попадут данные только по повороту в точке. Мы используем сразу оба флага.</p>
+<p>Тем самым мы получим матрицу, которая описывает положение и поворот объекта, который находится в точке на расстоянии distance от начала.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#getPosTan(float, float[], float[])" target="_blank">getPosTan</a> имеет схожий смысл, но он заполнит не матрицу, а два массива: pos – позиция, tan – наклон (cos и sin угла).</p>
+<p>В методе <b>onDraw</b> рисуем Path, выводим значение distance и информацию, полученную из метода getPosTan.</p>
+<p>Далее применяем к канве матрицу, полученную из метода getMatrix и рисуем небольшой прямоугольник. Он разместится в точке, которая находится на расстоянии distance и его угол будет соответствовать углу наклона Path в этой точке.</p>
+<p><img src="images/lesson150/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Если из MainActivity.onCreate убрать флаги заголовка и полноэкранного режима, то полученная матрица будет содержать некорректные значения смещения, не учитывающие высоту заголовка и верхней панели. Не знаю, баг это или фича.</p>
+<p>Path может состоять из нескольких контуров и PathMeasure умеет их различать.</p>
+<p>Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint paint;
+    Path path;
+    PathMeasure pMeasure;
+
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(3);
+
+      path = new Path();
+      path.moveTo(100, 300);
+      path.rLineTo(150, 150);
+      path.rLineTo(150, -100);
+
+      path.rMoveTo(0, 0);
+      path.rQuadTo(150, 200, 300, 0);
+      path.close();
+
+      path.rMoveTo(0, 0);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -150);
+      path.close();
+
+      pMeasure = new PathMeasure(path, false);
+      do {
+        Log.d(TAG,
+            String.format("Length: %s, isClosed: %s",
+                pMeasure.getLength(), pMeasure.isClosed()));
+      } while (pMeasure.nextContour());
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      canvas.drawPath(path, paint);
+    }
+  }</code></pre>
+<p>При создании Path мы используем методы moveTo и rMoveTo. Эти методы начинают новый контур в Path. Таким образом у нас получилось три контура. Методом close мы закроем второй и третий контур, первый оставим открытым.</p>
+<p>Далее используем <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#nextContour()" target="_blank">nextContour</a>, чтобы перебирать контуры и методами getLength и <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#isClosed()" target="_blank">isClosed</a> получаем длину и выясняем закрыт ли контур. Выводим в лог всю эту информацию.</p>
+<p><img style="border: 1px solid black;" src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1652367269" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>На экране видно, что второй и третий контуры закрыты.</p>
+<p>Логи говорят об этом же и показывают длину каждого контура (с учетом закрывающей линии):</p>
+<p><i>Length: 392.4096, isClosed: false<br/></i><i>Length: 673.3855, isClosed: true<br/></i><i>Length: 696.5477, isClosed: true</i></p>
+<p>Выделим часть одного Path в другой Path.</p>
+<p>Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint paint;
+    Path path;
+    Path path1;
+    PathMeasure pMeasure;
+
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(3);
+
+      path = new Path();
+      path.moveTo(100, 300);
+      path.rLineTo(150, 150);
+      path.rLineTo(150, -100);
+      path.rQuadTo(150, 200, 300, 0);
+      path.rLineTo(150, 100);
+      path.rLineTo(150, -150);
+
+      pMeasure = new PathMeasure(path, false);
+
+      path1 = new Path();
+      pMeasure.getSegment(150, 850, path1, true);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      canvas.drawPath(path1, paint);
+    }
+  }</code></pre>
+<p>Используем метод <a href="http://developer.android.com/reference/android/graphics/PathMeasure.html#getSegment(float, float, android.graphics.Path, boolean)" target="_blank">getSegment</a>. Передаем туда расстояние до точки начала (150) и до точки конца (850) нужной нам части Path. Объект path1 будет содержать вырезанную часть объекта path. Четвертым параметром передаем true, чтобы полученная фигура начиналась от стартовой точки. Иначе она начнется с (0,0).</p>
+<p><img style="line-height: 1.3em; border: 1px solid black;" src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1577151256" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Мы получили часть Path между точками, лежащими на расстоянии 150 и 850 от начала фигуры.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

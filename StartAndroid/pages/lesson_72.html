@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 72. Preferences. Список, экраны и категории</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем в настройках список <br> - группируем настройки по экранам и категориям</p>
+<p>На прошлом уроке мы узнали, как несложно создается экран настроек, и использовали там чекбокс и поле для ввода. Немного расширим наши знания и используем новые компоненты:</p>
+<p>список (<a href="http://developer.android.com/reference/android/preference/ListPreference.html" target="_blank">ListPreference</a>) – позволяет выбрать значение из нескольких возможных</p>
+<p>экран (<a href="http://developer.android.com/reference/android/preference/PreferenceScreen.html" target="_blank">PreferenceScreen</a>) – с его помощью можно делать вложенные экраны с настройками</p>
+<p>категория (<a href="http://developer.android.com/reference/android/preference/PreferenceCategory.html" target="_blank">PreferenceCategory</a>) – группировка нескольких настроек</p>
+<p>Создадим простое приложение. На первом экране будем читать и отображать значение из настройки-списка. Второй экран будет отображать все настройки.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0721_PreferencesSimple2<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: PreferencesSimple2<br><b>Package name</b>: ru.startandroid.develop.p0721preferencessimple2<br><b>Create Activity</b>: MainActivity</p>
+<p>Заполним <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;PreferencesSimple2&lt;/string&gt;
+    &lt;string-array name="entries"&gt;
+        &lt;item&gt;one&lt;/item&gt;
+        &lt;item&gt;two&lt;/item&gt;
+        &lt;item&gt;three&lt;/item&gt;
+    &lt;/string-array&gt;
+    &lt;string-array name="entry_values"&gt;
+        &lt;item&gt;1&lt;/item&gt;
+        &lt;item&gt;2&lt;/item&gt;
+        &lt;item&gt;3&lt;/item&gt;
+    &lt;/string-array&gt;
+&lt;/resources&gt;</code></pre>
+<p>Мы создали два массива, чуть позже их используем для списка значений.</p>
+<p>Рисуем основной экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Здесь только текстовое поле.</p>
+<p>Создадим xml-файл с настройками <b>res/xml/pref.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;CheckBoxPreference
+        android:key="chb"
+        android:summary="Description of checkbox"
+        android:title="Checkbox"&gt;
+    &lt;/CheckBoxPreference&gt;
+    &lt;ListPreference
+        android:entries="@array/entries"
+        android:entryValues="@array/entry_values"
+        android:key="list"
+        android:summary="Description of list"
+        android:title="List"&gt;
+    &lt;/ListPreference&gt;
+    &lt;PreferenceScreen
+        android:key="screen"
+        android:summary="Description of screen"
+        android:title="Screen"&gt;
+        &lt;PreferenceCategory
+            android:key="categ1"
+            android:summary="Description of category 1"
+            android:title="Category 1"&gt;
+            &lt;CheckBoxPreference
+                android:key="chb1"
+                android:summary="Description of checkbox 1"
+                android:title="CheckBox 1"&gt;
+            &lt;/CheckBoxPreference&gt;
+            &lt;CheckBoxPreference
+                android:key="chb2"
+                android:summary="Description of checkbox 2"
+                android:title="CheckBox 2"&gt;
+            &lt;/CheckBoxPreference&gt;
+            &lt;CheckBoxPreference
+                android:key="chb3"
+                android:summary="Description of checkbox 3"
+                android:title="CheckBox 3"&gt;
+            &lt;/CheckBoxPreference&gt;
+        &lt;/PreferenceCategory&gt;
+        &lt;PreferenceCategory
+            android:key="categ2"
+            android:summary="Description of category 2"
+            android:title="Category 2"&gt;
+            &lt;CheckBoxPreference
+                android:key="chb4"
+                android:summary="Description of checkbox 4"
+                android:title="CheckBox 4"&gt;
+            &lt;/CheckBoxPreference&gt;
+            &lt;CheckBoxPreference
+                android:key="chb5"
+                android:summary="Description of checkbox 5"
+                android:title="CheckBox 5"&gt;
+            &lt;/CheckBoxPreference&gt;
+        &lt;/PreferenceCategory&gt;
+    &lt;/PreferenceScreen&gt;
+&lt;/PreferenceScreen&gt;</code></pre>
+<p>Создавать его, конечно, можно не только через xml, но и конструктором. Вот такая получается картинка:</p>
+<p><img src="images/lesson_71_0.png" alt="" width="453" height="267"></p>
+<p>У нас в настройках будет чекбокс (chb), список (list) и вложенный экран (screen). Внутри screen две категории (categ 1 и categ2), а в них просто чекбоксы. Все просто и понятно.</p>
+<p>Из интересного стоит отметить аттрибуты <a href="http://developer.android.com/reference/android/preference/ListPreference.html#attr_android:entries" target="_blank">entries</a> и <a href="http://developer.android.com/reference/android/preference/ListPreference.html#attr_android:entryValues" target="_blank">entryValues</a> у ListPreference. entries – это то, что отобразит список пользователю, а entryValues – это то, что сохранит система после выбора значения в списке. Мы используем тут два разных массива. В итоге список покажет значения <b><i>one</i></b>, <b><i>two</i></b>, <b><i>three</i></b>, а сохранит соответственно <b><i>1</i></b>,<b><i>2</i></b> или <b><i>3</i></b>. Можно использовать один массив в обоих атрибутах, тогда отображаемые и сохраняемые значения будут равны.</p>
+<p>Создаем Activity для настроек – <b>PrefActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0721preferencessimple2;
+
+import android.os.Bundle;
+import android.preference.PreferenceActivity;
+
+public class PrefActivity extends PreferenceActivity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    addPreferencesFromResource(R.xml.pref);
+  }
+}</code></pre>
+<p>И <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0721preferencessimple2;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+  
+  TextView tvInfo;
+  SharedPreferences sp;
+  
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        tvInfo = (TextView) findViewById(R.id.tvInfo);
+        sp = PreferenceManager.getDefaultSharedPreferences(this);
+    }
+    
+    protected void onResume() {
+      String listValue = sp.getString("list", "не выбрано");
+      tvInfo.setText("Значение списка - " + listValue);
+      super.onResume();
+    }
+    
+    public boolean onCreateOptionsMenu(Menu menu) {
+      MenuItem mi = menu.add(0, 1, 0, "Preferences");
+      mi.setIntent(new Intent(this, PrefActivity.class));
+      return super.onCreateOptionsMenu(menu);
+    }
+}</code></pre>
+<p>В <b>onCreate </b>получаем доступ к настройкам.</p>
+<p>В <b>onResume </b>выводим в tvInfo значение из настроек, которое записал туда список. Если значений нет, то пишем текст «не выбрано»</p>
+<p>В <b>onCreateOptionsMenu </b>создаем пункт меню и вешаем на него Intent, который запустит нам экран настроек.</p>
+<p>Остальные параметры читать не буду, это мы на прошлом уроке рассмотрели, там все просто.</p>
+<p>Все сохраним и запустим.</p>
+<p><img src="images/lesson_71_1.png" alt="" width="640" height="449"></p>
+<p>Изначально настройки пусты, в списке ничего не было выбрано.</p>
+<p>Переходим через меню на экран настроек.</p>
+<p><img src="images/lesson_71_2.png" alt="" width="640" height="449"></p>
+<p>Первый пункт – чекбокс, второй – список, третий – вложенный экран. </p>
+<p>Нажмем на список:</p>
+<p><img src="images/lesson_71_3.png" alt="" width="640" height="449"></p>
+<p>Показаны значения из списка entries. Выбираем устраивающее нас значение, список закрывается и сохраняется соответствующее значение из списка entry_values. Можно вернуться на первый экран кнопкой Назад (Back) и убедиться в этом.</p>
+<p><img src="images/lesson_71_4.png" alt="" width="640" height="449"></p>
+<p>Я выбрал two, сохранилось 2.</p>
+<p>Снова идем в экран настроек и жмем на вложенный экран Screen. Провалились внутрь.</p>
+<p><img src="images/lesson_71_5.png" alt="" width="640" height="449"></p>
+<p>Тут куча чекбоксов, которые сгруппированы по двум категориям.</p>
+<p>Теперь мы умеем создавать экраны настроек с группировкой элементов по категориям и подэкранам. Это значительно удобнее для пользователя, чем куча разных настроек на одном экране.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

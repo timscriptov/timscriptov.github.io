@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 51. SimpleAdapter, добавление и удаление записей</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем SimpleAdapter для построения списка<br> - добавляем и удаляем записи в списке</p>
+<p>Как выводить данные в список с помощью <b>SimpleAdapter </b>мы знаем. Теперь попробуем эти данные менять. Сделаем список с возможностью <b>удаления </b>и <b>добавления </b>записей. Добавлять будем кнопкой, а удалять с помощью контекстного меню.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0511_SimpleAdapterData<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleAdapterData<br><b>Package name</b>: ru.startandroid.develop.p0511simpleadapterdata<br><b>Create Activity</b>: MainActivity</p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onButtonClick"
+        android:text="Добавить запись"&gt;
+    &lt;/Button&gt;
+    &lt;ListView
+        android:id="@+id/lvSimple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка для добавления и список. Из интересного можно отметить свойство <b>onClick </b>у кнопки. Дальше станет понятно, что это.</p>
+<p>Layout для пункта списка <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"&gt;
+    &lt;ImageView
+        android:id="@+id/ivImg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher"&gt;
+    &lt;/ImageView&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:text=""
+        android:textSize="18sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Картинка и текст.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0511simpleadapterdata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+
+public class MainActivity extends Activity {
+
+  private static final int CM_DELETE_ID = 1;
+
+  // имена атрибутов для Map
+  final String ATTRIBUTE_NAME_TEXT = "text";
+  final String ATTRIBUTE_NAME_IMAGE = "image";
+
+  ListView lvSimple;
+  SimpleAdapter sAdapter;
+  ArrayList&lt;Map&lt;String, Object&gt;&gt; data;
+  Map&lt;String, Object&gt; m;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // упаковываем данные в понятную для адаптера структуру
+    data = new ArrayList&lt;Map&lt;String, Object&gt;&gt;();
+    for (int i = 1; i &lt; 5; i++) {
+      m = new HashMap&lt;String, Object&gt;();
+      m.put(ATTRIBUTE_NAME_TEXT, "sometext " + i);
+      m.put(ATTRIBUTE_NAME_IMAGE, R.drawable.ic_launcher);
+      data.add(m);
+    }
+
+    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_IMAGE };
+    // массив ID View-компонентов, в которые будут вставлять данные
+    int[] to = { R.id.tvText, R.id.ivImg };
+
+    // создаем адаптер
+    sAdapter = new SimpleAdapter(this, data, R.layout.item, from, to);
+
+    // определяем список и присваиваем ему адаптер
+    lvSimple = (ListView) findViewById(R.id.lvSimple);
+    lvSimple.setAdapter(sAdapter);
+    registerForContextMenu(lvSimple);
+  }
+
+  public void onButtonClick(View v) {
+    // создаем новый Map
+    m = new HashMap&lt;String, Object&gt;();
+    m.put(ATTRIBUTE_NAME_TEXT, "sometext " + (data.size() + 1));
+    m.put(ATTRIBUTE_NAME_IMAGE, R.drawable.ic_launcher);
+    // добавляем его в коллекцию
+    data.add(m);
+    // уведомляем, что данные изменились
+    sAdapter.notifyDataSetChanged();
+  }
+
+  @Override
+  public void onCreateContextMenu(ContextMenu menu, View v,
+      ContextMenuInfo menuInfo) {
+    super.onCreateContextMenu(menu, v, menuInfo);
+    menu.add(0, CM_DELETE_ID, 0, "Удалить запись");
+  }
+
+  @Override
+  public boolean onContextItemSelected(MenuItem item) {
+    if (item.getItemId() == CM_DELETE_ID) {
+      // получаем инфу о пункте списка
+      AdapterContextMenuInfo acmi = (AdapterContextMenuInfo) item.getMenuInfo();
+      // удаляем Map из коллекции, используя позицию пункта в списке
+      data.remove(acmi.position);
+      // уведомляем, что данные изменились
+      sAdapter.notifyDataSetChanged();
+      return true;
+    }
+    return super.onContextItemSelected(item);
+  }
+}</code></pre>
+<p>В методе <b>onCreate </b>мы формируем коллекцию Map-объектов, массивы сопоставления, создаем адаптер и список, добавляем возможность контекстного меню для списка.</p>
+<p>Метод <b>onButtonClick </b>– его мы указали в main.xml в свойстве <b>onClick </b>кнопки. И теперь при нажатии на кнопку выполнится этот метод. Отдельный обработчик нажатия не нужен.</p>
+<p>В этом методе мы создаем новый Map, добавляем его к коллекции данных и сообщаем, что данные изменились и надо обновить список.</p>
+<p>Метод <b>onCreateContextMenu </b>– создание контекстного меню. Создаем только один пункт - для удаления записи.</p>
+<p>В <b>onContextItemSelected </b>обрабатываем нажатие на пункт контекстного меню. При вызове контекстного меню объект, для которого оно было вызвано, передает в меню информацию о себе. Чтобы получить данные по пункту списка, для  которого был совершен вызов контекстного меню, мы используем метод getMenuInfo. Объект AdapterContextMenuInfo содержит данные о View, id и позиции пункта списка. Мы используем позицию для удаления соответствующего Map из коллекции. После этого сообщаем, что данные изменились.</p>
+<p>Все сохраним и запустим.</p>
+<p><img src="images/lesson_50_0.png" alt="" width="640"></p>
+<p>На скрине показано контекстное меню, которое вызывается при долгом нажатии на пункт списка. За ним виден список и кнопка для добавления записей.</p>
+<p>Записи добавляются и удаляются. Редактирование я не стал делать. Там принцип тот же. Получаете Map и меняете его атрибуты.</p>
+<p>Из кода видно, что для обновления списка надо поменять данные, которые использует адаптер, и вызвать его метод-уведомление.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

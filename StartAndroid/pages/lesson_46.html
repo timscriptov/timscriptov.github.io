@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 46. События ExpandableListView</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- обрабатываем события дерева-списка</p>
+<p>Дерево-список строить мы умеем, теперь посмотрим, как с ним можно взаимодействовать. Нам предоставлена возможность обрабатывать следующие события: нажатие на группу, нажатие на элемент, сворачивание группы, разворачивание группы.</p>
+<p><b>Создадим</b> <b>проект</b><b>:</b></p>
+<p><b>Project name</b>: P0461_ExpandableListEvents<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ExpandableListEvents<br><b>Package name</b>: ru.startandroid.develop.p0461expandablelistevents<br><b>Create Activity</b>: MainActivity</p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"&gt;
+        &lt;TextView
+            android:id="@+id/tvInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+        &lt;/TextView&gt;
+        &lt;ExpandableListView
+            android:id="@+id/elvMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"&gt;
+        &lt;/ExpandableListView&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>TextView </b>для вывода информации и <b>ExpandableListView</b>.</p>
+<p>В проекте, рядом с классом <b>MainActivity </b>создадим (не Activity) класс <b>AdapterHelper</b>. В него поместим код для заполнения списка, чтобы разгрузить MainActivity.java.</p>
+<p>Код <b>AdapterHelper.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0461expandablelistevents;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.content.Context;
+import android.widget.SimpleExpandableListAdapter;
+
+public class AdapterHelper {
+  
+  final String ATTR_GROUP_NAME= "groupName";
+  final String ATTR_PHONE_NAME= "phoneName";
+
+  
+  // названия компаний (групп)
+  String[] groups = new String[] {"HTC", "Samsung", "LG"};
+  
+  // названия телефонов (элементов)
+  String[] phonesHTC = new String[] {"Sensation", "Desire", "Wildfire", "Hero"};
+  String[] phonesSams = new String[] {"Galaxy S II", "Galaxy Nexus", "Wave"};
+  String[] phonesLG = new String[] {"Optimus", "Optimus Link", "Optimus Black", "Optimus One"};
+  
+  // коллекция для групп
+  ArrayList&lt;Map&lt;String, String&gt;&gt; groupData;
+  
+  // коллекция для элементов одной группы
+  ArrayList&lt;Map&lt;String, String&gt;&gt; childDataItem;
+
+  // общая коллекция для коллекций элементов
+  ArrayList&lt;ArrayList&lt;Map&lt;String, String&gt;&gt;&gt; childData;
+  // в итоге получится childData = ArrayList&lt;childDataItem&gt;
+  
+  // список аттрибутов группы или элемента
+  Map&lt;String, String&gt; m;
+  
+  Context ctx;
+  
+  AdapterHelper(Context _ctx) {
+    ctx = _ctx;
+  }
+  
+  SimpleExpandableListAdapter adapter;
+  
+  
+  SimpleExpandableListAdapter getAdapter() {
+    
+    // заполняем коллекцию групп из массива с названиями групп
+        groupData = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String group : groups) {
+          // заполняем список аттрибутов для каждой группы
+          m = new HashMap&lt;String, String&gt;();
+            m.put(ATTR_GROUP_NAME, group); // имя компании
+            groupData.add(m);  
+        }
+        
+        // список аттрибутов групп для чтения
+        String groupFrom[] = new String[] {ATTR_GROUP_NAME};
+        // список ID view-элементов, в которые будет помещены аттрибуты групп
+        int groupTo[] = new int[] {android.R.id.text1};
+        
+
+        // создаем коллекцию для коллекций элементов 
+        childData = new ArrayList&lt;ArrayList&lt;Map&lt;String, String&gt;&gt;&gt;(); 
+        
+        // создаем коллекцию элементов для первой группы
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        // заполняем список аттрибутов для каждого элемента
+        for (String phone : phonesHTC) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put(ATTR_PHONE_NAME, phone); // название телефона
+            childDataItem.add(m);  
+        }
+        // добавляем в коллекцию коллекций
+        childData.add(childDataItem);
+
+        // создаем коллекцию элементов для второй группы        
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String phone : phonesSams) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put(ATTR_PHONE_NAME, phone);
+            childDataItem.add(m);  
+        }
+        childData.add(childDataItem);
+
+        // создаем коллекцию элементов для третьей группы        
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String phone : phonesLG) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put(ATTR_PHONE_NAME, phone);
+            childDataItem.add(m);  
+        }
+        childData.add(childDataItem);
+
+        // список аттрибутов элементов для чтения
+        String childFrom[] = new String[] {ATTR_PHONE_NAME};
+        // список ID view-элементов, в которые будет помещены аттрибуты элементов
+        int childTo[] = new int[] {android.R.id.text1};
+        
+        adapter = new SimpleExpandableListAdapter(
+            ctx,
+            groupData,
+            android.R.layout.simple_expandable_list_item_1,
+            groupFrom,
+            groupTo,
+            childData,
+            android.R.layout.simple_list_item_1,
+            childFrom,
+            childTo);
+        
+    return adapter;
+  }
+  
+  String getGroupText(int groupPos) {
+    return ((Map&lt;String,String&gt;)(adapter.getGroup(groupPos))).get(ATTR_GROUP_NAME);
+  }
+  
+  String getChildText(int groupPos, int childPos) {
+    return ((Map&lt;String,String&gt;)(adapter.getChild(groupPos, childPos))).get(ATTR_PHONE_NAME);
+  }
+  
+  String getGroupChildText(int groupPos, int childPos) {
+    return getGroupText(groupPos) + " " +  getChildText(groupPos, childPos);
+  }
+}</code></pre>
+<p>Код создания адаптера полностью заимствован с прошлого урока. Чтобы получить адаптер нам надо будет просто вызвать метод <b>getAdapter</b>.</p>
+<p>У класса есть <b>конструктор</b>, через который мы передаем объекту ссылку на <b>context</b>. Context нам понадобится, чтобы создать адаптер. Адаптеру же в свою очередь context нужен, например, для доступа к LayoutInflater.</p>
+<p>В конце класса находятся методы, которые возвращают нам названия групп и элементов из коллекций по номеру группы или номеру элемента. Для этого используем методы адаптера <b>getGroup </b>и <b>getChild</b>, приводим их к <b>Map</b> и извлекаем значение <b>атрибута </b>с именем компании или телефона.</p>
+<p>Пишем код в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0461expandablelistevents;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ExpandableListView.OnGroupClickListener;
+import android.widget.ExpandableListView.OnGroupCollapseListener;
+import android.widget.ExpandableListView.OnGroupExpandListener;
+import android.widget.SimpleExpandableListAdapter;
+import android.widget.TextView;
+
+
+public class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+  
+  ExpandableListView elvMain;
+  AdapterHelper ah;
+  SimpleExpandableListAdapter adapter;
+  TextView tvInfo;
+  
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        tvInfo = (TextView) findViewById(R.id.tvInfo);
+        
+        // создаем адаптер
+        ah = new AdapterHelper(this);
+        adapter = ah.getAdapter();
+        
+        elvMain = (ExpandableListView) findViewById(R.id.elvMain);
+        elvMain.setAdapter(adapter);
+        
+        // нажатие на элемент
+        elvMain.setOnChildClickListener(new OnChildClickListener() {
+      public boolean onChildClick(ExpandableListView parent, View v,
+          int groupPosition,   int childPosition, long id) {
+        Log.d(LOG_TAG, "onChildClick groupPosition = " + groupPosition + 
+                " childPosition = " + childPosition + 
+                " id = " + id);
+        tvInfo.setText(ah.getGroupChildText(groupPosition, childPosition));
+        return false;
+      }
+    });
+        
+        // нажатие на группу
+        elvMain.setOnGroupClickListener(new OnGroupClickListener() {
+      public boolean onGroupClick(ExpandableListView parent, View v,
+          int groupPosition, long id) {
+        Log.d(LOG_TAG, "onGroupClick groupPosition = " + groupPosition + 
+                " id = " + id);
+        // блокируем дальнейшую обработку события для группы с позицией 1
+        if (groupPosition == 1) return true;
+        
+        return false;
+      }
+    });
+        
+        // сворачивание группы        
+        elvMain.setOnGroupCollapseListener(new OnGroupCollapseListener() {
+      public void onGroupCollapse(int groupPosition) {
+        Log.d(LOG_TAG, "onGroupCollapse groupPosition = " + groupPosition);
+        tvInfo.setText("Свернули " + ah.getGroupText(groupPosition));
+      }
+    });
+        
+        // разворачивание группы
+        elvMain.setOnGroupExpandListener(new OnGroupExpandListener() {
+      public void onGroupExpand(int groupPosition) {
+        Log.d(LOG_TAG, "onGroupExpand groupPosition = " + groupPosition);
+        tvInfo.setText("Развернули " + ah.getGroupText(groupPosition));
+      }
+    });
+        
+        // разворачиваем группу с позицией 2
+        elvMain.expandGroup(2);
+    }
+}</code></pre>
+<p>Благодаря классу <b>AdapterHelper</b>, код создания адаптера занял всего две строчки: <b>создание </b>объекта и вызов метода <b>getAdapter</b>. Далее присваиваем адаптер списку и добавляем <b>обработчики</b>:</p>
+<p>1) <a href="http://developer.android.com/reference/android/widget/ExpandableListView.OnChildClickListener.html" target="_blank">OnChildClickListener</a> - нажатие на элемент</p>
+<p>Метод <br> public boolean <b>onChildClick</b>(ExpandableListView parent, View v, int groupPosition, int childPosition, long id), где</p>
+<p><b>parent </b>– ExpandableListView с которым работаем<br><b> v </b>– View элемента <br><b> groupPosition </b>– позиция группы в списке<br><b> childPosition </b>– позиция элемента в группе<br><b> id </b>– id элемента</p>
+<p>Мы выводим в лог позицию и id. А в <b>TextView</b> сверху от списка выводим <b>текст </b>нажатого <b>элемента </b>и его <b>группы</b>, который получаем с помощью методов AdapterHelper.</p>
+<p>Метод должен вернуть <b>boolean</b>. Если мы возвращаем <b>true </b>– это значит, мы сообщаем, что сами полностью <b>обработали событие</b> и оно <b>не пойдет в дальнейшие обработчики</b> (если они есть). Если возвращаем <b>false </b>– значит, мы позволяем <b>событию идти</b> <b>дальше</b>.</p>
+<p>2) <a href="http://developer.android.com/reference/android/widget/ExpandableListView.OnGroupClickListener.html" target="_blank">OnGroupClickListener</a> – нажатие на группу</p>
+<p>Метод <br> public boolean <b>onGroupClick</b>(ExpandableListView parent, View v, int groupPosition, long id), где</p>
+<p><b>parent </b>– ExpandableListView с которым работаем<br><b> v</b> – View элемента <br><b> groupPosition </b>– позиция группы в списке<br><b> id </b>– id группы</p>
+<p>Мы выводим в лог позицию и id группы.</p>
+<p>Этот метод также должен вернуть <b>boolean</b>. Мы будет возвращать true, если позиция группы = 1, иначе - false. Т.е. для этой группы мы блокируем дальнейшую обработку события. Далее увидим, что нам это даст.</p>
+<p>3) <a href="http://developer.android.com/reference/android/widget/ExpandableListView.OnGroupCollapseListener.html" target="_blank">OnGroupCollapseListener</a> – сворачивание группы</p>
+<p>Метод <br><b> onGroupCollapse</b>(int groupPosition), где groupPosition – позиция группы, которую свернули</p>
+<p>4) <a href="http://developer.android.com/reference/android/widget/ExpandableListView.OnGroupExpandListener.html" target="_blank">OnGroupExpandListener</a> – разворачивание группы</p>
+<p>Метод <br><b> onGroupExpand</b>(int groupPosition), где groupPosition – позиция группы, которую развернули</p>
+<p>И в конце кода MainActivity мы разворачиваем группу с позицией 2, используя метод <a href="http://developer.android.com/reference/android/widget/ExpandableListView.html#expandGroup(int)" target="_blank">expandGroup</a>.</p>
+<p>Все сохраним и запускаем.</p>
+<p>Как видим, группа LG сразу развернута. Это сработала команда <b>expandGroup </b>в конце кода.</p>
+<p>Если посмотреть в лог, то видим</p>
+<p><em>onGroupExpand groupPosition = 2</em></p>
+<p>Т.е. отработало событие разворачивания группы с позицией 2.</p>
+<p>Нажмем, например, на Optimus Link. Смотрим лог:</p>
+<p><i>onChildClick groupPosition = 2 childPosition = 1 id = 1</i></p>
+<p>Не забываем, что позиция считается с нуля. Группа с позицией 2 – LG, элемент с позицией 1 – Optimus Link, все верно.</p>
+<p>Смотрим TextView сверху экрана, он считал из адаптера значение атрибута и отобразил его.</p>
+<p>Теперь попробуем свернуть группу LG, нажмем на нее. Смотрим лог:</p>
+<p><i>onGroupClick groupPosition = 2 id = 2<br> onGroupCollapse groupPosition = 2</i></p>
+<p>Сначала отработал <b>onGroupClick </b>– нажатие на группу, а потом <b>onGroupCollapse </b>– сворачивание группы. TextView наверху экрана оповестил о том, что свернули группу LG.</p>
+<p>Снова развернем группу LG. Лог:</p>
+<p><em>onGroupClick groupPosition = 2 id = 2<br> onGroupExpand groupPosition = 2</em></p>
+<p>Нажатие на группу и разворачивание. Обратите внимание, что при программном разворачивании, события нажатия не было, только разворот.</p>
+<p>Теперь попробуем развернуть группу с позицией 1 – Samsung. Группа не разворачивается. Смотрим лог:</p>
+<p><em>onGroupClick</em> <em>groupPosition</em><em> = 1 </em><em>id</em><em> = 1</em></p>
+<p>Событие нажатия есть, а вот обработчик разворачивания не вызывается. Это происходит из-за строчки</p>
+<pre><code class="java">// блокируем дальнейшую обработку события для группы с позицией 1
+if (groupPosition == 1) return true;</code></pre>
+<p>Мы для группы с позицией 1 блокируем дальнейшую обработку события и оно не уходит в обработчики разворачивания или сворачивания. Поэтому и не срабатывает <b>onGroupExpand</b>.</p>
+<p>В итоге эти 4 обработчика позволяют вам определять, как пользователь взаимодействует с деревом.</p></body>
+</html>
+
+            </div>
+     </div>  
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

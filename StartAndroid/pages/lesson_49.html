@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 49. SimpleAdapter. Методы SetViewText и SetViewImage</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем методы SetViewText и SetViewImage</p>
+<p>Мы уже знаем, что <b>SimpleAdapter </b>умеет вставлять текст в TextView элементы и изображения в ImageView. Он использует для этого методы <b>SetViewText </b>и <b>SetViewImage</b>. Мы можем создать <b>свой адаптер</b> на основе SimpleAdapter и реализовать эти методы под наши цели.</p>
+<p>Эти методы предоставляют нам <b>View </b>и <b>данные</b>, а значит мы можем менять View в зависимости от данных. В качестве примера, сделаем список, отражающий динамику некоего показателя в разрезе дней. Если динамика положительная – будем разукрашивать элементы в зеленый цвет, если отрицательная – в красный.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0491_SimpleAdapterCustom1<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleAdapterCustom1<br><b>Package name</b>: ru.startandroid.develop.p0491simpleadaptercustom1<br><b>Create Activity</b>: MainActivity</p>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ListView
+        android:id="@+id/lvSimple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране только список.</p>
+<p>И layout для пункта списка <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"
+        android:orientation="horizontal"&gt;
+        &lt;ImageView
+            android:id="@+id/ivImg"
+            android:layout_width="30dp"
+            android:layout_height="22dp"
+            android:scaleType="fitCenter"&gt;
+        &lt;/ImageView&gt;
+        &lt;TextView
+            android:id="@+id/tvValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:text="TextView"
+            android:textSize="20sp"&gt;
+        &lt;/TextView&gt;
+        &lt;FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"&gt;
+            &lt;TextView
+                android:id="@+id/tvText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:text="TextView"
+                android:textSize="20sp"&gt;
+            &lt;/TextView&gt;
+        &lt;/FrameLayout&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Компонент <b>ivImg </b>будет отображать стрелку вниз или вверх, <b>tvValue </b>– значение динамики, <b>tvText </b>– номер дня.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0491simpleadaptercustom1;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  // имена атрибутов для Map
+  final String ATTRIBUTE_NAME_TEXT = "text";
+  final String ATTRIBUTE_NAME_VALUE = "value";
+  final String ATTRIBUTE_NAME_IMAGE = "image";
+
+  // картинки для отображения динамики 
+  final int positive = android.R.drawable.arrow_up_float;
+  final int negative = android.R.drawable.arrow_down_float;
+  
+  ListView lvSimple;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // массив данных
+    int[] values = { 8, 4, -3, 2, -5, 0, 3, -6, 1, -1 };
+
+    // упаковываем данные в понятную для адаптера структуру
+    ArrayList&lt;Map&lt;String, Object&gt;&gt; data = new ArrayList&lt;Map&lt;String, Object&gt;&gt;(
+        values.length);
+    Map&lt;String, Object&gt; m;
+    int img = 0;
+    for (int i = 0; i &lt; values.length; i++) {
+      m = new HashMap&lt;String, Object&gt;();
+      m.put(ATTRIBUTE_NAME_TEXT, "Day " + (i + 1));
+      m.put(ATTRIBUTE_NAME_VALUE, values[i]);
+      if (values[i] == 0) img = 0; else
+        img = (values[i] &gt; 0) ? positive : negative;
+      m.put(ATTRIBUTE_NAME_IMAGE, img);
+      data.add(m);
+    }
+
+    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_VALUE,
+        ATTRIBUTE_NAME_IMAGE };
+    // массив ID View-компонентов, в которые будут вставлять данные
+    int[] to = { R.id.tvText, R.id.tvValue, R.id.ivImg };
+
+    // создаем адаптер
+    MySimpleAdapter sAdapter = new MySimpleAdapter(this, data,
+        R.layout.item, from, to);
+
+    // определяем список и присваиваем ему адаптер
+    lvSimple = (ListView) findViewById(R.id.lvSimple);
+    lvSimple.setAdapter(sAdapter);
+  }
+
+  class MySimpleAdapter extends SimpleAdapter {
+
+    public MySimpleAdapter(Context context,
+        List&lt;? extends Map&lt;String, ?&gt;&gt; data, int resource,
+        String[] from, int[] to) {
+      super(context, data, resource, from, to);
+    }
+
+    @Override
+    public void setViewText(TextView v, String text) {
+      // метод супер-класса, который вставляет текст
+      super.setViewText(v, text);
+      // если нужный нам TextView, то разрисовываем 
+      if (v.getId() == R.id.tvValue) {
+        int i = Integer.parseInt(text);
+        if (i &lt; 0) v.setTextColor(Color.RED); else
+          if (i &gt; 0) v.setTextColor(Color.GREEN);
+      }
+    }
+
+    @Override
+    public void setViewImage(ImageView v, int value) {
+      // метод супер-класса
+      super.setViewImage(v, value);
+      // разрисовываем ImageView
+      if (value == negative) v.setBackgroundColor(Color.RED); else
+        if (value == positive) v.setBackgroundColor(Color.GREEN);
+    }
+  }
+}</code></pre>
+<p>Код создания адаптера обычен. Придумываем данные <b>values </b>и упаковываем их в коллекцию <b>Map</b>-объектов. Каждый Map будет состоять из трех атрибутов</p>
+<p>ATTRIBUTE_NAME_TEXT - текст с номером дня<br> ATTRIBUTE_NAME_VALUE - значение динамики<br> ATTRIBUTE_NAME_IMAGE - id картинки для отображения, в зависимости от значения (положительное или отрицательное)</p>
+<p>Затем заполняем массивы сопоставления данных (from) и View (to), создаем адаптер, используя свой класс <b>MySimpleAdapter</b>, и настраиваем список.</p>
+<p>Смотрим реализацию <b>MySimpleAdapter</b>. Конструктор вызывает конструктор супер-класса, тут ничего не меняем. Менять будем методы:</p>
+<p><b>setViewText</b></p>
+<p>Сначала выполняем метод супер-класса, который вставляет данные. А далее смотрим, если View, это тот TextView, который будет отображать значения, то меняем цвет текста на красный или зеленый в зависимости от значения, которое он будет отображать.</p>
+<p><b>setViewImage</b></p>
+<p>Выполняем метод супер-класса, чтобы ImageView получил изображение, а дальше меняем его фон в зависимости от значения. Картинка, которую мы вставляем , с альфа-слоем, поэтому фон будет виден. Проверку по id ImageView не выполняем, т.к. ImageView у нас только один.</p>
+<p>Все сохраним и запускаем.</p>
+<p><img src="images/lesson_48_0.png" alt="" width="640"></p>
+<p>Отобразились картинка, значение и день. Фон картинки и цвет текста значения меняются в зависимости от значения – положительное или отрицательное.</p>
+<p>Пример, конечно, не особо интересный, но надо было рассмотреть работу этих методов. Ничего лучше в голову не пришло )</p>
+</body>
+</html>
+
+            </div>
+     </div> 
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

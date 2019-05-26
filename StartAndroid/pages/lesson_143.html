@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 143. Рисование. Path</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- работаем с Path</p>
+
+<p>На прошлом уроке мы рассмотрели простые фигуры. Но кроме них мы имеем возможность создавать сложные фигуры с помощью объекта <a href="http://developer.android.com/reference/android/graphics/Path.html" target="_blank">Path</a>. Этот объект позволяет нам создать составную фигуру, состоящую из линий, кривых и простых фигур.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1431_DrawingPath<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: DrawingPath<br/> <b>Package name</b>: ru.startandroid.develop.p1431drawingpath<br/> <b>Create Activity</b>: MainActivity</p>
+<h3>Простые фигуры</h3>
+<p>Кодим в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1431drawingpath;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+    
+    Paint p;
+    RectF rectf;
+    Path path;
+    Path path1;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+      
+      rectf = new RectF(350,100,400,150);
+      path = new Path();
+      path1 = new Path();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // очистка path
+      path.reset();
+            
+      // угол
+      path.moveTo(100, 100);
+      path.lineTo(150, 200);
+      path.lineTo(50, 200);
+      
+      // треугольник
+      path.moveTo(250, 100);
+      path.lineTo(300, 200);
+      path.lineTo(200, 200);
+      path.close();
+      
+      // квадрат и круг
+      path.addRect(rectf, Path.Direction.CW);
+      path.addCircle(450, 150, 25, Path.Direction.CW);
+      
+      // рисование path
+      p.setColor(Color.BLACK);
+      canvas.drawPath(path, p);
+
+      
+      // очистка path1
+      path1.reset();
+      
+      // две пересекающиеся линии
+      path1.moveTo(50,50);
+      path1.lineTo(500,250);
+      path1.moveTo(500,50);
+      path1.lineTo(50,250);
+      
+      // рисование path1
+      p.setColor(Color.GREEN);      
+      canvas.drawPath(path1, p);
+
+      
+      // добавление path1 к path
+      path.addPath(path1);
+      
+      // смещение 
+      path.offset(500,100);      
+      
+      // рисование path
+      p.setColor(Color.BLUE);      
+      canvas.drawPath(path, p);
+    }
+    
+  }
+  
+}</code></pre>
+<p>Результат</p>
+<p><img src="images/lesson143/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Разбираем код.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Path.html#reset()" target="_blank">reset</a> очищает path.  </p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Path.html#moveTo(float, float)" target="_blank">moveTo</a> – ставит «курсор» в указанную точку. Далее рисование пойдет от нее.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Path.html#lineTo(float, float)" target="_blank">lineTo</a> – рисует линию от текущей точки до указанной, следующее рисование пойдет уже от указанной точки</p>
+<p>Таким образом мы нарисовали две прямые, получился угол.</p>
+<p>Далее перемещаем точку и снова рисуем две линии, и закрываем подфигуру методом <a href="http://developer.android.com/reference/android/graphics/Path.html#close()" target="_blank">close</a>. Методом moveTo мы сообщили, что начали рисовать новую подфигуру и эта точка является начальной, а когда вызываем close – рисуется линия от последней точки до начальной. Т.е. фигура закрывается. Таким образом, нарисовав две линии и вызвав метод close, мы получили треугольник.</p>
+<p>Далее методами <a href="http://developer.android.com/reference/android/graphics/Path.html#addRect(android.graphics.RectF, android.graphics.Path.Direction)" target="_blank">addRect</a> и <a href="http://developer.android.com/reference/android/graphics/Path.html#addCircle(float, float, float, android.graphics.Path.Direction)" target="_blank">addCircle</a> к объекту path добавляем квадрат и круг. Параметры тут стандартные, рассмотрены нами на прошлых уроках, кроме последнего: <a href="http://developer.android.com/reference/android/graphics/Path.Direction.html" target="_blank">направления</a>. Здесь есть два варианта: Path.Direction.CW (по часовой) и Path.Direction.CCW (против часовой). Т.е. вы задаете направление рисования линий квадрата или фигуры. Как это можно использовать, рассмотрим чуть позже.</p>
+<p>Выводим получившийся path на экран ченым цветом.</p>
+<p>Далее работаем с другим Path-объектом: path1. Добавляем в него две пересекающиеся линии. Выводим path1 зеленым цветом. Он у нас получился нарисован поверх path.</p>
+<p>Теперь методом <a href="http://developer.android.com/reference/android/graphics/Path.html#addPath(android.graphics.Path)" target="_blank">addPath</a> добавляем path1 к path. Т.е. к Path можно добавлять не только фигуры и линии, но и Path-объекты. Смещаем итоговый path на 500 вправо и 100 вниз методом <a href="http://developer.android.com/reference/android/graphics/Path.html#offset(float, float)" target="_blank">offset</a>, меняем цвет на синий и выводим результат. </p>
+<p>В <a href="http://developer.android.com/reference/android/graphics/Path.html" target="_blank">документацие</a> есть еще несколько методов add* для добавления фигур, которые мы прошли в прошлом уроке. С ними все аналогично.</p>
+<h3>Кривые</h3>
+<p>Path дает нам возможность рисовать не только прямые, но и кривые линии, а именно квадратичные и кубические кривые Безье.  <a href="http://ru.wikipedia.org/wiki/%D0%9A%D1%80%D0%B8%D0%B2%D0%B0%D1%8F_%D0%91%D0%B5%D0%B7%D1%8C%D0%B5" target="_blank">Википедия</a> дает очень хорошие GIF-ки на эту тему.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    Path path;
+    Point point1;
+    Point point21;
+    Point point22;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setStrokeWidth(3);
+      path = new Path();
+      
+      point1 = new Point(200,300);
+      point21 = new Point(500,600);
+      point22 = new Point(900,200);
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      
+      // первая линия
+      p.setColor(Color.BLACK);
+      canvas.drawLine(100, 100, 600, 100, p);
+      
+      // точка отклонения для первой линии
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.GREEN);
+      canvas.drawCircle(point1.x, point1.y, 10, p);
+      
+      // квадратичная кривая
+      path.reset();
+      path.moveTo(100, 100);
+      path.quadTo(point1.x, point1.y, 600, 100);
+      p.setStyle(Paint.Style.STROKE);
+      canvas.drawPath(path, p);
+      
+      
+      // вторая линия
+      p.setColor(Color.BLACK);
+      canvas.drawLine(400, 400, 1100, 400, p);
+
+      // точки отклонения для второй линии
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.BLUE);
+      canvas.drawCircle(point21.x, point21.y, 10, p);
+      canvas.drawCircle(point22.x, point22.y, 10, p);
+      
+      // кубическая кривая
+      path.reset();
+      path.moveTo(400, 400);
+      path.cubicTo(point21.x, point21.y, point22.x, point22.y, 1100, 400);
+      p.setStyle(Paint.Style.STROKE);
+      canvas.drawPath(path, p);
+    }
+  }</code></pre>
+<p>Результат</p>
+<p><img src="images/lesson143/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Рассмотрим сначала <b>зеленую</b> кривую.</p>
+<p>Сначала рисуем черную линию (100,100) – (600,100). Делаем это только для наглядности, чтобы видеть, какой была бы линия, если бы мы из нее кривую не сделали.</p>
+<p>Далее нарисуем небольшой круг в точке, которая будет использована для искривления линии. Делаем это тоже только для наглядности, чтобы видеть в каком направлении будет искривлена прямая. Координаты точки заданы в объекте point1.</p>
+<p>Теперь рисуем кривую, используя Path. Становимся в точку (100,100) методом moveTo. Метод <a href="http://developer.android.com/reference/android/graphics/Path.html#quadTo(float, float, float, float)" target="_blank">quadTo</a> рисует кривую из текущей точки (100,100) в точку (600,100) (т.е. те же координаты, что и черной линии). А точка (point1.x, point1.y) позволяет задать изгиб кривой. Проще говоря, кривая будет отклонена в сторону этой точки.</p>
+<p>Аналогично рисуем <b>синюю</b> кривую. Сначала черным цветом прямой оригинал. Затем точки отклонения. Затем искривляем. Метод <a href="http://developer.android.com/reference/android/graphics/Path.html#cubicTo(float, float, float, float, float, float)" target="_blank">cubicTo</a> рисует кривую из текущей точки (400,400) в точку (1100,400). А точки (point21.x, point21.y) и (point22.x, point22.y) позволяют задать изгиб кривой. Проще говоря, кривая будет отклонена в сторону этих точек.</p>
+<p>На получившемся результате видно, что кривые тянутся к точкам, которые показаны кружками. Для зеленой кривой, нарисованной методом quadTo – это одна точка. А метод cubicTo позволил нам задать две такие точки для синей линии.</p>
+<p>Также обратите внимание, что при создании объекта Paint я использовал флаг <a href="http://developer.android.com/reference/android/graphics/Paint.html#ANTI_ALIAS_FLAG" target="_blank">Paint.ANTI_ALIAS_FLAG</a>. Он сглаживает кривые при рисовании. Попробуйте его убрать и сравнить результат. </p>
+<p><i>В качестве задания предлагаю вам вспомнить Урок 102 про касания и сделать приложение, в котором будет нарисована прямая, а касаясь экрана пальцем ее можно будет искривлять в сторону точки касания.</i></p>
+<h3>Относительные методы</h3>
+<p>Методы moveTo, lineTo, quadTo, cubicTo имеют одноименные аналоги, но начинающиеся с буквы <b>r</b>: <a href="http://developer.android.com/reference/android/graphics/Path.html#rMoveTo(float, float)" target="_blank">rMoveTo</a>, <a href="http://developer.android.com/reference/android/graphics/Path.html#rLineTo(float, float)" target="_blank">rLineTo</a>, <a href="http://developer.android.com/reference/android/graphics/Path.html#rQuadTo(float, float, float, float)" target="_blank">rQuadTo</a>, <a href="http://developer.android.com/reference/android/graphics/Path.html#rCubicTo(float, float, float, float, float, float)" target="_blank">rCubicTo</a>. Отличие <b>r</b>-методов в том, что они используют не абсолютные, а относительные (<b>relative </b>– отсюда и буква <b>r</b>) координаты.</p>
+<p>Например, если метод lineTo(100,200) рисовал нам линию от текущей точки в точку (100,200), то rLineTo(100,200) нарисует линию от текущей точки в точку, которая правее текущей на 100 и ниже на 200.</p>
+<h3>Текст по фигуре</h3>
+<p>Теперь посмотрим, как можно использовать направление рисования, которое мы задавали в методах addRect и addCircle</p>
+<p>Перепишем DrawView:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    Path path;
+    String text;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setStrokeWidth(1);
+      p.setTextSize(20);
+      path = new Path();
+      text = "Draw the text, with origin at (x,y), using the specified paint";
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // черный
+      path.reset();
+      path.addCircle(200, 200, 100, Path.Direction.CW);
+      p.setColor(Color.BLACK);
+      canvas.drawTextOnPath(text, path, 0, 0, p);
+
+      path.reset();
+      path.addCircle(500, 200, 100, Path.Direction.CCW);
+
+      // синий
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.BLUE);
+      canvas.drawTextOnPath(text, path, 0, 0, p);
+      p.setStyle(Paint.Style.STROKE);
+      canvas.drawPath(path, p);
+
+      // зеленый
+      path.offset(-300, 250);
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.GREEN);
+      canvas.drawTextOnPath(text, path, 100, 0, p);
+      p.setStyle(Paint.Style.STROKE);
+      canvas.drawPath(path, p);
+
+      // красный
+      path.offset(300, 0);
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.RED);
+      canvas.drawTextOnPath(text, path, 0, 30, p);
+      p.setStyle(Paint.Style.STROKE);
+      canvas.drawPath(path, p);
+
+    }
+
+  }</code></pre>
+<p>Результат</p>
+<p><img src="images/lesson143/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Видим четыре текста, которые нарисованы в виде круга. Разберемся, как это сделано.</p>
+<p>Добавляем к Path круг методом addCircle, используя направление по часовой - Path.Direction.CW. Далее методом <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawTextOnPath(java.lang.String, android.graphics.Path, float, float, android.graphics.Paint)" target="_blank">drawTextOnPath</a> рисуем <b>черным</b> цветом текст по контуру path-фигуры. Как видим, текст идет по часовой стрелке. Сам круг при этом не рисуется. </p>
+<p>Далее очишаем path и добавляем к нему новый круг, используя направление против часовой Path.Direction.CCW. В нем текст пойдет против часовой стрелки. И <b>синим</b> цветом рисуем и текст и круг.</p>
+<p>А теперь рассмотрим параметры drawTextOnPath на зеленой и красной фигурах. Будем использовать тот же path, который нарисовали синим цветом. Только методом offset будем перемещать его на новое место.</p>
+<p>У метода drawTextOnPath третий параметр означает длину отступа от старта фигуры. В <b>зеленом</b> круге мы задали этот отступ равным 100. Видно, что по сравнению с синим кругом, текст здесь имеет отступ по окружности от начала.</p>
+<p>Четвертый параметр метода drawTextOnPath позволяет указать отступ текста от фигуры. В <b>красном</b> круге мы указали его равным 30. И видим, что текст удален от круга наружу. Если задать отрицательное значение, то текст будет смещен внутрь.</p>
+<p>Обратите внимание, что в Path вообще не используется объект Paint. Т.е. Path - это просто фигура. И она ничего не знает про то, какой кистью она будет нарисована. Кисть задается и используется уже непосредственно при рисовании фигуры на канвасе.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

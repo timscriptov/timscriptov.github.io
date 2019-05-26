@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 99. Service. Уведомления - notifications</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- шлем уведомление из сервиса</p>
+<p>В принципе, <b>уведомления </b>– отдельная от <b>сервисов </b>тема. Но чаще всего уведомления используются именно в сервисах, поэтому я решил дать эту тему сейчас.</p>
+<p>В андроид (версии &lt; 3) есть строка вверху экрана. Называется она статус-бар. Туда обычно в виде иконок сваливаются различные уведомления для пользователя (новые письма, смс и прочие). Пользователь открывает статус бар – видит там чуть более подробную инфу о событии. Дальше он может либо стереть это уведомление, либо нажать на него и перейти непосредственно к событию.</p>
+<p>В этом уроке научимся все это проделывать. Для начала разберем уведомление на логические составляющие, чтобы проще было понять как его создавать и отправлять.</p>
+<p><b>Первая часть</b> – то, что видно в статус-баре, когда уведомление только приходит – иконка и текст. Текст потом исчезает и остается только иконка.</p>
+<p><b>Вторая часть</b> – то, что мы видим, когда открываем статус бар (тянем вниз). Там уже полноценный View с иконкой и двумя текстами, т.е. более подробная информация о событии.</p>
+<p><b>Третья часть</b> – то, что произойдет, если мы нажмем на View из второй части. Тут обычно идет вызов Activity, где мы можем просмотреть полную информацию и обработать событие.</p>
+<p>Кроме этого есть еще несколько возможностей, по которым совсем кратко пробежимся в конце урока.</p>
+<p>Создадим приложение и сервис. Сервис, как будто загружает файл и посылает уведомление, по нажатию на которое будет открываться приложение и отображать имя файла.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0991_ServiceNotification<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceNotification<br><b>Package name</b>: ru.startandroid.develop.p0991servicenotification<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="stop"&gt;Stop&lt;/string&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnStop"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStop"
+		android:text="@string/stop"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tv"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопки для старт/стопа сервиса и TextView для отображения результата</p>
+<p>Создаем сервис <b>MyService</b>.java и прописываем его в манифесте. В манифесте же настроим сервис так, чтобы он работал в отдельном процессе. Для этого надо в его атрибуте process написать двоеточие и какое-нить слово.</p>
+<p><img src="images/lesson_98_0.png" alt="" width="640" height="377"></p>
+<p>Система эту строку добавит к package сервиса и, тем самым, получит название нового процесса, в котором и запустит сервис</p>
+<p><img src="images/lesson_98_1.png" alt=""></p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0991servicenotification;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  public final static String FILE_NAME = "filename";
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    TextView tv = (TextView) findViewById(R.id.tv);
+
+    Intent intent = getIntent();
+
+    String fileName = intent.getStringExtra(FILE_NAME);
+    if (!TextUtils.isEmpty(fileName))
+      tv.setText(fileName);
+  }
+  
+  public void onClickStart(View v) {
+    startService(new Intent(this, MyService.class));
+  }
+  
+  
+  public void onClickStop(View v) {
+    stopService(new Intent(this, MyService.class));
+  }
+}</code></pre>
+<p>В <b>onCreate </b>мы вытаскиваем из intent и кладем в TextView текст. Этот текст мы будем отправлять из сервиса через уведомление.</p>
+<p><b>onClickStart </b>и <b>onClickStop </b>– это обработчики кнопок. Стартуют и останавливают сервис.</p>
+<p><b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0991servicenotification;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+
+public class MyService extends Service {
+  NotificationManager nm;
+  
+  @Override
+  public void onCreate() {
+    super.onCreate();
+    nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+  }
+
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    try {
+      TimeUnit.SECONDS.sleep(5);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    sendNotif();
+    return super.onStartCommand(intent, flags, startId);
+  }
+  
+  void sendNotif() {
+    // 1-я часть
+    Notification notif = new Notification(R.drawable.ic_launcher, "Text in status bar", 
+      System.currentTimeMillis());
+    
+    // 3-я часть
+    Intent intent = new Intent(this, MainActivity.class);
+    intent.putExtra(MainActivity.FILE_NAME, "somefile");
+    PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
+    
+    // 2-я часть
+    notif.setLatestEventInfo(this, "Notification's title", "Notification's text", pIntent);
+    
+    // ставим флаг, чтобы уведомление пропало после нажатия
+    notif.flags |= Notification.FLAG_AUTO_CANCEL;
+    
+    // отправляем
+    nm.notify(1, notif);
+  }
+  
+  public IBinder onBind(Intent arg0) {
+    return null;
+  }
+}</code></pre>
+<p>В <b>onCreate </b>получаем менеджер уведомлений – <a href="http://developer.android.com/reference/android/app/NotificationManager.html" target="_blank">NotificationManager</a>. Он нам понадобится, чтобы отправить уведомление.</p>
+<p>В <b>onStartCommand </b>запускаем паузу на 5 секунд (эмулируем закачку файла) и после этого отправляем уведомление. Именно из-за этой паузы мы и используем другой процесс, чтобы не тормозило основное приложение.</p>
+<p>В <b>sendNotif </b>мы создаем и отправляем уведомление. Правда, немного в иной последовательности, что я описывал выше. Сначала первая часть, потом третья, потом вторая.</p>
+<p>Первая часть – создаем <a href="http://developer.android.com/reference/android/app/Notification.html" target="_blank">Notification</a>. В конструкторе указываем иконку и текст, которые будут видны в статус-баре. Также мы здесь указываем время. Обычно это текущее время. Но можно указать и прошлое и будущее. По этому времени уведомления будут отсортированы в статус-баре и в его раскрытой части.</p>
+<p>Третья часть – создаем Intent, который мы бы использовали для вызова нашего Activity. Туда помещаем имя загруженного файла. Activity его достанет и поместит в TextView. Далее мы оборачиваем этот Intent в PendingIntent, с помощью метода <a href="http://developer.android.com/reference/android/app/PendingIntent.html#getActivity(android.content.Context, int, android.content.Intent, int)" target="_blank">getActivity</a>. На вход ему передаем контекст и Intent. Второй параметр не используется (так написано в документацие). А четвертый – это флаги, влияющие на поведение PendingIntent. Они не относятся к теме урока, мы их не используем.</p>
+<p>Теперь этот созданный PendingIntent содержит информацию о том, что надо вызывать Activity, а также объект Intent, который для этой цели надо использовать. Это будет использовано при нажатии на уведомлении.</p>
+<p>Вторая часть – вызываем метод <a href="http://developer.android.com/reference/android/app/Notification.html#setLatestEventInfo(android.content.Context, java.lang.CharSequence, java.lang.CharSequence, android.app.PendingIntent)" target="_blank">setLatestEventInfo</a>. Передаем на вход контекст, текст-заголовок, подробный текст и PendingIntent. Теперь, когда мы откроем статус-бар, мы увидим два этих текста (заголовок и подробный). А, когда нажмем на уведомление, система использует PendingIntent для запуска Activity.</p>
+<p>Далее мы для созданного уведомления ставим флаг <a href="http://developer.android.com/reference/android/app/Notification.html#FLAG_AUTO_CANCEL" target="_blank">FLAG_AUTO_CANCEL</a>, чтобы оно исчезло из статус-бара после нажатия. По умолчанию оно не исчезает и продолжает висеть.</p>
+<p>Далее вызываем метод <a href="http://developer.android.com/reference/android/app/NotificationManager.html#notify(int, android.app.Notification)" target="_blank">notify</a> для менеджера уведомлений и передаем туда ID и созданное уведомление. ID используется, если мы хотим изменить или удалить уведомление.</p>
+<p>Все сохраним, запустим.</p>
+<p><img src="images/lesson_98_2.png" alt="" width="640" height="449"></p>
+<p>Жмем <b>Start </b>и сразу закрываем приложение кнопкой <b>Назад</b>.</p>
+<p>Проходит 5 сек и появляется уведомление (первая часть)</p>
+<p><img src="images/lesson_98_3.png" alt="" width="640" height="449"></p>
+<p>Открываем статус-бар и видим более подробную инфу (вторая часть)</p>
+<p><img src="images/lesson_98_4.png" alt="" width="640" height="449"></p>
+<p>Жмем на уведомление.</p>
+<p>Открывается наше приложение (третья часть) и в TextView появляется текст, переданный из сервиса.</p>
+<p><img src="images/lesson_98_5.png" alt="" width="640" height="449"></p>
+<p>Теперь вкратце пробежимся по остальным интересным возможностям уведомлений.</p>
+<h3>Обновление старого или новое уведомление</h3>
+<p>Если вы создадите новое уведомление и отправите его (notify) с тем же ID, что и у уже существующего уведомления, то новое заменит старое. Таким образом, вы можете уведомления обновлять.</p>
+<p>Если же надо показать новое уведомление, то используйте другой ID.</p>
+<h3>Удаление</h3>
+<p>Чтобы убрать уведомление из статус-бара, используется метод <a href="http://developer.android.com/reference/android/app/NotificationManager.html#cancel(int)" target="_blank">cancel</a> у менеджера уведомлений. На вход подается ID. Либо используйте метод <a href="http://developer.android.com/reference/android/app/NotificationManager.html#cancelAll()" target="_blank">cancelAll</a>, чтобы удалить все уведомления.</p>
+<h3>Звук</h3>
+<p>Если хотите, чтобы уведомление появилось со стандартным звуком, добавьте флаг <a href="http://developer.android.com/reference/android/app/Notification.html#DEFAULT_SOUND" target="_blank">Notification.DEFAULT_SOUND</a> в поле уведомления <a href="http://developer.android.com/reference/android/app/Notification.html#defaults" target="_blank">defaults</a>.</p>
+<p>А для использования своих звуков используется поле <a href="http://developer.android.com/reference/android/app/Notification.html#sound" target="_blank">sound</a>.</p>
+<p>Чтобы проиграть файл с <b>SD</b>:</p>
+<p><i>notif.sound = Uri.parse("file:///sdcard/notification/ringer.mp3");</i></p>
+<p>Чтобы использовать какую-либо из стандартных мелодий, используем <b>Content Provider</b>:</p>
+<p><i>notif.sound = Uri.withAppendedPath(Audio.Media.INTERNAL_CONTENT_URI, "6");</i></p>
+<p>Подробнее <a href="http://developer.android.com/guide/topics/ui/notifiers/notifications.html#Sound" target="_blank">здесь</a>.</p>
+<h3>Вибра</h3>
+<p>Если хотите, чтобы уведомление появилось со стандартной виброй, добавьте флаг <a href="http://developer.android.com/reference/android/app/Notification.html#DEFAULT_VIBRATE" target="_blank">Notification.DEFAULT_VIBRATE</a> в поле уведомления defaults.</p>
+<p>А для использования своей комбинации вибры используется поле <a href="http://developer.android.com/reference/android/app/Notification.html#vibrate" target="_blank">vibrate</a>. В это поле помещается массив long-чисел. Первое – длительность паузы (в миллисекундах) перед началом вибрирования, второе – длительность вибрирования, третье – длительность паузы, четвертое – длительность вибрирования … и т.д. Т.е. создаете свою комбинацию пауз и вибрирования. И мобила при получении уведомления вам ее провибрирует.</p>
+<p>Подробнее <a href="http://developer.android.com/guide/topics/ui/notifiers/notifications.html#Vibration" target="_blank">здесь</a>.</p>
+<p>Для работы вибры необходимо прописать права <a href="http://developer.android.com/reference/android/Manifest.permission.html#VIBRATE" target="_blank">VIBRATE</a> в манифесте.</p>
+<h3>Индикатор</h3>
+<p>Если хотите, чтобы уведомление появилось с миганием индикатора, добавьте флаг <a href="http://developer.android.com/reference/android/app/Notification.html#DEFAULT_LIGHTS" target="_blank">Notification.DEFAULT_LIGHTS</a> в поле уведомления defaults.</p>
+<p>А для использования своей комбинации мигания индикатора используются поля</p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#ledARGB" target="_blank">ledARGB</a> – здесь задается цвет</p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#ledOnMS" target="_blank">ledOnMS</a> – время «горения»</p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#ledOffMS" target="_blank">ledOffMS</a> – время «не горения»</p>
+<p>И в поле <a href="http://developer.android.com/reference/android/app/Notification.html#flags" target="_blank">flags</a> надо добавить флаг <a href="http://developer.android.com/reference/android/app/Notification.html#FLAG_SHOW_LIGHTS" target="_blank">Notification.FLAG_SHOW_LIGHTS</a>.</p>
+<p>В итоге индикатор будет мигать с заданными значениями и с заданным цветом. В документацие написано, что не все девайсы поддерживают разные цвета. Поэтому выбранный вами цвет не гарантируется.</p>
+<p>Подробнее <a href="http://developer.android.com/guide/topics/ui/notifiers/notifications.html#Lights" target="_blank">здесь</a>.</p>
+<h3>Число</h3>
+<p>У Notification есть поле <a href="http://developer.android.com/reference/android/app/Notification.html#number" target="_blank">number</a>. Вы можете поместить туда число больше нуля и оно отобразится на уведомлении.</p>
+<p>Например, при notif.number = 3 уведомление будет выглядеть так:</p>
+<p><img src="images/lesson_98_6.png" alt="" width="640" height="449"></p>
+<h3>Флаги</h3>
+<p>Добавляются в поле flags</p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#FLAG_INSISTENT" target="_blank">FLAG_INSISTENT</a> – звук уведомления будет повторяться, пока не откроют статус-бар</p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#FLAG_ONGOING_EVENT" target="_blank">FLAG_ONGOING_EVENT</a> – уведомление появляется не в обычной секции, а в ongoing (постоянные). Уведомления из этой секции не удаляются при нажатии кнопки очистки уведомлений.</p>
+<p><img src="images/lesson_98_7.png" alt="" width="640" height="449"></p>
+<p><a href="http://developer.android.com/reference/android/app/Notification.html#FLAG_NO_CLEAR" target="_blank">FLAG_NO_CLEAR </a>– уведомление не удалится при очистке всех уведомлений</p>
+<p>Не очень понимаю, в чем разница между ongoing и тем, что уведомление не удалится после нажатия на кнопку очистки всех уведомлений. Но флаги такие есть, и я о них упомянул.</p>
+</body>
+</html>
+						
+            </div>
+     </div>
+</div>
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

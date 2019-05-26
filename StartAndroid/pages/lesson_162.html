@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 162. Графика. Drawable. Shape, Gradient.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- изучаем drawable-тег shape</p>
+<p>Подробно ознакомившись с Bitmap, переходим к другому ключевому объекту графики – Drawable.</p>
+<p>Drawable – это абстрактный контейнер для графического объекта. Его главное абстрактное умение – он может нарисовать свое содержимое на предоставленной ему канве. А вот что конкретно он нарисует, зависит уже от реализации. Это может быть, например, тот же Bitmap, если мы используем BitmapDrawable объект. Или это может быть простая геометрическая фигура, если мы используем ShapeDrawable.</p>
+<p>Drawable-объекты мы можем создавать сами напрямую в коде. Но для некоторых из них мы можем создать описание в xml-файлах, в папке res/drawable. И когда он нам понадобится, мы укажем id файла, система сама распарсит его и создаст нам нужный объект.</p>
+<p>Самое распространенное использование Drawable – это свойство background, которое есть у каждого View. В качестве значения вы можете указать там RGB-цвет или id ресурса из папки res/drawable. Далее система сама по этому значению определит тип и далее:</p>
+<p>- если это цвет, то создаст ColorDrawable, <br/> - если это id картинки в res/drawable, то создаст BitmapDrawable<br/> - если это id xml-файла в res/drawable, то распарсит его и вернет соответствующего ему наследника Drawable: StateListDrawable, AnimationDrawable или какой-то другой.</p>
+<p>В итоге View получит свой Drawable-объект и сможет его нарисовать.</p>
+<p>В общем, как вы поняли, у абстрактного Drawable есть несколько наследников-реализаций и в ближайших уроках мы их рассмотрим. Начнем с тех, которые можно описать в xml. По ним есть отдельная статья в <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html" target="_blank" rel="noopener noreferrer">документацие</a>. Там, правда, есть пара ошибок копипаста, но в остальном все верно.</p>
+<p>В этом уроке рассмотрим тег &lt;<b>shape</b>&gt;</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1621_DrawableShape <br/> <b>Build Target</b>: Android 4.4 <br/> <b>Application name</b>: DrawableShape<br/> <b>Package name</b>: ru.startandroid.develop.p1621drawableshape<br/> <b>Create Activity</b>: MainActivity</p>
+<p>res/layout/<b>main.xml</b>:</p>
+<pre><code class="xml">
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="16dp"&gt;
+	&lt;ImageView
+		android:id="@+id/imageView"
+		android:layout_width="200dp"
+		android:layout_height="200dp"
+		android:layout_centerInParent="true"
+		android:background="#cccccc"
+		android:scaleType="center"&gt;
+	&lt;/ImageView&gt;
+&lt;/RelativeLayout&gt;
+</code></pre>
+<p>Создадим файл</p>
+<p>res/drawable/<b>shape.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+&lt;/shape&gt;</code></pre>
+<p>Корневой тег shape и у него же есть одноименный атрибут shape, в котором мы указываем тип фигуры. Мы указали <b>rectangle</b> – это прямоугольник.</p>
+<p>Далее, внутри тега shape, идет тег stroke, который позволяет задать нам характеристики линии контура (периметра) фигуры. Мы задаем толщину (width) в 1dp и черный цвет (color).</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1621drawableshape;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.ImageView;
+
+public class MainActivity extends Activity {
+
+ImageView imageView;
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    imageView = (ImageView) findViewById(R.id.imageView);
+    setDrawable();
+  }
+  
+  private void setDrawable() {
+  }
+
+}</code></pre>
+<p>В ImageView пока ничего не отображаем.</p>
+<p>Запускаем приложение</p>
+<p><img src="images/lesson162/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Видим ImageView с серым фоном</p>
+<p>Перепишем метод setDrawable:</p>
+<pre><code class="java">  private void setDrawable() {
+    imageView.setImageResource(R.drawable.shape);
+  }</code></pre>
+<p>В качестве drawable будем передавать наш файл shape</p>
+<p>Результат:</p>
+<p><img src="images/lesson162/lesson2.png" alt="" width="640" height="385"/></p>
+<p>ImageView теперь отображает прямоугольник с черным контуром.</p>
+<p>Посмотрим, какие еще фигуры нам доступны. </p>
+<p>Перепишем shape.xml:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="oval"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+&lt;/shape&gt;</code></pre>
+<p>Значение атрибута shape = <b>oval</b>, это эллипс</p>
+<p>В нашем случае получился круг, т.к. ImageView квадратный.</p>
+<p><img src="images/lesson162/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Значение <b>line</b> даст нам горизонтальную линию</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="line"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+&lt;/shape&gt;</code></pre>
+<p><img src="images/lesson162/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Есть еще фигура кольцо (<b>ring</b>), но о нем чуть позже.</p>
+<p>Вернемся к тегу stroke. Добавим в него параметров.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="4dp"
+		android:color="#0000FF"
+		android:dashWidth="20dp"
+		android:dashGap="3dp"&gt;
+	&lt;/stroke&gt;
+&lt;/shape&gt;</code></pre>
+<p>Ширина – 4dp, цвет – синий. Параметры dashWidth и dashGap сделают линию контура пунктирной. dashWidth задает длину пунктирной черточки, а dashGap – расстояние между черточками</p>
+<p><img src="images/lesson162/lesson5.png" alt="" width="640" height="385"/></p>
+<h3>&lt;solid&gt;</h3>
+<p>Добавим заливку, для этого используется тег solid</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="2dp"
+		android:color="#0000FF"&gt;
+	&lt;/stroke&gt;
+	&lt;solid
+		android:color="#00FF00"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p>Тег solid имеет атрибут color, который позволяет указать цвет заливки фигуры. Мы указали в нем зеленый цвет.</p>
+<p><img src="images/lesson162/lesson6.png" alt="" width="640" height="385"/></p>
+<p><span style="color: #135cae; font-family: Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold;">&lt;size&gt;</span></p>
+<p>По умолчанию фигура занимает все доступное ей пространство, но мы можем явно указать ее размер с помощью тега size.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="2dp"
+		android:color="#0000FF"&gt;
+	&lt;/stroke&gt;
+	&lt;size
+		android:width="100dp"
+		android:height="100dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Используем тег size с атрибутами width и height</p>
+<p><img src="images/lesson162/lesson7.png" alt="" width="640" height="385"/></p>
+<p>Фигура теперь размером 100х100 и уже не занимает всю доступную ей площадь. </p>
+<p>Учтите, что режим отображения зависит от scaleType y ImageView.</p>
+<h3>&lt;padding&gt;</h3>
+<p>Тег padding позволяет нам задать величину отступа внутри фигуры. Это актуально, например, для TextView. Отступ будет учтен при размещении текста.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="2dp"
+		android:color="#0000FF"&gt;
+	&lt;/stroke&gt;
+	&lt;padding
+		android:bottom="5dp"
+		android:top="20dp"
+		android:left="50dp"
+		android:right="30dp"&gt;
+	&lt;/padding&gt;
+&lt;/shape&gt;</code></pre>
+<p>Мы указали различные отступы со всех 4 сторон.</p>
+<p>Если мы теперь повесим эту фигуру в качестве background для TextView, результат будет таким</p>
+<p><img src="images/lesson162/lesson8.png" alt="" width="640" height="385"/></p>
+<h3>&lt;gradient&gt;</h3>
+<p>В качестве заливки мы можем использовать не один цвет, а градиент из двух или трех. Для этого используется тег gradient.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p>В теге gradient указываем два атрибута-цвета: startColor и endColor.</p>
+<p>В результате получится градиент, переходящий из первого цвета во второй.</p>
+<p><img src="images/lesson162/lesson9.png" alt="" width="640" height="385"/></p>
+<p>Градиент вовсе необязательно должен идти слева-направо. Мы можем указать угол направления. Для этого у тега gradient есть атрибут angle</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"
+		android:angle="225"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p>В angle указываем угол 225. Угол 0 означает направление слева-направо, 90 – снизу вверх и т.д. Угол должен быть кратным 45.</p>
+<p>В результате видим угол справа-сверху налево-вниз.</p>
+<p><img src="images/lesson162/lesson10.png" alt="" width="640" height="385"/></p>
+<p>Тег gradient позволяет указать третий цвет, который вклинится между start- и end- цветами.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"
+		android:centerColor="#0000FF"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p>В атрибуте centerColor укажем синий цвет, и он в градиенте будет между красным и зеленым.</p>
+<p><img src="images/lesson162/lesson11.png" alt="" width="640" height="385"/></p>
+<p>Градиент может быть разных типов. Мы рассмотрели тип linear, который используется по умолчанию. Есть еще два типа: radial и sweep.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:type="radial"
+		android:gradientRadius="300"
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p>Тип radial даст нам круговой градиент, а в параметре gradientRadius мы должны указать радиус круга.</p>
+<p><img src="images/lesson162/lesson12.png" alt="" width="640" height="385"/></p>
+<p>Мы можем указать точку центра кругового градиента атрибутами centerX и centerY. Значения этих атрибутов должны быть от 0 до 1.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:type="radial"
+		android:gradientRadius="300"
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"
+		android:centerX="0.2"
+		android:centerY="0.2"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p>Центра градиента будет в точке (0.2, 0.2), если принять размеры фигуры за единицу.</p>
+<p><img src="images/lesson162/lesson13.png" alt="" width="640" height="385"/></p>
+<p>Теперь посмотрим, как выглядит градиент sweep.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;gradient
+		android:type="sweep"
+		android:startColor="#FF0000"
+		android:endColor="#00FF00"&gt;
+	&lt;/gradient&gt;
+&lt;/shape&gt;</code></pre>
+<p><img src="images/lesson162/lesson14.png" alt="" width="640" height="385"/></p>
+<p>Для этого типа градиента также можно использовать атрибуты centerColor, centerX и centerY.</p>
+<h3>&lt;corners&gt;</h3>
+<p>Для фигуры прямоугольника мы можем сгладить углы. За это отвечает тег corners.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;corners
+		android:radius="40dp"&gt;
+	&lt;/corners&gt;
+&lt;/shape&gt;</code></pre>
+<p>Атрибут radius позволяет задать радиус закругления сразу для всех углов.</p>
+<p><img src="images/lesson162/lesson15.png" alt="" width="640" height="385"/></p>
+<p>Есть возможность задать свой радиус для каждого угла отдельно.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;stroke
+		android:width="1dp"
+		android:color="#000000"&gt;
+	&lt;/stroke&gt;
+	&lt;corners
+		android:topLeftRadius="15dp"
+		android:topRightRadius="30dp"
+		android:bottomRightRadius="45dp"
+		android:bottomLeftRadius="60dp"&gt;
+	&lt;/corners&gt;
+&lt;/shape&gt;</code></pre>
+<p><img src="images/lesson162/lesson16.png" alt="" width="640" height="385"/></p>
+<h3>Кольцо</h3>
+<p>Нам осталось рассмотреть четвертую фигуру - кольцо. Чтобы его получить, надо в атрибуте shape указать значение ring. Для кольца мы можем настроить два параметра: размер внутреннего радиуса и толщина кольца. Причем, эти два параметра мы можем указывать в абсолютном и относительном выражении.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:innerRadius="50dp"
+	android:shape="ring"
+	android:thickness="40dp"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>innerRadius – позволяет указать внутренний радиус, а thickness – толщину кольца. Атрибут useLevel, который нам пока неизвестен, должен быть false, иначе эта фигура у меня не отображалась.</p>
+<p><img src="images/lesson162/lesson17.png" alt="" width="640" height="385"/></p>
+<p>Отобразился круг с внутренним радиусом = 50dp и толщиной = 40dp.</p>
+<p>Попробуем указать толщину кольца в относительном значении. Для этого вместо thickness используем thicknessRatio. В этом атрибуте мы указываем во сколько раз толщина кольца будет меньше его ширины.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:innerRadius="50dp"
+	android:shape="ring"
+	android:thicknessRatio="10"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Ширина кольца = 200 dp, это указано в теге size. thicknessRatio =10, значит толщина кольца = 200 dp / 10 = 20dp.</p>
+<p><img src="images/lesson162/lesson18.png" alt="" width="640" height="385"/></p>
+<p>Теперь укажем внутренний радиус в относительном выражении. Для этого вместо innerRadius используем innerRadiusRatio. В атрибуте innerRadiusRatio указываем во сколько раз внутренний радиус меньше ширины кольца.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:innerRadiusRatio="3"
+	android:shape="ring"
+	android:thickness="10dp"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Ширина кольца = 200 dp. innerRadiusRatio = 3, значит внутренний радиус кольца = 200 dp / 3 = 67dp.</p>
+<p><img src="images/lesson162/lesson19.png" alt="" width="640" height="385"/></p>
+<p>Как видите, кольцо может занимать не весь свой размер. Это зависит от значений, которые мы задаем для внутреннего радиуса и толщины.</p>
+<p>У атрибутов относительного размера есть значения по умолчанию. Т.е. если мы явно не укажем значение для innerRadiusRatio, то по умолчанию он будет равен 3, а thicknessRatio по умолчанию равен 9. Посмотрим, как это выглядит</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:innerRadius="78dp"
+	android:shape="ring"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Мы указали только внутренний радиус. А размер толщины будет вычислен исходя из значения thicknessRatio по умолчанию, т.е. 9.</p>
+<p><img src="images/lesson162/lesson20.png" alt="" width="640" height="385"/></p>
+<p>Теперь не будем указывать инфу о внутреннем радиусе.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="ring"
+	android:thickness="33dp"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Мы указали только толщину кольца, а внутренний радиус будет вычислен исходя из значения innerRadiusRatio по умолчанию = 3.</p>
+<p><img src="images/lesson162/lesson21.png" alt="" width="640" height="385"/></p>
+<p>Давайте теперь попробуем вообще не указывать размеры внутреннего радиуса и толщины, и посмотрим, что получится.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="ring"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p><img src="images/lesson162/lesson22.png" alt="" width="640" height="385"/></p>
+<p>Видим, что кольцо заняло не все 200 dp по высоте, которые мы ему задали в теге size. Почему? Давайте считать исходя из значения по умолчанию.</p>
+<p>Внутренний радиус = 200 / 3 = 67. Толщина = 200 / 9 = 22. Т.е. диаметр кольца получается = 22 + 67 * 2 + 22 = 178.</p>
+<p>Попробуем подогнать размер кольца под все выделенное ему пространство.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:innerRadiusRatio="2.5"
+	android:shape="ring"
+	android:thicknessRatio="10"
+	android:useLevel="false"&gt;
+	&lt;solid
+		android:color="#FF0000"&gt;
+	&lt;/solid&gt;
+	&lt;size
+		android:height="200dp"
+		android:width="200dp"&gt;
+	&lt;/size&gt;
+&lt;/shape&gt;</code></pre>
+<p>Теперь радиус будет равен 200 / 2.5 = 80, а толщина = 200 / 10 = 20. Диаметр кольца =  20 + 80 * 2 + 20 = 200.</p>
+<p>Это видно и на скрине. Кольцо теперь по размеру равно ImageView, т.е. = 200.</p>
+<p><img src="images/lesson162/lesson23.png" alt="" width="640" height="385"/></p>
+<p>Атрибуты абсолютных значений (innerRadius и thickness) имеют приоритет перед относительными (innerRadiusRatio и thicknessRatio).</p>
+<h3><span style="line-height: 15.8079996109009px;">GradientDrawable</span></h3>
+<p>Хоть корневой тег и называется shape, но когда система его распарсит, она создает не ShapeDrawable, а GradientDrawable.</p>
+<p>Также, этот объект мы можем сами создать программно.</p>
+<p>Перепишем метод <b>setDrawable</b>:</p>
+<pre><code class="java">  private void setDrawable() {
+    GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.BL_TR, 
+        new int[] { Color.RED, Color.GREEN, Color.BLUE, Color.CYAN, Color.MAGENTA });
+    drawable.setShape(GradientDrawable.RECTANGLE);
+    drawable.setGradientType(GradientDrawable.LINEAR_GRADIENT);
+    drawable.setCornerRadius(40);
+    drawable.setStroke(10, Color.BLACK, 20, 5);
+    imageView.setImageDrawable(drawable);
+  }</code></pre>
+<p>Методы set* позволяют нам установить почти все те же параметры, что и в xml-файле.</p>
+<p><img src="images/lesson162/lesson24.png" alt="" width="640" height="385"/></p>
+<p>Но есть и отличия. Например, я не нашел как для GradientDrawable установить значения размеров для кольца. С другой стороны, мы в GradientDrawable можем указать больше трех цветов для градиента.</p>
+<p>Т.е. в основном -  xml- и java-создание равноценны, но есть некоторые нюансы.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 148. Рисование. Canvas, clip</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем clip</p>
+<p>Обычно нам для рисования доступна вся канва. Но бывают случаи, когда надо нарисовать объект так, чтобы прорисовалась только какая-то его часть, а остальное – нет.</p>
+<p>Из жизни можно провести аналогию с двумя бумажными листами. Кладем один лист на стол. А во втором вырезаем отверстие нужной нам формы и кладем второй лист поверх на первый. Далее полностью закрашиваем второй лист краской и убираем его. В итоге получаем на первом листе нужную нам форму ровно закрашенную.</p>
+<p>Вот что-то подобное делает clip. Он на канве определяет область, где рисование будет работать. А в остальных местах ничего рисоваться не будет.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1481_CanvasClip<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CanvasClip<br/> <b>Package name</b>: ru.startandroid.develop.p1481canvasclip<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1481canvasclip;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint p;
+    Rect rect;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStyle(Paint.Style.STROKE);
+      p.setStrokeWidth(3);
+      rect = new Rect(210, 210, 410, 510);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // сетка
+      p.setColor(Color.BLUE);
+      drawGrid(canvas);
+
+      // красный прямоугольник
+      p.setColor(Color.RED);
+      canvas.drawRect(rect, p);
+    }
+
+    private void drawGrid(Canvas canvas) {
+      for (int i = 25; i &lt; 400; i += 25) {
+        canvas.drawLine(100 + i, 100, 100 + i, 600, p);
+      }
+      for (int i = 25; i &lt; 500; i += 25) {
+        canvas.drawLine(100, 100 + i, 500, 100 + i, p);
+      }
+
+    }
+
+  }
+
+}</code></pre>
+<div class="java"><code class="java"></code>Просто выводим на экран сетку из линий синим цветом и прямоугольник rect красным цветом.</div>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2661308993" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Изменим пример так, чтобы красный прямоугольник ограничивал область рисования на канве.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // сетка
+      p.setColor(Color.BLUE);
+      drawGrid(canvas);
+      
+      // красный прямоугольник
+      p.setColor(Color.RED);
+      canvas.drawRect(rect, p);
+      
+      // смещение
+      canvas.translate(600, 0);
+      
+      // задание clip-области
+      canvas.clipRect(rect);
+      
+      // сетка 
+      p.setColor(Color.BLUE);
+      drawGrid(canvas);
+      
+    }</code></pre>
+<p>Мы снова выводим синие линии и красный прямоугольник. Затем смещаемся вправо и вместо рисования красного прямоугольника мы методом <a href="http://developer.android.com/reference/android/graphics/Canvas.html#clipRect(android.graphics.Rect)" target="_blank">clipRect</a> говорим канве, что теперь рисование доступно только в этой области. И рисуем синие линии.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2586092980" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что справа линии нарисовались только в области rect, т.к. мы задали это методом clipRect.</p>
+<p>Разумеется, clip-область будет работать только для последующих рисований. Все, что было нарисовано до задания этой области, остается как было.</p>
+<p>При задании clip-области мы можем использовать несколько прямоугольников. Для добавления прямоугольников используется эта версия метода: <a href="http://developer.android.com/reference/android/graphics/Canvas.html#clipRect(android.graphics.Rect, android.graphics.Region.Op)" target="_blank">clipRect(Rect rect, Region.Op op)</a>. Здесь используются режимы взаимодействия областей, которые мы подробно рассмотрели в прошлом уроке про регионы.</p>
+<p>Посмотрим на примере. Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">  class DrawView extends View {
+
+    Paint p;
+    Rect rect1;
+    Rect rect2;
+    Region.Op op = Region.Op.UNION;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStyle(Paint.Style.STROKE);
+      p.setStrokeWidth(3);
+      rect1 = new Rect(180, 220, 340, 380);
+      rect2 = new Rect(280, 320, 440, 480);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // сетка
+      p.setColor(Color.BLUE);
+      drawGrid(canvas);
+
+      // красные прямоугольники
+      p.setColor(Color.RED);
+      canvas.drawRect(rect1, p);
+      canvas.drawRect(rect2, p);
+
+      // смещение
+      canvas.translate(600, 0);
+
+      // задание clip-области
+      canvas.clipRect(rect1);
+      canvas.clipRect(rect2, op);
+
+      // сетка
+      p.setColor(Color.BLUE);
+      drawGrid(canvas);
+
+    }
+
+    private void drawGrid(Canvas canvas) {
+      for (int i = 25; i &lt; 400; i += 25) {
+        canvas.drawLine(100 + i, 100, 100 + i, 600, p);
+      }
+      for (int i = 25; i &lt; 500; i += 25) {
+        canvas.drawLine(100, 100 + i, 500, 100 + i, p);
+      }
+    }
+
+  }</code></pre>
+<p>При использовании UNION, области прямоугольников объединились в одну область и она стала clip-областью.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2510876967" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Чтобы убрать clip-область, можно использовать метод <a href="http://developer.android.com/reference/android/graphics/Canvas.html#restore()" target="_blank">restore</a>. Все те механизмы сохранения/восстановления канвы, что мы рассмотрели в Уроке 146 относятся не только к матрице, но и к clip.</p>
+<p>Я в этом уроке использовал объекты Rect. Но у канвы существуют и другие версии метода задания clip-области. Можно использовать RectF, Region и Path. </p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

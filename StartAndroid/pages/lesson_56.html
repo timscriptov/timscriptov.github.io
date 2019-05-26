@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 56. Spinner – выпадающий список</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем Spinner</p>
+<p>Многовато уроков получилось про адаптеры и списки. Я изначально хотел буквально пару примеров показать, но чето затянуло и расписал чуть ли не все существующие адаптеры ) Напоследок сделаем пару полезных примеров, где еще используются адаптеры. В этом небольшом уроке рассмотрим <a href="http://developer.android.com/reference/android/widget/Spinner.html" target="_blank">Spinner</a>.</p>
+<p>Spinner – это выпадающий список, позволяющий выбрать одно значение. Он позволяет сэкономить место на экране. Я думаю, все встречали его не только в Android, но и в других языках программирования.</p>
+<p>Сделаем простой пример.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0561_Spinner<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Spinner<br><b>Package name</b>: ru.startandroid.develop.p0561spinner<br><b>Create Activity</b>: MainActivity</p>
+<p>В экран <b>main.xml</b> поместим Spinner:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Spinner
+        android:id="@+id/spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/Spinner&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0561spinner;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+  
+  String[] data = {"one", "two", "three", "four", "five"};
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        // адаптер
+        ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this, android.R.layout.simple_spinner_item, data);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        
+        Spinner spinner = (Spinner) findViewById(R.id.spinner);
+        spinner.setAdapter(adapter);
+        // заголовок
+        spinner.setPrompt("Title");
+        // выделяем элемент 
+        spinner.setSelection(2);
+        // устанавливаем обработчик нажатия
+        spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+      @Override
+      public void onItemSelected(AdapterView&lt;?&gt; parent, View view,
+          int position, long id) {
+        // показываем позиция нажатого элемента
+        Toast.makeText(getBaseContext(), "Position = " + position, Toast.LENGTH_SHORT).show();
+      }
+      @Override
+      public void onNothingSelected(AdapterView&lt;?&gt; arg0) {
+      }
+    });
+    }
+}</code></pre>
+<p>Код несложен. Создаем адаптер, используем <b>simple_spinner_item</b> в качестве layout для отображения Spinner на экране. А методом setDropDownViewResource указываем какой layout использовать для прорисовки пунктов выпадающего списка.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/widget/Spinner.html#setPrompt(java.lang.CharSequence)" target="_blank">setPrompt</a> устанавливает текст заголовка выпадающего списка, а <a href="http://developer.android.com/reference/android/widget/AbsSpinner.html#setSelection(int)" target="_blank">setSelection</a> – элемент, который мы хотим выделить. Оба метода, разумеется, необязательны. Я их использовал для демонстрации.</p>
+<p>Обработчик выбора элемента из списка присваивается методом <a href="http://developer.android.com/reference/android/widget/AdapterView.html#setOnItemSelectedListener(android.widget.AdapterView.OnItemSelectedListener)" target="_blank">setOnItemSelectedListener</a>. Будем выводить на экран позицию выбранного элемента.</p>
+<p>Все сохраним и запустим. Нажмем на Spinner.</p>
+<p><img src="images/lesson_55_0.png" alt="" width="640"></p>
+<p>Виден заголовок Title и выделен элемент с позицией 2. Выберем пункт four.</p>
+<p><img src="images/lesson_55_1.png" alt="" width="640"></p>
+<p>Обработчик показал, что выделили пункт с позицией 3.</p>
+<p>Чтобы определить, какой элемент выделен сейчас, используйте spinner.<a href="http://developer.android.com/reference/android/widget/AdapterView.html#getSelectedItemPosition()" target="_blank">getSelectedItemPosition</a>(). Чтобы получить текст этого элемента можно сразу выполнять spinner.<a href="http://developer.android.com/reference/android/widget/AdapterView.html#getSelectedItem()" target="_blank">getSelectedItem()</a>.toString().</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

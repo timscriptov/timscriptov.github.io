@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 48. Используем SimpleAdapter.</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассмотрим пример использования SimpleAdapter</p>
+<p><b>SimpleAdapter</b> работает с данными такого вида List&lt;? extends Map&lt;String, ?&gt;&gt; - т.е. коллекция Map-объектов (или -наследников). Если смотреть с точки зрения списка, то каждый <b>Map </b>содержит данные для соответствующего <b>пункта </b>списка. Чтобы адаптер знал, какие <b>данные </b>в какие <b>View</b>-компоненты каждого пункта списка ему вставлять, мы указываем два массива: String[] <b>from </b>и int[] <b>to</b>. В from перечисляем ключи из Map, а в to – ID View-компонентов. Адаптер перебирает <b>View </b>из массива <b>to </b>и сопоставляет им <b>значения </b>из <b>Map </b>по ключам из <b>from</b>.</p>
+<p>Проверим это на примере. Создадим небольшой список, каждый пункт которого будет состоять из checkbox-а, текстового поля и картинки.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0481_SimpleAdapter<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleAdapter<br><b>Package name</b>: ru.startandroid.develop.p0481simpleadapter<br><b>Create Activity</b>: MainActivity</p>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ListView
+        android:id="@+id/lvSimple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Здесь только LIstView.</p>
+<p>Создаем <b>item.xml</b> для пункта списка:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;ImageView
+        android:id="@+id/ivImg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher"&gt;
+    &lt;/ImageView&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"&gt;
+        &lt;CheckBox
+            android:id="@+id/cbChecked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CheckBox"&gt;
+        &lt;/CheckBox&gt;
+        &lt;TextView
+            android:id="@+id/tvText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginRight="20dp"
+            android:text="TextView"&gt;
+        &lt;/TextView&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Тройка ImageView, CheckBox и TextView будут у нас представлять каждый пункт списка.</p>
+<p>Пишем код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0481simpleadapter;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+
+public class MainActivity extends Activity {
+
+  // имена атрибутов для Map
+  final String ATTRIBUTE_NAME_TEXT = "text";
+  final String ATTRIBUTE_NAME_CHECKED = "checked";
+  final String ATTRIBUTE_NAME_IMAGE = "image";
+
+  ListView lvSimple;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // массивы данных
+    String[] texts = { "sometext 1", "sometext 2", "sometext 3",
+        "sometext 4", "sometext 5" };
+    boolean[] checked = { true, false, false, true, false };
+    int img = R.drawable.ic_launcher;
+
+    // упаковываем данные в понятную для адаптера структуру
+    ArrayList&lt;Map&lt;String, Object&gt;&gt; data = new ArrayList&lt;Map&lt;String, Object&gt;&gt;(
+        texts.length);
+    Map&lt;String, Object&gt; m;
+    for (int i = 0; i &lt; texts.length; i++) {
+      m = new HashMap&lt;String, Object&gt;();
+      m.put(ATTRIBUTE_NAME_TEXT, texts[i]);
+      m.put(ATTRIBUTE_NAME_CHECKED, checked[i]);
+      m.put(ATTRIBUTE_NAME_IMAGE, img);
+      data.add(m);
+    }
+
+    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_CHECKED,
+        ATTRIBUTE_NAME_IMAGE };
+    // массив ID View-компонентов, в которые будут вставлять данные
+    int[] to = { R.id.tvText, R.id.cbChecked, R.id.ivImg };
+
+    // создаем адаптер
+    SimpleAdapter sAdapter = new SimpleAdapter(this, data, R.layout.item,
+        from, to);
+
+    // определяем список и присваиваем ему адаптер
+    lvSimple = (ListView) findViewById(R.id.lvSimple);
+    lvSimple.setAdapter(sAdapter);
+  }
+}</code></pre>
+<p>Разбираем код. Мы создаем константы для имен атрибутов, описываем массивы данных  и пакуем эти данные в ArrayList&lt;Map&lt;String,Object&gt;&gt; (img у нас будет одинаков для всех). Далее мы определяем два массива, которые будут использованы для сопоставления данных и View-компонентов. Массив <b>from </b>содержит<b> имена Map-ключей</b>, а массив <b>to </b>–<b> ID View</b>-компонентов. Т.е. в R.id.tvText будет вставлено значение из элемента Map с ключом ATTRIBUTE_NAME_TEXT и т.д. по порядку. После этого мы создаем адаптер и увязываем его со списком.</p>
+<p>Все сохраним и запускаем. Видим, что все так, как мы и планировали.</p>
+<p><img src="images/lesson_47_0.png" alt="" width="640"></p>
+<p>Адаптер перебрал <b>View</b>-компоненты (массив <b>to</b>) для каждого пункта списка и сопоставил им значения из <b>Map </b>(массив <b>from</b>). Т.е. карта сопоставления примерно такая:</p>
+<p>R.id.tvText – Map.get(ATTRIBUTE_NAME_TEXT)<br>R.id.cbChecked - Map.get(ATTRIBUTE_NAME_CHECKED)<br>R.id.ivImg - Map.get(ATTRIBUTE_NAME_IMAGE)</p>
+<p>А как адаптер понимает, какие методы и для каких View-компонентов надо вызывать, чтобы передать им значения из Map? Он смотрит на <b>тип </b>View-компонента и в зависимости от него уже определяет как работать с ним. Для него существует три типа:</p>
+<p>1) View, наследующие интерфейс Checkable. Примеры - CheckBox, CheckedTextView, CompoundButton, RadioButton, Switch, ToggleButton. В этом случае адаптер проверяет, является ли соответствующее значение из Map типа <b>boolean</b>. Если да, то все ок и вызывается метод <a href="http://developer.android.com/reference/android/widget/Checkable.html#setChecked(boolean)" target="_blank">Checkable.setChecked</a>. Иначе получим ошибку.</p>
+<p>С версии 2.2 алгоритм чуть поменялся – добавили еще одну ветку логики. Теперь, если значение из Map не <b>boolean</b>, то проверяется, что View является наследником <b>TextView</b>. Если да, то вставляется текстовое значение из Map.</p>
+<p>2) View, являющиеся <b>TextView </b>или его наследниками.  Тут просто вызывается метод <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.html#setViewText(android.widget.TextView, java.lang.String)">SimpleAdapter.setViewText</a>, а он уже вызывает <a href="http://developer.android.com/reference/android/widget/TextView.html#setText(java.lang.CharSequence)" target="_blank">TextView.setText</a> и передает туда значение из Map.</p>
+<p>3) View, являющиеся <b>ImageView </b>или его наследниками. Адаптер проверяет тип данных из Map:</p>
+<p>- если их можно привести (instanceof) к типу Integer, то вызывается метод <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.html#setViewImage(android.widget.ImageView, int)" target="_blank">SimpleAdapter.setViewImage(ImageView v, int value)</a>, а он уже вызывает <a href="http://developer.android.com/reference/android/widget/ImageView.html#setImageResource(int)" target="_blank">ImageView.setImageResource</a>.</p>
+<p>- иначе вызывается метод <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.html#setViewImage(android.widget.ImageView, java.lang.String)" target="_blank">SimpleAdapter.setViewImage (ImageView v, String value)</a>, который снова пытается привести значение к int и вызвать метод ImageView.setImageResource, и, если не получается, то преобразует строку к <b>Uri </b>(Uri.parse) и вызвает метод <a href="http://developer.android.com/reference/android/widget/ImageView.html#setImageURI(android.net.Uri)" target="_blank">ImageView.setImageURI(Uri)</a>.</p>
+<p>Если View не подходит ни под один из трех вышеперечисленных типов, то получим ошибку.</p>
+<p>Немного поэкспериментируем, и попробуем в CheckBox вставлять тот же текст, что и в TextView. Адаптер сможет это сделать, т.к. <b>CheckBox </b>является наследником <b>TextView</b>.</p>
+<p>Для этого перепишем заполнение массивов:</p>
+<pre><code class="java">    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_CHECKED,
+        ATTRIBUTE_NAME_IMAGE, ATTRIBUTE_NAME_TEXT };
+
+    // массив ID View-компонентов, в которые будут вставлять данные
+    int[] to = { R.id.tvText, R.id.cbChecked, R.id.ivImg, R.id.cbChecked };</code></pre>
+<p>Мы добавили адаптеру указание, чтобы он в R.id.cbChecked (CheckBox), вставил текст из Map по ключу ATTRIBUTE_NAME_TEXT.</p>
+<p>Сохраняем, запускаем.</p>
+<p><img src="images/lesson_47_1.png" alt="" width="640"></p>
+<p>Текст успешно вставился в CheckBox.</p>
+<p>Теперь попробуем передать данные неверно. Например, вместо id изображения, передадим boolean в R.id.ivImg. Для этого изменим from:</p>
+<pre><code class="java">    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_CHECKED,
+        ATTRIBUTE_NAME_CHECKED, ATTRIBUTE_NAME_TEXT };</code></pre>
+<p>Сохраним, запустим.</p>
+<p><img src="images/lesson_47_2.png" alt="" width="640"></p>
+<p>Видим, что картинки нет. Адаптер определил, что передали не Integer и попытался показать картинку по Uri из текстовой интерпретации boolean, но у него не получилось.</p>
+<p>В общем, штука неплохая, но функционал довольно ограничен - поставить галку, указать картинку и разместить текст. В следующий раз попробуем расширить функционал под свои потребности.</p>
+<p>Думаю, имеет смысл сказать, что, если ставить и снимать галку в пунктах, то данные адаптера при этом не меняются.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

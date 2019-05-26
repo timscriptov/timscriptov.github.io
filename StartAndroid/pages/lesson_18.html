@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 18. Меняем layoutParams в рабочем приложении</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- изменяем layout-параметры для уже существующих компонентов экрана</p>
+<p>Мы умеем создавать экранные компоненты и настраивать для них расположение с помощью <b>LayoutParams</b>. В этом уроке разберемся, как изменять layout-параметры уже существующих компонентов.</p>
+<p>Менять мы будем вес – <b>weight</b>. Нарисуем <b>SeekBar </b>(регулятор или «ползунок») и <b>две кнопки</b>. И будем <b>регулировать </b>пространство занимаемое кнопками, используя параметр веса.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0181_DynamicLayout3<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: DynamicLayout3<br><b>Package name</b>: ru.startandroid.develop.dynamiclayout3<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем <b>main.xml</b> и создаем такой экран:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"&gt;
+    &lt;SeekBar
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:max="100"
+        android:progress="50"
+        android:layout_marginTop="20dp"
+        android:id="@+id/sbWeight"&gt;
+    &lt;/SeekBar&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:id="@+id/btn1"
+            android:text="Button1"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:id="@+id/btn2"
+            android:text="Button2"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Мы используем компонент SeekBar. Он похож на полосу прокрутки и позволяет задавать какое-либо значение из диапазона. У этого компонента есть свойства <b>max </b>и <b>progress</b>. <b>Max </b>– это какое значение выдает SeekBar, когда он выкручен на <b>максимум</b>. <b>Progress </b>– это <b>текущее значение </b>ползунка. Максимум сделаем = <b>100</b>, а текущее значение будет на половине – <b>50</b>.</p>
+<p>Кнопки у нас с шириной по содержимому и <b>вес для обоих = 1</b>. Они <b>поровну </b>делят пространство LinearLayout, в котором находятся.</p>
+<p>Осталось только написать нужный код, чтобы все заработало. Открываем <b>MainActivity.java</b>, опишем и найдем компоненты и получим доступ к их LayoutParams.</p>
+<pre><code class="java">public class MainActivity extends Activity {
+
+  SeekBar sbWeight;
+  Button btn1;
+  Button btn2;
+
+  LinearLayout.LayoutParams lParams1;
+  LinearLayout.LayoutParams lParams2;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    sbWeight = (SeekBar) findViewById(R.id.sbWeight);
+
+    btn1 = (Button) findViewById(R.id.btn1);
+    btn2 = (Button) findViewById(R.id.btn2);
+
+    lParams1 = (LinearLayout.LayoutParams) btn1.getLayoutParams();
+    lParams2 = (LinearLayout.LayoutParams) btn2.getLayoutParams();
+  }
+}</code></pre>
+<p>Мы используем метод <a href="http://developer.android.com/reference/android/view/View.html#getLayoutParams()" target="_blank">getLayoutParams</a> для получения LayoutParams компонента. Но этот метод возвращает базовый <b>ViewGroup.LayoutParams</b>, а нам нужен<b> LinearLayout.LayoutParams</b>, поэтому делаем преобразование. В результате - <b>lParams1 </b>и <b>lParams2 </b>теперь являются <b>LayoutParams </b>для компонентов <b>btn1 </b>и <b>btn2</b>. Т.е. работая, например, с lParams1 мы влияем на btn1. Сейчас мы это используем.</p>
+<p>Для SeekBar нужен будет обработчик, который будет реагировать на изменения. Это мы поручим Activity. Для этого надо добавить к описанию класса<b> implements OnSeekBarChangeListener</b>:</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnSeekBarChangeListener {</code></pre>
+<pre><code class="java">  @Override
+  public void onProgressChanged(SeekBar seekBar, int progress,
+      boolean fromUser) {
+
+  }
+
+  @Override
+  public void onStartTrackingTouch(SeekBar seekBar) {
+
+  }
+
+  @Override
+  public void onStopTrackingTouch(SeekBar seekBar) {
+
+  }</code></pre>
+<p>Обработчик содержит три метода. Из названий понятно, что: </p>
+<p>- <a href="http://developer.android.com/reference/android/widget/SeekBar.OnSeekBarChangeListener.html#onStartTrackingTouch(android.widget.SeekBar)" target="_blank">onStartTrackingTouch</a> срабатывает, когда начинаем тащить ползунок<br>- <a href="http://developer.android.com/reference/android/widget/SeekBar.OnSeekBarChangeListener.html#onProgressChanged(android.widget.SeekBar, int, boolean)" target="_blank">onProgressChanged</a> срабатывает все время, пока значение меняется<br>- <a href="http://developer.android.com/reference/android/widget/SeekBar.OnSeekBarChangeListener.html#onStopTrackingTouch(android.widget.SeekBar)" target="_blank">onStopTrackingTouch</a> срабатывает, когда отпускаем ползунок</p>
+<p>Мы будем использовать метод onProgressChanged. Так изменения будут видны во время перетаскивания ползунка.</p>
+<pre><code class="java">  @Override
+  public void onProgressChanged(SeekBar seekBar, int progress,
+      boolean fromUser) {
+    int leftValue = progress;
+    int rightValue = seekBar.getMax() - progress;
+    // настраиваем вес
+    lParams1.weight = leftValue;
+    lParams2.weight = rightValue;
+    // в текст кнопок пишем значения переменных
+    btn1.setText(String.valueOf(leftValue));
+    btn2.setText(String.valueOf(rightValue));
+  }</code></pre>
+<p>переменная <b>rightValue </b>– то, что справа от ползунка, т.е. из максимума вычесть текущее значение.</p>
+<p>Соответственно эти значения и используем как вес. Чем ползунок <b>левее</b>, тем <b>меньше leftValue</b> и <b>больше rightValue</b>, а значит <b>меньше ширина btn1</b> и <b>больше ширина btn2</b>. И наоборот.</p>
+<p><img src="images/lesson_17_0.png" alt="" width="280" height="456" border="0"></p>
+<p>Также для наглядности в текст кнопок будем записывать значения переменных.</p>
+<p>Ну и конечно не забываем, что надо обработчик (Activity) присвоить View-компоненту, события которого необходимо обрабатывать:</p>
+<pre><code class="java">    setContentView(R.layout.main);
+
+    sbWeight = (SeekBar) findViewById(R.id.sbWeight);
+    sbWeight.setOnSeekBarChangeListener(this);
+
+    btn1 = (Button) findViewById(R.id.btn1);</code></pre>
+<p>Все сохраним и запустим приложение. Перетаскивая ползунок, меняем размеры кнопок:</p>
+<p><img src="images/lesson_17_1.png" alt="" width="640" height="454" border="0"></p>
+<p>Выглядит эффектно, я считаю ) И кода - всего несколько строк.</p>
+<p>Есть небольшой нюанс. Как верно заметили в каментах, если просто написать код lParams1.weight = 1, то компонент не изменится. Необходимо дописать код: btn1.requestLayout(). Тогда кнопка прочтет Layout и перерисуется. Этот метод уже вызывается в setText, поэтому мы его здесь явно не вызываем.</p>
+<p>Теперь мы знаем достаточно много, и на следующих уроках попробуем написать первое осмысленное приложение – калькулятор.</p>
+<p>Полный код урока:</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnSeekBarChangeListener {
+
+  SeekBar sbWeight;
+  Button btn1;
+  Button btn2;
+
+  LinearLayout.LayoutParams lParams1;
+  LinearLayout.LayoutParams lParams2;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    sbWeight = (SeekBar) findViewById(R.id.sbWeight);
+    sbWeight.setOnSeekBarChangeListener(this);
+
+    btn1 = (Button) findViewById(R.id.btn1);
+    btn2 = (Button) findViewById(R.id.btn2);
+
+    lParams1 = (LinearLayout.LayoutParams) btn1.getLayoutParams();
+    lParams2 = (LinearLayout.LayoutParams) btn2.getLayoutParams();
+  }
+
+  @Override
+  public void onProgressChanged(SeekBar seekBar, int progress,
+      boolean fromUser) {
+    int leftValue = progress;
+    int rightValue = seekBar.getMax() - progress;
+    // настраиваем вес
+    lParams1.weight = leftValue;
+    lParams2.weight = rightValue;
+    // в текст кнопок пишем значения переменных
+    btn1.setText(String.valueOf(leftValue));
+    btn2.setText(String.valueOf(rightValue));
+  }
+
+  @Override
+  public void onStartTrackingTouch(SeekBar seekBar) {
+  }
+
+  @Override
+  public void onStopTrackingTouch(SeekBar seekBar) {
+  }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div> 
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

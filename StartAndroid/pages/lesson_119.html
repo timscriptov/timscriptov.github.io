@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 119. PendingIntent – флаги, requestCode. AlarmManager</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- подробно разбираемся с PendingIntent<br> - используем AlarmManager</p>
+<p> </p>
+<p>Перед тем, как продолжить тему виджетов, нам надо будет знать две темы: <a href="http://developer.android.com/reference/android/app/PendingIntent.html" target="_blank">PendingIntent</a> и <a href="http://developer.android.com/reference/android/app/AlarmManager.html" target="_blank">AlarmManager</a>.</p>
+<p>С PendingIntent мы уже мельком встречались при работе с уведомлениями (Notifications) в Уроке 99. Вспомним, как создается этот объект. Мы создаем обычный Intent с нужными нам параметрами. Затем мы создаем PendingIntent каким-либо из методов: getActivity, getBroadcast, getService. Здесь имя метода определяет, какой тип объекта будет вызван с помощью нашего Intent. Ведь мы сами, когда отправляем Intent, явно говорим системе, что хотим вызвать: startActivity, sendBroadcast, startService.</p>
+<p>Методы создания PendingIntent одинаковы по параметрам и требуют на вход:</p>
+<p><b>context</b> – тут все понятно.<br><b>requestCode</b> – в документацие почему-то написано «currently not used». Но при этом использовать их вполне можно. Это своего рода ключи, чтобы отличать один PendingIntent от других при необходимости.<br><b>intent</b> – этот Intent будет впоследствии использован для вызова activity/broadcast/service (в зависимости от метода создания)<br><b>flags</b> – флаги, влияющие на поведение и создание PendingIntent</p>
+<p>Создавая и передавая другому приложению PendingIntent (с Intent внутри), мы предоставляем ему возможность и полномочия отправлять Intent от нашего имени. В этом уроке мы будем работать с PendingIntent. Увидим, что при создании есть свои нюансы, и разберемся, как можно использовать флаги и requestCode.</p>
+<p>Вторая тема урока – AlarmManager. Это планировщик, которому можно передать PendingIntent и сказать, когда именно надо будет его использовать. В общем, что-то типа будильника. Там особо не о чем говорить, поэтому рассмотрим его совсем кратко.</p>
+<p> </p>
+<p>Создадим пример, в котором будем создавать различные PendingIntent и использовать их в Notifications. Результатом выполнения будет вызов BroadcastReceiver, в котором будем логировать входящую информацию.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1191_PendingIntent<br><b>Build Target</b>: Android 4.0 <br><b>Application name</b>: PendingIntent<br><b>Package name</b>: ru.startandroid.develop.p1191pendingintent<br><b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p><span style="line-height: 1.3em;">Добавим строки в <b>strings.xml</b>:</span></p>
+<pre><code class="xml">&lt;string name="button1"&gt;Button1&lt;/string&gt;
+&lt;string name="button2"&gt;Button2&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Создаем <b>Receiver.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1191pendingintent;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+
+public class Receiver extends BroadcastReceiver {
+
+  final String LOG_TAG = "myLogs";
+
+  @Override
+  public void onReceive(Context ctx, Intent intent) {
+    Log.d(LOG_TAG, "onReceive");
+    Log.d(LOG_TAG, "action = " + intent.getAction());
+    Log.d(LOG_TAG, "extra = " + intent.getStringExtra("extra"));
+  }
+}</code></pre>
+<p><span style="line-height: 1.3em;">Это наш Receiver, в который будут падать Intent из PendingIntent. В нем мы читаем Intent и выводим в лог action и один параметр из extra-данных. Не забудьте прописать этот класс в манифесте.</span></p>
+<p> </p>
+<p>Layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".MainActivity"&gt;
+	&lt;Button
+		android:id="@+id/button1"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick1"
+		android:text="@string/button1"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/button2"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick2"
+		android:text="@string/button2"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><span style="line-height: 1.3em;">Только две кнопки.</span></p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1191pendingintent;
+
+import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  NotificationManager nm;
+  AlarmManager am;
+  Intent intent1;
+  Intent intent2;
+  PendingIntent pIntent1;
+  PendingIntent pIntent2;
+
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    am = (AlarmManager) getSystemService(ALARM_SERVICE);
+  }
+
+  public void onClick1(View view) {
+
+    intent1 = createIntent("action 1", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+
+    intent2 = createIntent("action 2", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+
+    compare();
+  }
+
+  public void onClick2(View view) {
+
+  }
+
+  Intent createIntent(String action, String extra) {
+    Intent intent = new Intent(this, Receiver.class);
+    intent.setAction(action);
+    intent.putExtra("extra", extra);
+    return intent;
+  }
+
+  void compare() {
+    Log.d(LOG_TAG, "intent1 = intent2: " + intent1.filterEquals(intent2));
+    Log.d(LOG_TAG, "pIntent1 = pIntent2: " + pIntent1.equals(pIntent2));
+  }
+
+  void sendNotif(int id, PendingIntent pIntent) {
+    Notification notif = new Notification(R.drawable.ic_launcher, "Notif "
+        + id, System.currentTimeMillis());
+    notif.flags |= Notification.FLAG_AUTO_CANCEL;
+    notif.setLatestEventInfo(this, "Title " + id, "Content " + id, pIntent);
+    nm.notify(id, notif);
+  }
+}</code></pre>
+<p>Метод <b>createIntent</b> создает Intent с указанными параметрами.</p>
+<p>Метод <b>sendNotif</b> создает уведомление с указанными ID и PendingIntent.</p>
+<p>Метод <b>compare</b> выводит в лог результат сравнения Intent и PendingIntent. Для Intent используем метод <a href="http://developer.android.com/reference/android/content/Intent.html#filterEquals(android.content.Intent)" target="_blank">filterEquals</a>, который сравнивает Intent по action, data и пр., игнорируя extra-данные .</p>
+<p>В <b>onClick1</b> мы, используя все эти методы, будем создавать различные комбинации, и смотреть, что получается. Сейчас мы там создаем пару Intent и PendingIntent и просто сравниваем их, нигде не используя. В качестве флагов и requestCode мы пока используем нули.</p>
+<p>В <b>onClick2</b> пока ничего не пишем.</p>
+<p> </p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_118_0.png" alt="" width="320" height="480"></p>
+<p>Жмем <b>Button1</b>, смотрим лог.</p>
+<p><i>intent1 = intent2: false<br> pIntent1 = pIntent2: false</i></p>
+<p>Видим, что Intent-ы не равны (т.к. у них различается параметр action). А PendingIntent не равны потому, что их Intent не равны между собой.</p>
+<p>Давайте теперь сравняем основные части Intent. Перепишем <b>onClick1</b>:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+    
+    compare();
+  }</code></pre>
+<p><span style="line-height: 1.3em;">action будут равны, а Extra отличается. Сохраним, запустим. Жмем <b>Button1</b>:</span></p>
+<p><i>intent1 = intent2: true<br> pIntent1 = pIntent2: true</i></p>
+<p>Теперь метод filterEquals говорит нам, что Intent равны. Напомню – это потому, что этот метод не учитывает данные в Extra. PendingIntent получились равны, потому что (по версии filterEquals) равны их Intent. Этот момент надо четко понять, т.к. он очень сильно влияет на создание новых PendingIntent.</p>
+<p>Попробую расписать алгоритм, как я его понимаю. Когда приложение создает PendingIntent, система его хранит в себе. При этом, Intent создаваемого PendingIntent сравнивается с Intent уже существующих PendingIntent. Если есть PendingIntent с Intent равным Intent создаваемого PendingIntent, то создаваемый PendingIntent получит этот существующий Intent. А Intent, с которым мы его пытались создать будет отброшен.</p>
+<p>Т.е. в нашем случае мы создали pIntent1 с intent1, система его хранит. Далее мы создаем pIntent2 с intent2. Система проверяет существующие PendingIntent, и видит, что есть pIntent1 с intent1, и этот intent1 равен intent2. И ваш созданный pIntent2, теперь содержит intent1. А intent2 выкинут. pIntent1 при этом, разумеется, также остается со своим intent1. Просто теперь один Intent будет использоваться двумя PendingIntent-ами.</p>
+<p>Можно сказать, что дефолтное поведение дает нам полную копию существующего PendingIntent, вместо создаваемого, если их Intent-ы равны без учета extra-данных.</p>
+<p>Давайте убедимся в этом. Перепишем <b>onClick1</b>:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action 1", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+
+    intent2 = createIntent("action 2", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+
+    compare();
+
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  }</code></pre>
+<p>Будем создавать разные Intent, использовать их в PendingIntent и отправлять уведомления.</p>
+<p>Все сохраним и запустим. Жмем <b>Button1</b>. Появились два уведомления.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_118_1.png" alt="" width="320" height="480"></p>
+<p>Жмем первое (Title 1), смотрим лог:</p>
+<p><i>onReceive<br> action = action 1<br> extra = extra 1</i></p>
+<p>Все верно. Что помещали в intent1, то и получили в результате срабатывания pIntent1.</p>
+<p>Жмем второе (Title 2) уведомление:</p>
+<p><i>onReceive<br> action = action 2<br> extra = extra 2</i></p>
+<p>Также все верно. Что помещали в intent2, то и получили в результате срабатывания pIntent2.</p>
+<p> </p>
+<p>Теперь сделаем action одинаковым</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+    
+    compare();
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  }</code></pre>
+<p>Сохраняем, запускаем. Жмем <b>Button1</b>. Жмем первое уведомление:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>Все верно.</p>
+<p>Жмем второе уведомление и наблюдаем в логах <span style="text-decoration: line-through;">разрыв шаблона</span> такое:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>При втором уведомлении сработал pIntent2, в который мы помещали intent2 c другим extra. Но получили мы extra из intent1. Причины описаны выше. Система увидела, что intent1 равен intent2 (без учета данных в Extra) и созданному pIntent2 дала intent1.</p>
+<p> </p>
+<p>Это дефолтное поведение системы, но, к счастью, мы можем на него повлиять. Для этого и нужны флаги и requestCode, которые передаются в метод создания PendingIntent.</p>
+<p> </p>
+<p>Определимся с формулировкой. Фраза «создаваемый PendingIntent похож на существующий» означает, что равны (без extra) Intent-ы двух этих PendingIntent.</p>
+<p> </p>
+<h3>FLAG_CANCEL_CURRENT</h3>
+<p>Если система видит, что создаваемый с таким флагом PendingIntent похож на существующий, то она отменит (удалит) существующий.</p>
+<p>Перепишем onClick1:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, PendingIntent.FLAG_CANCEL_CURRENT);
+    
+    compare();
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  } </code></pre>
+<p> </p>
+<p>Сохраняем, запускаем, жмем <b>Button1</b>, жмем первое уведомление. В логах ничего. pIntent1 был отменен системой в момент создания pIntent2, т.к. они похожи, а pIntent2 содержал флаг FLAG_CANCEL_CURRENT. И т.к. первое уведомление было создано с использованием pIntent1, оно ничего и не сделало.</p>
+<p>Жмем второе уведомление.</p>
+<p><i>onReceive<br> action = action<br> extra = extra 2</i></p>
+<p>pIntent2 отменил pIntent1, но сам остался и выполнился.</p>
+<p> </p>
+<p> </p>
+<h3>FLAG_UPDATE_CURRENT</h3>
+<p>Этот флаг включает поведение, обратное дефолтному. Если система видит, что создаваемый с таким флагом PendingIntent похож на существующий, то она возьмет extra-данные Intent создаваемого PendingIntent и запишет их вместо extra-данных Intent существующего PendingIntent. Проще говоря, существующий PendingIntent будет использовать Intent из создаваемого.</p>
+<p>Перепишем onClick1:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, PendingIntent.FLAG_UPDATE_CURRENT);
+    
+    compare();
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  }</code></pre>
+<p> </p>
+<p>Сохраняем, запускаем, жмем <b>Button1</b>, жмем первое уведомление. В логах:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 2</i></p>
+<p>Видим, что pIntent1 использовал intent2 вместо intent1. Жмем второе уведомление :</p>
+<p><i>onReceive<br> action = action<br> extra = extra 2</i></p>
+<p>Данные из intent2. Получилось, что в обоих PendingIntent использовался intent2.</p>
+<p> </p>
+<h3>FLAG_ONE_SHOT</h3>
+<p>PendingIntent с этим флагом сработает лишь один раз. Сначала сделаем пример без флага. Перепишем onClick1:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent1);
+  }</code></pre>
+<p><span style="line-height: 1.3em;">Будем использовать один PendingIntent в обоих уведомлениях.</span></p>
+<p>Сохраняем, запускаем, жмем <b>Button1</b>, жмем первое уведомление. В логах:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>жмем второе уведомление:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>Все логично. Оба уведомления использовали один pIntent1 с intent1.</p>
+<p>Теперь используем флаг:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, PendingIntent.FLAG_ONE_SHOT);
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent1);
+  }</code></pre>
+<p><span style="line-height: 1.3em;">Этот флаг отменит PendingIntent после первого применения.</span></p>
+<p>Сохраняем, запускаем, жмем <b>Button1</b>, жмем первое уведомление. В логах:</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>Все ок, pIntent1 сработал. Жмем второе уведомление – в логах ничего. pIntent1 не сработал. Система увидела FLAG_ONE_SHOT и отменила PendingIntent после первого вызова. Т.е. PendingIntent с таким флагом может быть использован только один раз.</p>
+<p> </p>
+<h3>FLAG_NO_CREATE</h3>
+<p>PendingIntent не будет создан, если среди существующих нет похожего.</p>
+<p>Перепишем <b>onClick1</b> и <b>onClick2</b></p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    Log.d(LOG_TAG, "pIntent1 created");
+  }
+  
+  public void onClick2(View view){
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, PendingIntent.FLAG_NO_CREATE);
+    if (pIntent2 == null) Log.d(LOG_TAG, "pIntent2 is null"); 
+      else Log.d(LOG_TAG, "pIntent2 created");  
+  }</code></pre>
+<p> </p>
+<p><span style="line-height: 1.3em;">Сохраняем, запускаем. Жмем <b>Button2</b>, в логах:</span></p>
+<p><i>pIntent2 is null</i></p>
+<p>pIntent2 не создался, т.к. не было создано похожих PendingIntent. Дальнейшие нажатия будут возвращать тот же результат.</p>
+<p>Теперь нажмем <b>Button1</b>, а затем <b>Button2</b>:</p>
+<p><i>pIntent1 created<br> pIntent2 created</i></p>
+<p>После создания pIntent1, получилось создать и pIntent2 (т.к. похожий pIntent1 существовал). Зачем нужен такой флаг? Единственное, что мне приходит в голову – с его помощью можно проверить существование в системе определенного PendingIntent.  Если такой PendingIntent существует, то он вам и вернется (здесь действует дефолтное правило), а если не существует – то получим null.</p>
+<p> </p>
+<h3>Как оно там внутри работает</h3>
+<p>Наверняка назрели вопросы типа: где в системе хранятся эти PendingIntent, как долго они хранятся и когда отменяются (удаляются)?</p>
+<p>К сожалению, не знаю. Самому было бы интересно узнать.</p>
+<p>В последнем примере:</p>
+<p>Если создать pIntent1, закрыть Activity, открыть Activity и создать pIntent2, то он создастся. <br> Если создать pIntent1, убить процесс, открыть Activity и создать pIntent2, то он создастся.<br> Если создать pIntent1, переустановить приложение, открыть Activity и создать pIntent2, то он не создастся.</p>
+<p>Т.е. переустановка приложения точно скидывает все созданные в нем PendingIntent.</p>
+<p>Если есть какие-нить мысли или ссылки на этот счет, пишите на форуме.</p>
+<p> </p>
+<h3>Отмена </h3>
+<p>Вы всегда можете вручную отменить любой PendingIntent методом <a href="http://developer.android.com/reference/android/app/PendingIntent.html#cancel()" target="_blank">cancel</a>.</p>
+<p>Перепишем методы:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    sendNotif(1, pIntent1);
+  }
+
+  public void onClick2(View view) {
+    pIntent1.cancel();
+    Log.d(LOG_TAG, "cancel pIntent1");
+  }</code></pre>
+<p> </p>
+<p>Все сохраним, запустим, жмем <b>Button1</b>. Появилось уведомление. Теперь жмем <b>Button2</b>. pIntent1 отменился. Но при этом, заметьте, уведомление спокойно продолжает себе висеть. Ему неважно, живой его PendingIntent или нет.</p>
+<p>Нажимаем на уведомление и видим, что в логах ничего не происходит, т.к. PendingIntent был отменен.</p>
+<p> </p>
+<h3>requestCode</h3>
+<p>Что делать, если у нас есть Intent-ы, различающиеся только extra-данными, и нам все-таки нужно получить разные PendingIntent с ними? Можно использовать <b>requestCode</b>. При их использовании PendingIntent не будут считаться похожими, даже при равных Intent.</p>
+<p>Перепишем <b>onClick1</b>:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 1, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 2, intent2, 0);
+    
+    compare();
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  }</code></pre>
+<p><span style="line-height: 1.3em;">Используем requestCode = 1 для pIntent1 и 2 для pInten2.</span></p>
+<p>Сохраняем, запускаем, жмем Button1. В логах:</p>
+<p><i>intent1 = intent2: true<br> pIntent1 = pIntent2: false</i></p>
+<p>Intent-ы равны, а PendingIntent-ы (благодаря requestCode) – нет.</p>
+<p>Жмем первое уведомление</p>
+<p><i>onReceive<br> action = action<br> extra = extra 1</i></p>
+<p>Жмем второе уведомление</p>
+<p><i>onReceive<br> action = action<br> extra = extra 2</i></p>
+<p>Все сработало, как и ожидалось. Никто ни у кого Intent-ы не менял. Все остались при своих.</p>
+<p> </p>
+<p>Есть еще вариант как сделать разные PendingIntent. Он подходит, если у вас в Intent не используется поле data. Туда можно поместить какие-то свои бессмысленные Uri, содержащие ID, которые просто будут разными, чтобы Intent-ы, а следовательно и PendingIntent-ы получились разными.</p>
+<p>Либо можно, чтобы весь Intent преобразовывался в Uri и помещался в data. Делается это так:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    Uri data1 = Uri.parse(intent1.toUri(Intent.URI_INTENT_SCHEME));
+    intent1.setData(data1);
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    Uri data2 = Uri.parse(intent2.toUri(Intent.URI_INTENT_SCHEME));
+    intent2.setData(data2);
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+    
+    compare();
+    
+    sendNotif(1, pIntent1);
+    sendNotif(2, pIntent2);
+  }</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/content/Intent.html#toUri(int)" target="_blank">toUri</a> преобразует Intent со всем его содержимым и всеми параметрами в строку. <a href="http://developer.android.com/reference/android/net/Uri.html#parse(java.lang.String)" target="_blank">parse</a> преобразует строку в Uri. Теперь даже если основные параметры Intent-ов будут одинаковы, то разное содержимое extra-данных сделает полученные Uri разными. И Intent-ы будут отличаться по полю data.</p>
+<p> </p>
+<p>Разобрались с PendingIntent. Взглянем на AlarmManager. Как я уже написал, да и как понятно из названия объекта, он отвечает за то, чтобы срабатывать по расписанию. "Срабатывать" означает использовать ваш PendingIntent, который вы ему отправите.</p>
+<p>Два основных метода: <a href="http://developer.android.com/reference/android/app/AlarmManager.html#set(int, long, android.app.PendingIntent)" target="_blank">set</a> и <a href="http://developer.android.com/reference/android/app/AlarmManager.html#setRepeating(int, long, long, android.app.PendingIntent)" target="_blank">setRepeating</a>. Они позволяют запланировать, соответственно, разовое и повторяющееся событие.</p>
+<p>Рассмотрим пример. Перепишем методы:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action 1", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+
+    intent2 = createIntent("action 2", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+
+    Log.d(LOG_TAG, "start");
+    am.set(AlarmManager.RTC, System.currentTimeMillis() + 4000, pIntent1);
+    am.setRepeating(AlarmManager.ELAPSED_REALTIME,
+        SystemClock.elapsedRealtime() + 3000, 5000, pIntent2);
+  }
+
+  public void onClick2(View view) {
+    am.cancel(pIntent2);
+  }</code></pre>
+<p>В <b>onClick1</b> создадим два разных PendingIntent. Первый отправим методом set. На вход метод требует тип «будильника», время срабатывания (в милисекундах) и PendingIntent.</p>
+<p> </p>
+<p>Типы будильника бывают следующие: <a href="http://developer.android.com/reference/android/app/AlarmManager.html#ELAPSED_REALTIME" target="_blank">ELAPSED_REALTIME</a>, <a href="http://developer.android.com/reference/android/app/AlarmManager.html#ELAPSED_REALTIME_WAKEUP" target="_blank">ELAPSED_REALTIME_WAKEUP</a>, <a href="http://developer.android.com/reference/android/app/AlarmManager.html#RTC" target="_blank">RTC</a> и <a href="http://developer.android.com/reference/android/app/AlarmManager.html#RTC_WAKEUP" target="_blank">RTC_WAKEUP</a>. В чем отличие между ними?</p>
+<p>Те, название которых начинается с <b>RTC</b>, ориентируются на системное время. И время запуска таких будильников надо указывать относительно <a href="http://developer.android.com/reference/java/lang/System.html#currentTimeMillis()" target="_blank">System.currentTimeMillis</a>. Т.е. это RTC и RTC_WAKEUP.</p>
+<p>Те, название которых начинается с <b>ELAPSED_REALTIME</b>, ориентируются на время от начала загрузки оси (включения устройства). Время запуска таких будильников надо указывать относительно <a href="http://developer.android.com/reference/android/os/SystemClock.html#elapsedRealtime()" target="_blank">SystemClock.elapsedRealtime()</a>. Т.е. это ELAPSED_REALTIME и ELAPSED_REALTIME_WAKEUP.</p>
+<p>Те, в названии которых есть <b>WAKEUP</b>, при срабатывании будут выводить устройство из спячки. Т.е. это ELAPSED_REALTIME_WAKEUP и RTC_WAKEUP.</p>
+<p>Тут надо не путать спячку с выключенным экраном. Экран может быть выключен, но устройство вовсю будет работать. А когда задач нет устройство уходит в спячку, вырубая процессор для экономии энергии. Если будильники с типом не WAKEUP должны сработать, а устройство в это время спит, то их запуск откладывается до пробуждения. А WAKEUP-будильники разбудят устройство.</p>
+<p> </p>
+<p>Вернемся к методу set. Используем здесь тип RTC, а, значит, время запуска (второй параметр метода) указываем относительно системного времени.  Укажем текущее время + 4 секунды. Т.е. будильник сработает через 4 секунды после текущего времени создания. А когда он сработает, он выполнит pIntent1 (третий параметр метода).</p>
+<p>Второй будильник ставим методом setRepeating. Он похож на set, только позволяет задать еще период повтора срабатывания. Для примера используем здесь тип ELAPSED_REALTIME. С таким типом время запуска мы должны указать, через сколько милисекунд после старта системы сработает будильник. Мы берем время уже прошедшее со старта (SystemClock.elapsedRealtime()), тем самым получая текущее время, и прибавляем к нему 3 секунды. Период повтора (третий параметр метода) сделаем равным 5 секунд. При срабатывании будет выполнен pIntent2.</p>
+<p>Т.е. после того, как мы нажмем кнопку у нас установятся два будильника.</p>
+<p>Первый – однократный, через 4 секунды от текущего времени, pIntent1.</p>
+<p>Второй – повторяющийся каждые 5 сек., с первым запуском через 3 секунды от текущего времени.</p>
+<p>В onClick2 мы будем выключать второй будильник, чтобы он у нас не работал вечно. Для этого выполняем метод cancel с указанием PendingIntent, который используется в будильнике.</p>
+<p>Все сохраняем, запускаем приложение. Жмем Button1. В логах наблюдаем, как начали срабатывать будильники. Секунд через 20 жмем кнопку Button2, движуха в логах прекратилась. Смотрим логи:</p>
+<p>07:55:22.380: start<br>07:55:25.450: onReceive<br>07:55:25.450: action = action 2<br>07:55:25.459: extra = extra 2<br>07:55:26.430: onReceive<br>07:55:26.430: action = action 1<br>07:55:26.430: extra = extra 1<br>07:55:30.499: onReceive<br>07:55:30.499: action = action 2<br>07:55:30.499: extra = extra 2<br>07:55:35.429: onReceive<br>07:55:35.429: action = action 2<br>07:55:35.429: extra = extra 2<br>07:55:40.450: onReceive<br>07:55:40.450: action = action 2<br>07:55:40.450: extra = extra 2</p>
+<p> </p>
+<p>Второй будильник сработал через 3 секунды после старта и далее срабатывал каждые 5 сек, пока мы не его не выключили методом <b>cancel</b>. А первый сработал один раз, через 4 секунды. Все, как и задумывалось.</p>
+<p>Есть еще метод <a href="http://developer.android.com/reference/android/app/AlarmManager.html#setInexactRepeating(int, long, long, android.app.PendingIntent)" target="_blank">setInexactRepeating</a>. Он аналогичен методу setRepeating, но периодичность его срабатывания не всегда точно такая, какую вы указали. Он может подстраивать запуск вашего будильника под будильники, которые будут выполнены примерно в то же время. Сделано это для экономии энергии, чтобы не будить два раза устройство, если оно спит. Судя по документацие погрешность запуска может быть значительной, так что используйте аккуратнее. </p>
+<p> </p>
+<p>Расскажу еще несколько полезных фактов из жизни будильников.</p>
+<p>Если вы запланируете будильник с просроченным временем запуска – он выполнится сразу же.</p>
+<p>После перезагрузки устройства все будильники стираются.</p>
+<p>Если вы попытаетесь создать два разных будильника на основе одного или похожих PendingIntent, то сработает только второй, а первый будет удален при создании второго.</p>
+<p>Пример:</p>
+<pre><code class="java">  public void onClick1(View view) {
+    intent1 = createIntent("action", "extra 1");
+    pIntent1 = PendingIntent.getBroadcast(this, 0, intent1, 0);
+    
+    intent2 = createIntent("action", "extra 2");
+    pIntent2 = PendingIntent.getBroadcast(this, 0, intent2, 0);
+    
+    Log.d("qwe", "start");
+    am.set(AlarmManager.RTC, System.currentTimeMillis() + 2000, pIntent1);
+    am.set(AlarmManager.RTC, System.currentTimeMillis() + 4000, pIntent2);
+  }</code></pre>
+<p>Создаем похожие PendingIntent и запланируем их в два разных будильника – через 2 и 4 секунды.</p>
+<p>Сохраняем, запускаем. Жмем <b>Button1</b>. В логах видим:</p>
+<p><i>8:03:59.669: start</i></p>
+<p><i>8:04:03.740: onReceive</i></p>
+<p><i>8:04:03.740: action = action</i></p>
+<p><i>8:04:03.750: extra = extra 1</i></p>
+<p>Видим, что пришел Intent из pIntent1, который мы использовали для первого будильника, но пришел он через 4 секунды. Что произошло? Выше мы уже рассмотрели, что произойдет при создании похожих PendingIntent - второй будет использовать Intent первого. Кроме того AlarmManager определил, что pIntent1 (используемый в первом будильнике) и pIntent2 (используемый во втором) похожи, и решил, что негоже иметь разные будильники, с одинаковыми PendingIntent. И оставил нам только последний созданный будильник, т.е. второй.</p>
+<p>Как решить проблему одинаковости PendingIntent, мы уже рассмотрели выше. Повторяться не буду.</p>
+<p>Тема вроде несложная для понимания, но достаточно сложная для объяснения. Все аспекты и варианты рассмотреть в одном уроке трудновато, поэтому если у вас остались какие-либо вопросы, то самым лучшим способом получить ответы на них будут тесты.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

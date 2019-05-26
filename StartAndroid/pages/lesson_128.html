@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	  
+	<title>Урок 128. Медиа. Audio Focus</title>
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- используем Audio Focus</p>
+ 
+<p> </p>
+<p>Наверняка вы замечали, что при прослушивании музыки, если срабатывает уведомление, то на время звучания уведомления звук музыки или прерывается или становится тише. Это можно реализовать с помощью <a href="http://developer.android.com/training/managing-audio/audio-focus.html" target="_blank" rel="noopener noreferrer">аудио-фокуса</a>.</p>
+<p>Попробую сначала объяснить схему движения фокуса на словах. Если рассматривать пример музыки и уведомления, то пусть музыку играет некое приложение_1, а уведомления выдает некое приложение_2. Приложение_1, когда начинает воспроизведение, запрашивает аудио-фокус, получает его и играет музыку. Далее приходит смс или письмо, и приложение_2 хочет воспроизвести звук уведомления. Оно также запрашивает аудио-фокус и получает его. Но при этом система видит, что фокус сейчас у приложения_1. Система сообщает приложению_1, что фокус оно пока что потеряло.  Звук уведомления воспроизводится, приложение_2 отдает фокус, а приложению_1 сообщают, что фокус снова его. Когда приложение_1 заканчивает играть музыку, оно отдает фокус. Т.е. приложение должно не только запрашивать фокус при необходимости, но и явно отдавать его, когда он более не нужен. Для этого есть специальные методы, мы их рассмотрим дальше.</p>
+<p>Тут еще важно понимать, что эти сообщения от системы к приложениям о том, что фокус потерян/восстановлен являются просто уведомительными. И разработчик приложения сам решает, как он будет это обрабатывать: проигнорит, убавит звук или приостановит воспроизведение. Например, я протестировал два плеера на своем планшете. На одном включил музыку и свернул его, музыка продолжала играть в фоне. В другом плеере я запустил просмотр фильма. В результате я слышал и фильм и музыку. Аудио-фокус позволяет избежать этого.</p>
+<p>Можно провести аналогию с человеком. Допустим, какой-то человек громко говорит. Его просят говорить потише, а еще лучше совсем заткнуться, т.к. он мешает остальным и вообще достал, и все хотят послушать другого человека. Вот это и есть потеря аудио-фокуса первым человеком. Но ведь это вовсе не означает, что этот человек тут же замолчит. Ему просто поступило уведомление, что другой человек хочет говорить. И первый человек поступает так, как считает нужным: либо продолжает громко говорить, либо будет говорить потише, либо замолчит. Это остается на его усмотрение, особенно если он наглый, сильный или быстро бегает )</p>
+<p> </p>
+<p>Напишем приложение, в котором реализуем пример с музыкой и звуком. При нажатии на одну кнопку будем запускать проигрывание музыки, а при нажатии на другую – воспроизводить короткий звук. И привяжем к этой схеме аудио-фокус.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1281_AudioFocus<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: AudioFocus<br/> <b>Package name</b>: ru.startandroid.develop.p1281audiofocus<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="music"&gt;Music&lt;/string&gt;
+&lt;string name="sound_gain"&gt;Sound G&lt;/string&gt;
+&lt;string name="sound_gain_transient"&gt;Sound GT&lt;/string&gt;
+&lt;string name="sound_gain_transient_duck"&gt;Sound GTD&lt;/string&gt;</code></pre>
+<p> </p>
+<p>layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".MainActivity"&gt;
+	&lt;Button
+		android:id="@+id/btnPlayMusic"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentTop="true"
+		android:onClick="onClickMusic"
+		android:text="@string/music"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnPlaySoundG"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_below="@+id/btnPlayMusic"
+		android:onClick="onClickSound"
+		android:text="@string/sound_gain"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnPlaySoundGT"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignBaseline="@id/btnPlaySoundG"
+		android:layout_toRightOf="@id/btnPlaySoundG"
+		android:onClick="onClickSound"
+		android:text="@string/sound_gain_transient"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnPlaySoundGTD"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignBaseline="@id/btnPlaySoundG"
+		android:layout_toRightOf="@id/btnPlaySoundGT"
+		android:onClick="onClickSound"
+		android:text="@string/sound_gain_transient_duck"&gt;
+	&lt;/Button&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Кнопка <b>Music </b>будет запускать музыку, а три другие кнопки – звук. Их три, потому что есть три разных типа фокуса, которые может запросить приложение. Мы протестируем все три.</p>
+<p>В папку <b>mnt/sdcard/Music/</b> поместите какой-нить файл с именем <b>music.mp3</b>. Например, его можно взять <a href="http://yadi.sk/d/yd1uBZ7-569Kd" target="_blank" rel="noopener noreferrer">здесь</a>. В папку <b>res/raw</b> поместите файл <b>explosion.mp3</b>, например <a href="http://yadi.sk/d/RWJ4NW6L4OrqK" target="_blank" rel="noopener noreferrer">отсюда</a>.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1281audiofocus;
+
+import java.io.IOException;
+
+import android.app.Activity;
+import android.content.Context;
+import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity implements OnCompletionListener {
+
+  final static String LOG_TAG = "myLogs";
+
+  AudioManager audioManager;
+
+  AFListener afListenerMusic;
+  AFListener afListenerSound;
+
+  MediaPlayer mpMusic;
+  MediaPlayer mpSound;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+  }
+
+  public void onClickMusic(View view) {
+    mpMusic = new MediaPlayer();
+    try {
+      mpMusic.setDataSource("mnt/sdcard/Music/music.mp3");
+      mpMusic.prepare();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    mpMusic.setOnCompletionListener(this);
+
+    afListenerMusic = new AFListener(mpMusic, "Music");
+    int requestResult = audioManager.requestAudioFocus(afListenerMusic,
+        AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+    Log.d(LOG_TAG, "Music request focus, result: " + requestResult);
+
+    mpMusic.start();
+  }
+
+  public void onClickSound(View view) {
+    int durationHint = AudioManager.AUDIOFOCUS_GAIN;
+    switch (view.getId()) {
+    case R.id.btnPlaySoundG:
+      durationHint = AudioManager.AUDIOFOCUS_GAIN;
+      break;
+    case R.id.btnPlaySoundGT:
+      durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
+      break;
+    case R.id.btnPlaySoundGTD:
+      durationHint = AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
+      break;
+    }
+
+    mpSound = MediaPlayer.create(this, R.raw.explosion);
+    mpSound.setOnCompletionListener(this);
+
+    afListenerSound = new AFListener(mpSound, "Sound");
+    int requestResult = audioManager.requestAudioFocus(afListenerSound,
+        AudioManager.STREAM_MUSIC, durationHint);
+    Log.d(LOG_TAG, "Sound request focus, result: " + requestResult);
+
+    mpSound.start();
+
+  }
+
+  @Override
+  public void onCompletion(MediaPlayer mp) {
+    if (mp == mpMusic) {
+      Log.d(LOG_TAG, "Music: abandon focus");
+      audioManager.abandonAudioFocus(afListenerMusic);
+    } else if (mp == mpSound) {
+      Log.d(LOG_TAG, "Sound: abandon focus");
+      audioManager.abandonAudioFocus(afListenerSound);
+    }
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    if (mpMusic != null)
+      mpMusic.release();
+    if (mpSound != null)
+      mpSound.release();
+    if (afListenerMusic != null)
+      audioManager.abandonAudioFocus(afListenerMusic);
+    if (afListenerSound != null)
+      audioManager.abandonAudioFocus(afListenerSound);
+  }
+
+  class AFListener implements OnAudioFocusChangeListener {
+
+    String label = "";
+    MediaPlayer mp;
+
+    public AFListener(MediaPlayer mp, String label) {
+      this.label = label;
+      this.mp = mp;
+    }
+
+    @Override
+    public void onAudioFocusChange(int focusChange) {
+      String event = "";
+      switch (focusChange) {
+      case AudioManager.AUDIOFOCUS_LOSS:
+        event = "AUDIOFOCUS_LOSS";
+        break;
+      case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+        event = "AUDIOFOCUS_LOSS_TRANSIENT";
+        break;
+      case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+        event = "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK";
+        break;
+      case AudioManager.AUDIOFOCUS_GAIN:
+        event = "AUDIOFOCUS_GAIN";
+        break;
+      }
+      Log.d(LOG_TAG, label + " onAudioFocusChange: " + event);
+    }
+  }
+}</code></pre>
+<p>В <b>onCreate</b> мы просто получаем <a href="http://developer.android.com/reference/android/media/AudioManager.html" target="_blank" rel="noopener noreferrer">AudioManager</a>. Именно через него мы будем запрашивать фокус.</p>
+<p><b>onClickMusic</b> срабатывает при нажатии кнопки Music. Здесь мы создаем MediaPlayer и даем ему путь к файлу с музыкой. Методом setOnCompletionListener устанавливаем Activity, как получателя уведомления о окончании воспроизведения. Далее идет работа с фокусом. afListenerMusic – это слушатель (реализующий интерфейс <a href="http://developer.android.com/reference/android/media/AudioManager.OnAudioFocusChangeListener.html" target="_blank" rel="noopener noreferrer">OnAudioFocusChangeListener</a>), который будет получать сообщения о потере/восстановлении фокуса. Он является экземпляром класса AFListener, который мы рассмотрим чуть дальше.</p>
+<p>Фокус запрашивается с помощью метода <a href="http://developer.android.com/reference/android/media/AudioManager.html#requestAudioFocus(android.media.AudioManager.OnAudioFocusChangeListener, int, int)" target="_blank" rel="noopener noreferrer">requestAudioFocus</a>. На вход необходимо передать: <br/> - слушателя, который будет получать сообщения о фокусе<br/> - тип потока<br/> - тип фокуса</p>
+<p>Тип фокуса говорит о том, насколько долго приложение собирается воспроизводить свой звук и насколько важно, чтобы другое приложение при этом замолчало. Всего есть три типа фокуса:<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_GAIN" target="_blank" rel="noopener noreferrer">AUDIOFOCUS_GAIN</a> – приложение дает понять, что оно собирается долго воспроизводить свой звук, и текущее воспроизведение должно приостановиться на это время<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_GAIN_TRANSIENT" target="_blank" rel="noopener noreferrer">AUDIOFOCUS_GAIN_TRANSIENT</a> – воспроизведение будет коротким, и текущее воспроизведение должно приостановиться на это время<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK" target="_blank" rel="noopener noreferrer">AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK</a> – воспроизведение будет коротким, но текущее воспроизведение может просто на это время убавить звук и продолжать играть</p>
+<p>Итак, мы запрашиваем фокус и говорим, что это надолго - AUDIOFOCUS_GAIN. Метод requestAudioFocus возвращает статус:<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_REQUEST_FAILED" target="_blank" rel="noopener noreferrer">AUDIOFOCUS_REQUEST_FAILED</a> = 0 – фокус не получен<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_REQUEST_GRANTED" target="_blank" rel="noopener noreferrer">AUDIOFOCUS_REQUEST_GRANTED</a> = 1 – фокус получен</p>
+<p>После того, как получили фокус, стартуем воспроизведение.</p>
+<p> </p>
+<p>Метод <b>onClickSound</b> срабатывает при нажатии на любую из трех кнопок Sound. Здесь мы определяем, какая из трех кнопок была нажата. Тем самым мы в переменную durationHint пишем тип аудио-фокуса, который будем запрашивать. Далее создаем MediaPlayer, который будет воспроизводить наш звук взрыва из папки raw. Присваиваем ему слушателя окончания воспроизведения. Запрашиваем фокус с типом, который определили выше. Стартуем воспроизведение.</p>
+<p> </p>
+<p>Метод <b>onCompletion</b>, срабатывает по окончании воспроизведения. Мы определяем, какой именно MediaPlayer закончил играть и методом <a href="http://developer.android.com/reference/android/media/AudioManager.html#abandonAudioFocus(android.media.AudioManager.OnAudioFocusChangeListener)" target="_blank" rel="noopener noreferrer">abandonAudioFocus</a> сообщаем системе, что больше не претендуем на аудио-фокус. На вход методу передаем того же слушателя, который давали при запросе фокуса.</p>
+<p>В <b>onDestroy</b> освобождаем ресурсы и отпускаем фокус.</p>
+<p> </p>
+<p>Класс <b>AFListener</b> реализует интерфейс OnAudioFocusChangeListener и является получателем сообщений о потере/восстановлении фокуса. При создании мы даем ему соответствующий MediaPlayer (позже станет понятно зачем) и текст, который нам понадобится для логов.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/media/AudioManager.OnAudioFocusChangeListener.html#onAudioFocusChange(int)" target="_blank" rel="noopener noreferrer">onAudioFocusChange</a> получает на вход статус фокуса этого приложения. Тут 4 варианта:<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_LOSS" target="_blank" rel="noopener noreferrer"> AUDIOFOCUS_LOSS</a> – фокус потерян в результате того, что другое приложение запросило фокус AUDIOFOCUS_GAIN. Т.е. нам дают понять, что другое приложение собирается воспроизводить что-то долгое и просит нас пока приостановить наше воспроизведение.<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_LOSS_TRANSIENT" target="_blank" rel="noopener noreferrer"> AUDIOFOCUS_LOSS_TRANSIENT</a> - фокус потерян в результате того, что другое приложение запросило фокус AUDIOFOCUS_GAIN_TRANSIENT. Нам дают понять, что другое приложение собирается воспроизводить что-то небольшое и просит нас пока приостановить наше воспроизведение<br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK" target="_blank" rel="noopener noreferrer"> AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK</a> - фокус потерян в результате того, что другое приложение запросило фокус AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK. Нам дают понять, что другое приложение собирается воспроизводить что-то небольшое, и мы можем просто убавить звук, не приостанавливая воспроизведение <br/><a href="http://developer.android.com/reference/android/media/AudioManager.html#AUDIOFOCUS_GAIN" target="_blank" rel="noopener noreferrer"> AUDIOFOCUS_GAIN</a> – другое приложение закончило воспроизведение, звук снова наш</p>
+<p>Пока что мы просто будем выводить в лог всю эту информацию, чтобы увидеть схему взаимодействия двух приложений с аудио-фокусом.</p>
+<p> </p>
+<p>Все сохраним и запустим приложение. Жмем Music, воспроизведение музыки началось. В логах видим.</p>
+<p><em>Music</em> <em>request</em> <em>focus</em><em>, </em><em>result</em><em>: 1</em></p>
+<p>Т.е. музыка запросила фокус и получила его (статус = 1).</p>
+<p> </p>
+<p> </p>
+<p>Жмем Sound G, чтобы воспроизвести звук взрыва и запросить фокус AUDIOFOCUS_GAIN.</p>
+<p><em>Sound request focus, result: 1</em></p>
+<p><em>Music onAudioFocusChange: AUDIOFOCUS_LOSS</em></p>
+<p>Фокус запрошен и получен взрывом. А музыка получила уведомление о том, что фокус она потеряла (AUDIOFOCUS_LOSS).</p>
+<p> </p>
+<p>Слышим звук взрыва. После того как звук взрыва закончился:</p>
+<p><i>Sound: abandon focus</i></p>
+<p><i>Music onAudioFocusChange: AUDIOFOCUS_GAIN</i></p>
+<p>Срабатывает метод onCompletion, в котором взрыв отдает фокус (abandon focus). И, следовательно, музыка получает сообщение о том, что фокус снова ее (AUDIOFOCUS_GAIN).</p>
+<p> </p>
+<p>Если дождаться, когда закончится музыка увидим такое сообщение.</p>
+<p><i>Music: abandon focus</i></p>
+<p>Музыка отдала фокус.</p>
+<p> </p>
+<p>Как вы заметили, музыка все это время играла и никуда не делась. То, что она теряла фокус – не означает автоматически, что она остановится. Повторюсь, фокус – это только уведомление. А как приложение отреагирует на это уведомление – решать вам, как разработчику.</p>
+<p> </p>
+<p>Кнопки Sound GT и Sound GTD срабатывают аналогично, я уже не буду их нажимать. Отличие будет в том, что взрыв будет запрашивать фокусы соответственно AUDIOFOCUS_GAIN_TRANSIENT и AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK. А музыка будет получать статусы AUDIOFOCUS_LOSS_TRANSIENT и AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK.</p>
+<p> </p>
+<p>Т.е. мы увидели как одно приложение запрашивает определенный тип фокуса, а другое приложение видит этот тип и должно принимать соответствующие меры. Кстати о мерах. Давайте кроме логов реализуем и эти меры.</p>
+<p>Перепишем метод <b>onAudioFocusChange</b> класса AFListener:</p>
+<pre><code class="java">public void onAudioFocusChange(int focusChange) {
+      String event = "";
+      switch (focusChange) {
+      case AudioManager.AUDIOFOCUS_LOSS:
+        event = "AUDIOFOCUS_LOSS";
+        mp.pause();
+        break;
+      case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+        event = "AUDIOFOCUS_LOSS_TRANSIENT";
+        mp.pause();
+        break;
+      case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+        event = "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK";
+        mp.setVolume(0.5f, 0.5f);
+        break;
+      case AudioManager.AUDIOFOCUS_GAIN:
+        event = "AUDIOFOCUS_GAIN";
+        if (!mp.isPlaying())
+          mp.start();
+        mp.setVolume(1.0f, 1.0f);
+        break;
+      }
+      Log.d(LOG_TAG, label + " onAudioFocusChange: " + event);
+    }</code></pre>
+<p>При потерях фокуса AUDIOFOCUS_LOSS и AUDIOFOCUS_LOSS_TRANSIENT ставим паузу. А при AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK – просто уменьшаем громкость. При получении же фокуса (AUDIOFOCUS_GAIN)  возобновляем воспроизведение, если оно было приостановлено, и ставим громкость на максимум.</p>
+<p>Я выбрал самые простые меры, чтобы не усложнять урок. Но их можно улучшить. Например, при потере фокуса надолго (AUDIOFOCUS_LOSS) можно освобождать ресурсы, и снова создавать MediaPlayer при получении фокуса. Либо можно вообще полностью отдать фокус (abandon), и тогда пользователю надо будет явно вернуться в ваше приложение, чтобы возобновить воспроизведение. </p>
+<p> </p>
+<p>Когда вы запрашиваете фокус, метод requestFocus возвращает вам ответ, получилось захватить фокус или нет. Документация рекомендует учитывать этот параметр и стартовать воспроизведение только при положительном результате (AUDIOFOCUS_REQUEST_GRANTED). Я, правда, не знаю как тут можно получить отрицательный результат. Если у кого есть соображения на этот счет – пишите на форуме.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 90. AsyncTask. Status – статусы задачи</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- читаем статусы задачи</p>
+<p>Мы всегда можем определить, в каком состоянии сейчас находится задача. Для этого используются статусы. Их всего <a href="http://developer.android.com/reference/android/os/AsyncTask.Status.html#enumconstants" target="_blank">три</a>:</p>
+<p><b>PENDING </b>– задача еще не запущена</p>
+<p><b>RUNNING </b>– задача в работе</p>
+<p><b>FINISHED </b>– метод onPostExecute отработал, т.е. задача успешно завершена</p>
+<p>В принципе по названиям все понятно, но посмотрим и убедимся сами. К тому же, не очень понятно, в каком статусе будет задача, если мы ее отменим методом cancel.</p>
+<p>Рассмотрим на примере.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0901_AsyncTaskStatus<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AsyncTaskStatus<br><b>Package name</b>: ru.startandroid.develop.p0901asynctaskstatus<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;AsyncTaskStatus&lt;/string&gt;
+	&lt;string name="start"&gt;Start&lt;/string&gt;
+	&lt;string name="status"&gt;Status&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnStatus"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/status"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>По кнопке <b>Start </b>запускаем задачу, по кнопке <b>Status </b>будем выводить ее статус.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0901asynctaskstatus;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+  MyTask mt;
+  TextView tvInfo;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      startTask();
+      break;
+    case R.id.btnStatus:
+      showStatus();
+      break;
+    default:
+      break;
+    }
+  }
+
+  private void startTask() {
+    mt = new MyTask();
+  }
+
+  private void showStatus() {
+    if (mt != null)
+      Toast.makeText(this, mt.getStatus().toString(), Toast.LENGTH_SHORT).show();
+  }
+
+
+  class MyTask extends AsyncTask&lt;Void, Void, Void&gt; {
+    @Override
+    protected void onPreExecute() {
+      super.onPreExecute();
+      tvInfo.setText("Begin");
+    }
+
+    @Override
+    protected Void doInBackground(Void... params) {
+      try {
+        for (int i = 0; i &lt; 5; i++) {
+if (isCancelled()) return null;
+          TimeUnit.SECONDS.sleep(1);
+        }
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      return null;
+    }
+
+    @Override
+    protected void onPostExecute(Void result) {
+      super.onPostExecute(result);
+      tvInfo.setText("End");
+    }
+    
+    @Override
+    protected void onCancelled() {
+      super.onCancelled();
+      tvInfo.setText("Cancel");
+    }
+  }
+}</code></pre>
+<p>По нажатию кнопки <b>Start </b>срабатывает метод startTask. В нем мы просто создаем новую задачу, но пока что не запускаем ее.</p>
+<p>По нажатию кнопки <b>Status </b>читаем и выводим на экран статус задачи. Используем метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#getStatus()" target="_blank">getStatus</a>.</p>
+<p>Сама задача проста, гоняем в цикле паузы.</p>
+<p>Все сохраним и запустим.</p>
+<p><img src="images/lesson_89_0.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Start </b>– задача создалась.</p>
+<p>Жмем <b>Status</b></p>
+<p><img src="images/lesson_89_1.png" alt="" width="640" height="454"></p>
+<p>Статус = <b>PENDING</b>. Все верно, задача еще не запущена.</p>
+<p>Перепишем метод <b>startTask</b>:</p>
+<pre><code class="java">  private void startTask() {
+    mt = new MyTask();
+    mt.execute();
+  }</code></pre>
+<p>Теперь будем создавать задачу и запускать ее.</p>
+<p>Сохраняем, запускаем. Жмем <b>Start</b>. Задача начала работать.</p>
+<p><img src="images/lesson_89_2.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Status</b>, пока задача работает</p>
+<p><img src="images/lesson_89_3.png" alt="" width="640" height="454"></p>
+<p>Статус = <b>RUNNING</b>. Задача в работе.</p>
+<p>После того, как задача завершилась (End на экране), жмем <b>Status</b></p>
+<p><img src="images/lesson_89_4.png" alt="" width="640" height="454"></p>
+<p>Статус = <b>FINISHED</b>. Задача завершена успешно, метод onPostExecute был выполнен.</p>
+<p>Теперь посмотрим, какой статус будет если отменить задачу. Перепишем <b>startTask</b>:</p>
+<pre><code class="java">  private void startTask() {
+    mt = new MyTask();
+    mt.execute();
+    mt.cancel(false);
+  }</code></pre>
+<p>Недолго думая отменяем задачу сразу после запуска.</p>
+<p>Сохраняем, запускаем приложение. Жмем <b>Start</b>.</p>
+<p><img src="images/lesson_89_5.png" alt="" width="640" height="454"></p>
+<p>Задача отменилась. Жмем <b>Status</b></p>
+<p><img src="images/lesson_89_6.png" alt="" width="640" height="454"></p>
+<p>Статус почему-то <b>RUNNING</b>, как будто задача в работе. Не особо логично, конечно, но вот такая особенность реализации. Почему нельзя было ввести еще один статус CANCELED – я не знаю. Разработчикам Android виднее.</p>
+<p>Как тогда отличить, задача запущена или отменена? Можно использовать метод isCancelled. Перепишем <b>showStatus </b>например так:</p>
+<pre><code class="java">  private void showStatus() {
+    if (mt != null)
+      if (mt.isCancelled())
+        Toast.makeText(this, "CANCELLED", Toast.LENGTH_SHORT).show();
+      else
+        Toast.makeText(this, mt.getStatus().toString(), Toast.LENGTH_SHORT).show();
+  }</code></pre>
+<p>Сохраняем, запускаем приложение. Жмем <b>Start</b>, задача отменяется. Жмем <b>Status</b></p>
+<p><img src="images/lesson_89_7.png" alt="" width="640" height="454"></p>
+<p>Задача отменена, значит isCancelled вернул true, и мы вывели соответствующее сообщение.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

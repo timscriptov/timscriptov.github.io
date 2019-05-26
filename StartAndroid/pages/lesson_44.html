@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 44. События в ListView</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассматриваем события ListView: нажатие - onItemClick, выделение - onItemSelect, прокрутка - onScroll</p>
+<p>При взаимодействии со списком может возникнуть необходимость обрабатывать события – нажатие на пункт и прокрутка. Попробуем это сделать.</p>
+<p><b>Создадим</b> <b>проект</b><b>:</b></p>
+<p><b>Project name</b>: P0441_SimpleListEvents<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleListEvents<br><b>Package name</b>: ru.startandroid.develop.p0441simplelistevents<br><b>Create Activity</b>: MainActivity</p>
+<p>Нарисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ListView
+        android:id="@+id/lvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране только <b>ListView</b>.</p>
+<p>Так же, как и на прошлом уроке добавим список имен в ресурс <b>res/values/strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="hello"&gt;Hello World, MainActivity!&lt;/string&gt;
+    &lt;string name="app_name"&gt;SimpleListEvents&lt;/string&gt;
+    &lt;string-array name="names"&gt;
+        &lt;item&gt;Иван&lt;/item&gt;
+        &lt;item&gt;Марья&lt;/item&gt;
+        &lt;item&gt;Петр&lt;/item&gt;
+        &lt;item&gt;Антон&lt;/item&gt;
+        &lt;item&gt;Даша&lt;/item&gt;
+        &lt;item&gt;Борис&lt;/item&gt;
+        &lt;item&gt;Костя&lt;/item&gt;
+        &lt;item&gt;Игорь&lt;/item&gt;
+        &lt;item&gt;Анна&lt;/item&gt;
+        &lt;item&gt;Денис&lt;/item&gt;
+        &lt;item&gt;Вадим&lt;/item&gt;
+        &lt;item&gt;Ольга&lt;/item&gt;
+        &lt;item&gt;Сергей&lt;/item&gt;
+    &lt;/string-array&gt;
+&lt;/resources&gt;</code></pre>
+<p>Пишем код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0441simplelistevents;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  ListView lvMain;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    lvMain = (ListView) findViewById(R.id.lvMain);
+
+    ArrayAdapter&lt;CharSequence&gt; adapter = ArrayAdapter.createFromResource(
+        this, R.array.names, android.R.layout.simple_list_item_1);
+    lvMain.setAdapter(adapter);
+
+    lvMain.setOnItemClickListener(new OnItemClickListener() {
+      public void onItemClick(AdapterView&lt;?&gt; parent, View view,
+          int position, long id) {
+        Log.d(LOG_TAG, "itemClick: position = " + position + ", id = "
+            + id);
+      }
+    });
+
+    lvMain.setOnItemSelectedListener(new OnItemSelectedListener() {
+      public void onItemSelected(AdapterView&lt;?&gt; parent, View view,
+          int position, long id) {
+        Log.d(LOG_TAG, "itemSelect: position = " + position + ", id = "
+            + id);
+      }
+
+      public void onNothingSelected(AdapterView&lt;?&gt; parent) {
+        Log.d(LOG_TAG, "itemSelect: nothing");
+      }
+    });
+
+  }
+}</code></pre>
+<p>Смотрим код. Мы находим экранные элементы, создаем и присваиваем списку адаптер. Далее списку мы присваиваем два обработчика событий:</p>
+<p>1) <b>OnItemClickListener </b>– обрабатывает <b>нажатие </b>на пункт списка</p>
+<p>Предоставляет нам метод <a href="http://developer.android.com/reference/android/widget/AdapterView.OnItemClickListener.html#onItemClick(android.widget.AdapterView&lt;?&gt;, android.view.View, int, long)" target="_blank">onItemClick(AdapterView&lt;?&gt; parent, View view, int position, long id)</a>, где</p>
+<p><b>parent </b>– View-родитель для нажатого пункта, в нашем случае - ListView <br><b> view </b>– это нажатый пункт, в нашем случае – TextView из android.R.layout.simple_list_item_1<br><b> position </b>– порядковый номер пункта в списке<br><b> id </b>– идентификатор элемента,</p>
+<p>Мы в лог будем выводить <b>id </b>и <b>position </b>для элемента, на который нажали.</p>
+<p>2) <b>OnItemSelectedListener </b>– обрабатывает <b>выделение</b> пунктов списка (не check, как на прошлом уроке)</p>
+<p>Предоставляет нам метод <a href="http://developer.android.com/reference/android/widget/AdapterView.OnItemSelectedListener.html#onItemSelected(android.widget.AdapterView&lt;?&gt;, android.view.View, int, long)" target="_blank">onItemSelected</a> полностью аналогичен по параметрам методу <b>onItemClick </b>описанному выше. Не буду повторяться.</p>
+<p>Также есть метод <a href="http://developer.android.com/reference/android/widget/AdapterView.OnItemSelectedListener.html#onNothingSelected(android.widget.AdapterView&lt;?&gt;)" target="_blank">onNothingSelected</a> – когда список <b>теряет выделение</b> пункта и ни один пункт не выделен.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p>Ткнем какой-нибудь элемент, например - Петр. Смотрим лог:</p>
+<p><i>itemClick: position = 2, id = 2</i></p>
+<p>Все верно. Т.к. позиция считается не с единицы, а с <b>нуля </b>– Петр имеет позицию 2. (В нашем случае id равен position. Я пока не встречал случаев id != position, но наверняка они есть)</p>
+<p>Теперь покрутите колесо мышки или понажимайте клавиши вверх вниз на клавиатуре. Видно что идет <b>визуальное выделение</b> элементов списка.</p>
+<p>А в логах мы видим такие записи:</p>
+<p><i>itemSelect: position = 2, id = 2<br> itemSelect: position = 3, id = 3<br> itemSelect: position = 4, id = 4<br> itemSelect: position = 5, id = 5<br> itemSelect: position = 4, id = 4<br> itemSelect: position = 3, id = 3<br> itemSelect: position = 2, id = 2</i></p>
+<p>Т.е. обработчик фиксирует какой пункт <b>выделен</b>. Честно говоря, я не очень понимаю как можно использовать такое выделение. Но обработчик для него есть и я решил про него рассказать. Пусть будет.</p>
+<p>Снова нажмем теперь на любой пункт списка, мы видим, что выделение пропало. Логи:</p>
+<p><i>itemSelect: nothing<br> itemClick: position = 3, id = 3</i></p>
+<p>Ничего не выделено и нажат пункт с позицией 3.</p>
+<p>Давайте добавим к списку еще один обработчик:</p>
+<pre><code class="java">    lvMain.setOnScrollListener(new OnScrollListener() {
+      public void onScrollStateChanged(AbsListView view, int scrollState) {
+        // Log.d(LOG_TAG, "scrollState = " + scrollState);
+      }
+
+      public void onScroll(AbsListView view, int firstVisibleItem,
+          int visibleItemCount, int totalItemCount) {
+        Log.d(LOG_TAG, "scroll: firstVisibleItem = " + firstVisibleItem
+            + ", visibleItemCount" + visibleItemCount
+            + ", totalItemCount" + totalItemCount);
+      }
+    });</code></pre>
+<p> </p>
+<p><b>OnScrollListener</b> – обрабатывает прокрутку списка.</p>
+<p>Методы:</p>
+<p>1) <a href="http://developer.android.com/reference/android/widget/AbsListView.OnScrollListener.html#onScrollStateChanged(android.widget.AbsListView, int)" target="_blank">onScrollStateChanged(AbsListView view, int scrollState)</a> - обработка состояний прокрутки </p>
+<p><b>view </b>– это прокручиваемый элемент, т.е. ListView<br><b>scrollState </b>– состояние списка. Может принимать три значения:</p>
+<p><b>SCROLL_STATE_IDLE </b>= 0, список закончил прокрутку<br><b> SCROLL_STATE_TOUCH_SCROLL </b>= 1, список начал прокрутку<br><b> SCROLL_STATE_FLING </b>= 2, список «катнули», т.е. при прокрутке отпустили палец и прокрутка дальше идет «по инерции»</p>
+<p>Вывод в лог я пока закаментил, чтобы не мешалось. Чуть позже раскаментим.</p>
+<p>2) <a href="http://developer.android.com/reference/android/widget/AbsListView.OnScrollListener.html#onScroll(android.widget.AbsListView, int, int, int)" target="_blank">onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)</a> - обработка прокрутки </p>
+<p><b>view </b>– прокручиваемый элемент<br><b> firstVisibleItem </b>– первый видимый на экране пункт списка<br><b> visibleItemCount </b>– сколько пунктов видно на экране<br><b> totalItemCount </b>– сколько всего пунктов в списке</p>
+<p>Причем для параметров <b>firstVisibleItem </b>и <b>visibleItemCount </b>пункт считается видимым на экране даже если он виден не полностью.</p>
+<p>Все сохраним и запустим.</p>
+<p>Теперь потаскайте список туда-сюда курсором (как будто пальцем) и смотрите логи. Там слишком много всего выводится. Я не буду здесь выкладывать. Но принцип понятен – меняется первый видимый пункт (firstVisibleItem) и может на единицу меняться кол-во видимых пунктов (visibleItemCount).</p>
+<p>Теперь закоментируем вывод в лог в методе <b>onScroll </b>(чтобы не спамил нам лог) и раскаментим в <b>onScrollStateChanged</b>.</p>
+<pre><code class="java">    lvMain.setOnScrollListener(new OnScrollListener() {
+      public void onScrollStateChanged(AbsListView view, int scrollState) {
+        Log.d(LOG_TAG, "scrollState = " + scrollState);
+      }
+
+      public void onScroll(AbsListView view, int firstVisibleItem,
+          int visibleItemCount, int totalItemCount) {
+        //Log.d(LOG_TAG, "scroll: firstVisibleItem = " + firstVisibleItem
+        //    + ", visibleItemCount" + visibleItemCount
+        //    + ", totalItemCount" + totalItemCount);
+      }
+    });</code></pre>
+<p>Сохраняем, запускаем.</p>
+<p>Схватим список, немного потягаем туда сюда и отпустим. Смотрим лог:</p>
+<p><i>scrollState = 1<br> scrollState = 0</i></p>
+<p>Отработали два события – список <b>начал </b>прокрутку, список <b>закончил </b>прокрутку.</p>
+<p>Попробуем взять список, «катнуть» его и отпустить.</p>
+<p><i>scrollState = 1<br> scrollState = 2<br> scrollState = 0</i></p>
+<p>Видим три события – прокрутка <b>началась</b>, список «<b>катнули</b>», прокрутка <b>закончилась</b>.</p>
+<p>Полный код урока:</p>
+<pre><code class="java">package ru.startandroid.develop.p0441simplelistevents;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  ListView lvMain;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    lvMain = (ListView) findViewById(R.id.lvMain);
+
+    ArrayAdapter&lt;CharSequence&gt; adapter = ArrayAdapter.createFromResource(
+        this, R.array.names, android.R.layout.simple_list_item_1);
+    lvMain.setAdapter(adapter);
+
+    lvMain.setOnItemClickListener(new OnItemClickListener() {
+      public void onItemClick(AdapterView&lt;?&gt; parent, View view,
+          int position, long id) {
+        Log.d(LOG_TAG, "itemClick: position = " + position + ", id = "
+            + id);
+      }
+    });
+
+    lvMain.setOnItemSelectedListener(new OnItemSelectedListener() {
+      public void onItemSelected(AdapterView&lt;?&gt; parent, View view,
+          int position, long id) {
+        Log.d(LOG_TAG, "itemSelect: position = " + position + ", id = "
+            + id);
+      }
+
+      public void onNothingSelected(AdapterView&lt;?&gt; parent) {
+        Log.d(LOG_TAG, "itemSelect: nothing");
+      }
+    });
+
+    lvMain.setOnScrollListener(new OnScrollListener() {
+      public void onScrollStateChanged(AbsListView view, int scrollState) {
+        Log.d(LOG_TAG, "scrollState = " + scrollState);
+      }
+
+      public void onScroll(AbsListView view, int firstVisibleItem,
+          int visibleItemCount, int totalItemCount) {
+        Log.d(LOG_TAG, "scroll: firstVisibleItem = " + firstVisibleItem
+            + ", visibleItemCount" + visibleItemCount
+            + ", totalItemCount" + totalItemCount);
+      }
+    });
+
+  }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

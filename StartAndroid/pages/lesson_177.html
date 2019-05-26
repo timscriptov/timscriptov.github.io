@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 177. ConstraintLayout. Основы</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>Android Studio по умолчанию предлагает нам использовать ConstraintLayout при создании разметки экрана. Давайте разберемся, что это за штука и как с ней работать.</p>
+<p>Немного теории</p>
+<p>Начнем с самых азов. Чтобы вы могли размещать на экране различные компоненты (кнопки, поля ввода, чекбоксы и т.п.), необходимо использовать специальный контейнер. Именно в него вы будете помещать компоненты. В Android компоненты называются View, а контейнер - ViewGroup.</p>
+<p>Существуют несколько типов ViewGroup: LinearLayout, RelativeLayout, FrameLayout, TableLayout, ConstraintLayout и т.д.</p>
+<p>Они различаются тем, как они будут упорядочивать компоненты внутри себя. LinearLayout, например, выстроит их по горизонтальной или вертикальной линии. А TableLayout - в виде таблицы. Более подробно об этом вы можете прочитать в <a href="/ru/uroki/vse-uroki-spiskom/15-urok-6-vidy-layouts-kljuchevye-otlichija-i-svojstva.html" hreflang="ru">Уроке 6</a>.</p>
+<p>В этом уроке мы будет разбираться, как будут вести себя компоненты в контейнере ConstraintLayout.</p>
+<p>Вообще, слово Constraint переводится как ограничение, принуждение. Но как по мне, так это не совсем точно отражает смысл. Самое подходящее слово, которое я могу тут подобрать - это привязка. Его и буду использовать.</p>
+<h2>Практика</h2>
+<p>Чтобы вам самим попрактиковаться, рекомендую создать модуль для этого урока. О том, как создать модуль, мы уже говорили в <a href="/ru/uroki/vse-uroki-spiskom/12-urok-3-sozdanie-avd-pervoe-prilozhenie-struktura-android-proekta.html" hreflang="ru">Уроке 3</a>.</p>
+<p>В меню студии: <b>File</b> &gt; <b>New</b> &gt; <b>New module</b></p>
+<p><img src="images/lesson177/lesson1.png" alt="" width="640" height="385"/></p>
+<p><b>Application/Library name</b>: ConstraintLayoutIntro<br/><b>Module name</b>: p0180constraintlayoutintro<br/><b>Package name</b>: ru.startandroid.p0180constraintlayoutintro</p>
+<p>Итак, у нас в Android Studio есть модуль. А в нем есть файл res &gt; layout &gt; activity_main.xml.</p>
+<p><img src="images/lesson177/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Откроем этот файл двойным кликом. Он выглядит так</p>
+<p><img src="images/lesson177/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Убедитесь, что слева-внизу открытка вкладка Design, и режим просмотра выбран Design, а не Blueprint.</p>
+<p>Сейчас на экране вы видите текст Hello World. Этот текст отображен с помощью View, которое называется TextView.</p>
+<p>Вы можете видеть его в Component Tree (слева-снизу).</p>
+<p><img src="data:image/webp;base64,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" data-pagespeed-url-hash="2408423112" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Обратите внимание, что TextView как бы вложен в ConstraintLayout. Это то, о чем я говорил в начале. ConstraintLayout - контейнер, а внутри него находятся различные View, в нашем случае - TextView. Также, можно сказать, что ConstraintLayout является родителем или родительским ViewGroup для TextView.</p>
+<p>Давайте удалим TextView с экрана. Для этого просто выделите его на экране или в Component Tree и нажмите кнопку Del на клавиатуре.</p>
+<p>Теперь ConstraintLayout пуст и экран ничего не отображает.</p>
+<p><img src="images/lesson177/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Если вы вдруг что-то удалили по ошибке, вы всегда можете восстановить это, нажав Ctrl+Z.</p>
+<p>А если вы там совсем чего-то наворотили и не получается все это отменить, то откройте вкладку Text (слева-снизу) и вставьте туда этот код:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+
+    &lt;TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" /&gt;
+
+&lt;/android.support.constraint.ConstraintLayout&gt;</code></pre>
+<p>Ваш экран вернется к первоначальному состоянию.</p>
+<h2>Зачем нужны привязки</h2>
+<p>Давайте добавим на экран какой-нибудь компонент, например, снова TextView. Для этого просто перетащите компонент мышкой из Palette на экран.</p>
+<p><img src="images/lesson177/lesson5.gif" alt="" width="640" height="385"/></p>
+<p>После этого TextView появился на экране и в Component Tree.</p>
+<p>Запустим приложение и посмотрим, как этот текст будет выглядеть.</p>
+<p><img src="images/lesson177/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Видим, что TextView уехал влево и вверх. Что-то явно пошло не так.</p>
+<p>Если вы откроете текстовое представление вашего экрана (вкладка Text слева-снизу), то увидите, что элемент TextView подчеркнут красной линией.</p>
+<p><img src="images/lesson177/lesson7.png" alt="" width="640" height="385"/></p>
+<p>Если навести на него мышкой, то он покажет ошибку:<br/><em>This view is not constrained, it only has designtime positions, so it will jump to (0,0) unless you add constraints.</em></p>
+<p>Этим сообщением студия говорит нам, что View не привязано. Его текущее положение на экране актуально только для разработки (т.е. только в студии). А при работе приложения, это положение будет проигнорировано, и View уедет в точку (0,0), т.е. влево-вверх (что мы и наблюдали при запуске).</p>
+<p>Как сделать так, чтобы View в ConstraintLayout оставалось на месте и не смещалось в угол? Необходимо добавить привязки (constraints). Они будут задавать положение View на экране относительно каких-либо других элементов или относительно родительского View.</p>
+<h2>Как добавить привязки</h2>
+<p>Давайте добавим привязки для нашего TextView.</p>
+<p>Если вы выделите на экране TextView, то можете видеть 4 круга по его бокам.<br/><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="190127508" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Эти круги используются, чтобы создавать привязки.</p>
+<p>Существует два типа привязок: одни задают положение View по горизонтали, а другие - по вертикали.</p>
+<p>Создадим горизонтальную привязку. Привяжем положение TextView к левому краю его родителя. Напомню, что родителем TextView является ConstraintLayout, который в нашем случае занимает весь экран. Поэтому края ConstraintLayout совпадают с краями экрана.</p>
+<p>Чтобы создать привязку, нажмите мышкой на TextView, чтобы выделить его. Затем зажмите левой кнопкой мыши левый кружок и тащите его к левой границе.</p>
+<p><img src="images/lesson177/lesson8.gif" alt="" width="640" height="385"/></p>
+<p>TextView также уехал влево. Он привязался к левой границе своего родителя.</p>
+<p>Но вовсе необязательно они должны быть вплотную. Мы можем задать отступ. Для этого просто зажмите левой кнопкой мыши TextView, перетащите вправо и отпустите.</p>
+<p><img src="images/lesson177/lesson9.gif" alt="" width="640" height="385"/></p>
+<p>Обратите внимание на число, которое меняется. Это величина отступа TextView от объекта, к которому он привязан (в нашем случае - от левой границы родителя).</p>
+<p>Запустим приложение</p>
+<p><img src="images/lesson177/lesson10.png" alt="" width="640" height="385"/></p>
+<p>Раньше у нас TextView уезжал влево-вверх, а теперь он уехал только вверх. Влево он не уехал, т.к. мы создали для него горизонтальную привязку. И TextView теперь знает, что по горизонтали он должен располагаться с определенным отступом от левого края.</p>
+<p>Давайте создадим вертикальную привязку, чтобы закрепить TextView и по вертикали.</p>
+<p><img src="images/lesson177/lesson11.gif" alt="" width="640" height="385"/></p>
+<p>Используем верхний кружок и тащим его к верхней границе. TextView привязывается по вертикали к верхней границе родителя. После этого можно перетащить TextView куда вам нужно, чтобы настроить горизонтальный и вертикальный отступы. При перетаскивании вы видите значения отступов.</p>
+<p>Теперь TextView привязан и по горизонтали, и по вертикали. Т.е. он точно знает, где он должен находиться на экране во время работы приложения.</p>
+<p>Запускаем, чтобы проверить<br/><img src="images/lesson177/lesson12.png" alt="" width="640" height="385"/></p>
+<p>TextView никуда не уехал, а находится там, где мы и настроили с помощью привязок.</p>
+<p><br/>Давайте добавим еще одно View, например, кнопку - Button.</p>
+<p><img src="images/lesson177/lesson13.gif" alt="" width="640" height="385"/></p>
+<p>Если сейчас запустить приложение, то кнопка уедет влево-вверх потому что она ни к чему не привязана.</p>
+<p><img src="images/lesson177/lesson14.png" alt="" width="640" height="385"/></p>
+<p>Мы можем привязывать не только к границам родителя, но и к другим View. Давайте привяжем кнопку к TextView.</p>
+<p><img src="images/lesson177/lesson15.gif" alt="" width="640" height="385"/></p>
+<p>Мы привязали кнопку к TextView, создав две привязки</p>
+<p><img src="images/lesson177/lesson16.png" alt="" width="640" height="385"/></p>
+<p>1) Вертикальная привязка. Верхняя граница кнопки привязана к нижней границе TextView. Отступ = 82. <br/>Т.е. можно сказать, что по вертикальной оси:<br/>верхняя граница кнопки = нижняя граница TextView + 82</p>
+<p>2) Горизонтальная привязка. Левая граница кнопки привязана к правой границе TextView. Отступ 103.<br/>По горизонтальной оси:<br/>левая граница кнопки = правая граница TextView + 103</p>
+<p><br/>Т.к. кнопка привязана к TextView, то, если мы сейчас будем перемещать TextView, то кнопка будет также перемещаться.</p>
+<p><img src="images/lesson177/lesson17.gif" alt="" width="640" height="385"/></p>
+<p>Добавим еще View. Например, CheckBox.</p>
+<p><img src="images/lesson177/lesson18.gif" alt="" width="640" height="385"/></p>
+<p>Давайте сделаем так, чтобы он по горизонтали находился на том же уровне, что и TextView. Для этого нам надо левую границу CheckBox привязать к левой границе TextView и сделать нулевой отступ. А по вертикали привяжем к нижней границе родителя.</p>
+<p><img src="images/lesson177/lesson19.gif" alt="" width="640" height="385"/></p>
+<p> Теперь чекбокс и TextView выравнены по левому краю.</p>
+<h2>Как удалить привязку</h2>
+<p>Чтобы удалить привязку, надо просто нажать на соответствующий кружок. Удалим привязки у кнопки.</p>
+<p><img src="images/lesson177/lesson20.gif" alt="" width="640" height="385"/></p>
+<p>Чтобы удалить сразу все привязки, есть специальная кнопка</p>
+<p><img src="images/lesson177/lesson21.gif" alt="" width="640" height="385"/></p>
+<h2>Привязка с двух сторон</h2>
+<p>Мы рассмотрели примеры, когда View было привязано по каждой оси только с одной стороны. Т.е. только слева или справа по горизонтали, и сверху или снизу по вертикали. Но мы можем привязать View с обоих сторон по каждой оси.</p>
+<p>Пока рассмотрим только горизонтальную привязку. Но, разумеется, все это будет работать и для вертикальной привязки.</p>
+<p>Давайте попробуем, например, левый край привязать к левой границе родителя, а правый край - к правой границе родителя.</p>
+<p>Очистим экран от всех View и добавим новый TextView без каких-либо привязок.  Теперь привяжем его к левой и правой границам родителя.</p>
+<p><img src="images/lesson177/lesson22.gif" alt="" width="640" height="385"/></p>
+<p>TextView сначала ушел влево, т.к. была привязка к левой границе, но после создания привязки к правой границе он выровнялся и теперь расположен по центру. Т.е. привязки уравняли друг друга, и View находится ровно посередине между тем, к чему он привязан слева, и тем, к чему он привязан справа. Т.е. в нашем случае View находится посередине между левой и правой границами его родителя.</p>
+<p>Обратите внимание, что такие двусторонние привязки отображаются как пружинки, а не линии.</p>
+<p><br/>Давайте немного усложним пример, добавив кнопку и перенастроив привязки</p>
+<p><img src="images/lesson177/lesson23.png" alt="" width="640" height="385"/></p>
+<p>Кнопка привязана к правому краю. А TextView привязан к левому краю и к кнопке.</p>
+<p>Если мы теперь будем перемещать кнопку, то TextView будет оставаться ровно посередине между левым краем и кнопкой.</p>
+<p><img src="images/lesson177/lesson24.gif" alt="" width="640" height="385"/></p>
+<p>Мы можем настроить двустороннюю привязку так, чтобы View располагалось не посередине, а ближе к левому краю или к кнопке. Для этого удобно использовать специальный скролл в Properties.</p>
+<p><img src="images/lesson177/lesson25.gif" alt="" width="640" height="385"/></p>
+<p>Этим скроллом вы задаете пропорцию. По умолчанию значение = 50. Это половина от 100. Соответственно, View находится на половине расстояния между объектами, к которому оно привязано. В нашем случае, при значении = 50, TextView находится посередине между левым краем и кнопкой.</p>
+<p>Если поставить значение, например, 25, то TextView будет находится от левого края на расстоянии равном четверти расстояния между левым краем и кнопкой. Если поставить 75, то TextView будет находится от левого края на расстоянии равном 3/4 от расстояния между левым краем и кнопкой.</p>
+<p>И как бы не менялось расстояние между левым краем и кнопкой, эти пропорции всегда будут соблюдаться.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

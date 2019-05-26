@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 50. SimpleAdapter. Используем ViewBinder</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем свой SimpleAdapter.ViewBinder</p>
+<p>Адаптер <b>SimpleAdapter </b>при своей работе сопоставляет <b>View</b>-компоненты и значения из <b>Map</b>-объектов. Как он это делает по умолчанию и с каким View-компонентами умеет работать, мы рассмотрели в предыдущих уроках. Но если нам не хватает этих возможностей, мы всегда можем <b>создать свой обработчик</b> и присвоить его адаптеру.</p>
+<p>Для этого используется метод <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.html#setViewBinder(android.widget.SimpleAdapter.ViewBinder)" target="_blank">setViewBinder (SimpleAdapter.ViewBinder viewBinder)</a>, который на вход требует объект <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.ViewBinder.html" target="_blank">SimpleAdapter.ViewBinder</a>. Мы создаем свой вариант этого биндера и реализуем в нем метод <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.ViewBinder.html#setViewValue(android.view.View, java.lang.Object, java.lang.String)" target="_blank">setViewValue(View view, Object data, String textRepresentation)</a>, в котором прописываем всю логику сопоставления данных и компонентов (биндинга). Метод возвращает значение boolean.</p>
+<p>Алгоритм работы адаптера таков: он сначала проверяет, давали ли ему сторонний биндер.</p>
+<p>Если находит, то выполняет его метод <b>setViewValue</b>. Если метод возвращает <b>true</b>, то адаптер считает, что обработка успешно <b>завершена</b>, если же <b>false </b>– то он выполняет биндинг в своем <b>стандартном</b> алгоритме, который мы рассмотрели на предыдущих уроках.</p>
+<p>Если адаптер <b>не находит</b> сторонний биндер, он также выполняет <b>стандартный </b>биндинг.</p>
+<p>Т.е. наша задача – заполнить метод <b>SimpleAdapter.ViewBinder.setViewValue</b>. И здесь уже нет ограничений на TextView или ImageView,  может быть обработан и заполнен любой компонент. Создадим пример, в котором будем заполнять значение ProgressBar и менять цвет LinearLayout.</p>
+<p>Это будет приложение-мониторинг, которое отображает уровень загрузки мощностей какой-то системы в разрезе дней. ProgressBar будет показывать уровень загрузки, а весь пункт списка будет подкрашиваться цветом в зависимости от уровня загрузки.</p>
+<p>Создадим проект:</p>
+<p><b>Project</b> <b>name</b>: P0501_SimpleAdapterCustom2<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleAdapterCustom2<br><b>Package name</b>: ru.startandroid.develop.p0501simpleadaptercustom2<br><b>Create Activity</b>: MainActivity</p>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ListView
+        android:id="@+id/lvSimple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt; </code></pre>
+<p>Только список.</p>
+<p>Нам понадобится создать файл res/values/<b>colors.xml</b>, где мы перечислим требуемые нам цвета:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;color name="Bckgr"&gt;#9C9C9C&lt;/color&gt;
+    &lt;color name="Red"&gt;#33FF0000&lt;/color&gt;
+    &lt;color name="Orange"&gt;#33FFFF00&lt;/color&gt;
+    &lt;color name="Green"&gt;#3300FF00&lt;/color&gt;
+    &lt;color name="Black"&gt;#000000&lt;/color&gt;
+&lt;/resources&gt;</code></pre>
+<p>Теперь создаем layout для пунктов списка res/layout/<b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/Bckgr"&gt;
+    &lt;LinearLayout
+        android:id="@+id/llLoad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"&gt;
+        &lt;TextView
+            android:id="@+id/tvLoad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:layout_gravity="center_horizontal"
+            android:textColor="@color/Black"&gt;
+        &lt;/TextView&gt;
+        &lt;ProgressBar
+            android:id="@+id/pbLoad"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:max="100"&gt;
+        &lt;/ProgressBar&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>llLoad – LinearLayout который занимает весь пункт списка, и который мы будем разукрашивать, <br> tvLoad – текст-инфа, <br> pbLoad – индикатор загрузки.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0501simpleadaptercustom2;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.SimpleAdapter;
+
+public class MainActivity extends Activity {
+
+  // имена атрибутов для Map
+  final String ATTRIBUTE_NAME_TEXT = "text";
+  final String ATTRIBUTE_NAME_PB = "pb";
+  final String ATTRIBUTE_NAME_LL = "ll";
+
+  ListView lvSimple;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // массив данных
+    int load[] = { 41, 48, 22, 35, 30, 67, 51, 88 };
+
+    // упаковываем данные в понятную для адаптера структуру
+    ArrayList&lt;Map&lt;String, Object&gt;&gt; data = new ArrayList&lt;Map&lt;String, Object&gt;&gt;(
+        load.length);
+    Map&lt;String, Object&gt; m;
+    for (int i = 0; i &lt; load.length; i++) {
+      m = new HashMap&lt;String, Object&gt;();
+      m.put(ATTRIBUTE_NAME_TEXT, "Day " + (i+1) + ". Load: " + load[i] + "%");
+      m.put(ATTRIBUTE_NAME_PB, load[i]);
+      m.put(ATTRIBUTE_NAME_LL, load[i]);
+      data.add(m);
+    }
+
+    // массив имен атрибутов, из которых будут читаться данные
+    String[] from = { ATTRIBUTE_NAME_TEXT, ATTRIBUTE_NAME_PB,
+        ATTRIBUTE_NAME_LL };
+    // массив ID View-компонентов, в которые будут вставлять данные
+    int[] to = { R.id.tvLoad, R.id.pbLoad, R.id.llLoad };
+
+    // создаем адаптер
+    SimpleAdapter sAdapter = new SimpleAdapter(this, data, R.layout.item,
+        from, to);
+    // Указываем адаптеру свой биндер
+    sAdapter.setViewBinder(new MyViewBinder());
+
+    // определяем список и присваиваем ему адаптер
+    lvSimple = (ListView) findViewById(R.id.lvSimple);
+    lvSimple.setAdapter(sAdapter);
+  }
+
+  class MyViewBinder implements SimpleAdapter.ViewBinder {
+    
+    int red = getResources().getColor(R.color.Red);
+    int orange = getResources().getColor(R.color.Orange);
+    int green = getResources().getColor(R.color.Green);
+    
+    @Override
+    public boolean setViewValue(View view, Object data,
+        String textRepresentation) {
+      int i = 0;
+      switch (view.getId()) {
+      // LinearLayout
+      case R.id.llLoad:
+        i = ((Integer) data).intValue();
+        if (i &lt; 40) view.setBackgroundColor(green); else 
+          if (i &lt; 70) view.setBackgroundColor(orange); else
+        view.setBackgroundColor(red);
+        return true;
+      // ProgressBar  
+      case R.id.pbLoad:
+        i = ((Integer) data).intValue();
+        ((ProgressBar)view).setProgress(i);
+        return true;
+      }
+      return false;
+    }
+  }
+}</code></pre>
+<p>Смотрим код. Заполняем массив данных загрузки по 100-бальной шкале. Формируем данные для адаптера: в <b>TextView </b>будем передавать краткую информацию (<b>String</b>), а в <b>ProgressBar</b> и <b>LinearLayout </b>– значение загрузки (<b>int</b>). Заполняем массивы сопоставления, создаем адаптер, говорим ему, чтобы использовал наш биндер, и настраиваем список.</p>
+<p>Вложенный класс <b>MyViewBinder </b>– это наша реализация биндера. Мы должны реализовать метод <b>setViewValue</b>, который будет использоваться адаптером для сопоставления данных из Map и View-компонентов. На вход ему идут:</p>
+<p><b>view </b>- View-компонент <br><b> data </b>- данные для него <br><b> textRepresentation </b>- текстовое представление данных (data.toString() или пустой String, но никогда не null)</p>
+<p>Итак, смотрим реализацию. Сначала проверяется какой компонент нам дали на обработку.</p>
+<p>В случае <b>llLoad </b>мы ожидаем данные типа int, поэтому выполняем приведение Object к Integer и получаем данные по загрузке из массива. А далее смотрим уровень этой загрузки. Если меньше 40, то будем считать, что все ок, цвет фона зеленый. От 40 до 70 – внимание, цвет желтый. Выше 70 – высокая нагрузка, красный цвет. Возвращаем <b>true</b>. Это важно! Тем самым мы говорим адаптеру, что мы успешно <b>выполнили </b>биндинг для данного компонента и выполнять для него стандартную обработку не надо.</p>
+<p>В случае <b>pbLoad </b>мы также ожидаем int и выполняем приведение. А затем просто вызываем метод setProgress и передаем ему значение. В конце возвращаем true – мы сами успешно обработали компонент, стандартная обработка не нужна.</p>
+<p>Для всех других View-компонентов метод <b>setViewValue </b>будет возвращать <b>false</b>. Это значит, компоненты пойдут на <b>стандартную</b> обработку адаптером. В нашем случае по этому пути отправится <b>tvLoad </b>и адаптер сам передаст ему текст из Map, наше вмешательство не нужно.</p>
+<p>Все сохраняем и запускаем.</p>
+<p><img src="images/lesson_49_0.png" alt="" width="640"></p>
+<p>Получаем вот такую картинку. LinearLayout заполнился цветом, ProgressBar отобразил уровень загрузки, TextView показал информацию о дне и загрузке.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

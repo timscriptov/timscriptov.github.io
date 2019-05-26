@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 142. Рисование. Простые фигуры, текст</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- рисуем фигуры<br/>- выводим текст</p>
+
+<p>На прошлом уроке разобрались, как достучаться до канвы. Теперь попробуем поработать с ней, рассмотрим методы рисования точки, линии, круга, дуги, овала, прямоугольника и текста.</p>
+<p>Для рисования используются методы <b>draw</b>*. Если посмотреть их в <a href="http://developer.android.com/reference/android/graphics/Canvas.html" target="_blank">документацие</a> можно обратить внимание, что одним из их параметров является объект <a href="http://developer.android.com/reference/android/graphics/Paint.html" target="_blank">Paint</a>. В этом объекте задаются графические характеристики рисования. Т.е. можно считать, что это кисть, которой будут рисоваться ваши фигуры. Через него вы сообщаете канве цвет и толщину линии для рисования.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1421_DrawingFigure<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: DrawingFigure<br/> <b>Package name</b>: ru.startandroid.develop.p1421drawingfigure<br/> <b>Create Activity</b>: MainActivity</p>
+<p>Пишем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1421drawingfigure;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+    
+    Paint p;
+    Rect rect;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      rect = new Rect();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      // заливка канвы цветом
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // настройка кисти
+      // красный цвет
+      p.setColor(Color.RED);
+      // толщина линии = 10
+      p.setStrokeWidth(10);
+      
+      // рисуем точку (50,50)
+      canvas.drawPoint(50, 50, p);
+      
+      // рисуем линию от (100,100) до (500,50)
+      canvas.drawLine(100,100,500,50,p);
+      
+      // рисуем круг с центром в (100,200), радиус = 50
+      canvas.drawCircle(100, 200, 50, p);
+      
+      // рисуем прямоугольник 
+      // левая верхняя точка (200,150), нижняя правая (400,200)
+      canvas.drawRect(200, 150, 400, 200, p);
+      
+      // настройка объекта Rect
+      // левая верхняя точка (250,300), нижняя правая (350,500)
+      rect.set(250, 300, 350, 500);
+      // рисуем прямоугольник из объекта rect
+      canvas.drawRect(rect, p);
+    }
+    
+  }
+  
+}</code></pre>
+<p>Смотрим класс <b>DrawView</b>. В <b>конструкторе</b> создаем объект Paint, которым будем рисовать фигуры, и объект <a href="http://developer.android.com/reference/android/graphics/Rect.html" target="_blank">Rect</a>, который нам понадобится для рисования прямоугольника. Тут сразу обращу внимание, что создавать объекты крайне желательно за пределами метода onDraw, т.к. при частой прорисовке у вас постоянно будут создаваться новые объекты, а это является лишней нагрузкой на сборщик мусора и может замедлить работу приложения. Поэтому создаем мы объекты всего один раз, в конструкторе.</p>
+<p>В методе <b>onDraw</b> мы сначала закрашиваем всю канву цветом. Есть различные реализации метода закраски:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawRGB(int, int, int)" target="_blank">drawRGB</a> – на вход требует три компонента RGB (red, green, blue: смешением этих трех цветов можно получать другие цвета и их оттенки).</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawARGB(int, int, int, int)" target="_blank">drawARGB</a> – аналогичен drawRGB, но добавляет использование прозрачности (alpha). alpha + RGB = ARGB.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawColor(int)" target="_blank">drawColor</a> – на вход требует ARGB-значение в десятичной системе. Для удобства в классе <a href="http://developer.android.com/reference/android/graphics/Color.html" target="_blank">Color</a> есть несколько констант-цветов. Одну из них (<a href="http://developer.android.com/reference/android/graphics/Color.html#GREEN" target="_blank">Color.GREEN</a>) мы использовали с этим методом на прошлом уроке.</p>
+<p>Если хотите посмотреть, как выглядят различные RGB комбинации, просто напишите в Интернете фразу: «таблица цветов».</p>
+<p>Мы в нашем приложении используем метод drawARGB и передаем ему значения: прозрачность (80), уровень красного (102), уровень зеленого (204), уровень синего (255). В итоге получаем канву, закрашенную вполне себе приятным для глаз цветом.</p>
+<p>Далее настраиваем нашу кисть, она же Paint. Напомню, что эти настройки будут применены к рисованию фигур.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#setColor(int)" target="_blank">setColor</a> позволяет указать цвет (аналогично методу drawColor у канвы). Кроме этого, у Paint есть метод для указания ARGB – <a href="http://developer.android.com/reference/android/graphics/Paint.html#setARGB(int, int, int, int)" target="_blank">setARGB</a>.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#setStrokeWidth(float)" target="_blank">setStrokeWidth</a> позволяет указать толщину линий при рисовании. Мы укажем 10.</p>
+<p>Начинаем рисовать объекты.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPoint(float, float, android.graphics.Paint)" target="_blank">drawPoint</a> – нарисует точку с координатами (50,50)</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawLine(float, float, float, float, android.graphics.Paint)" target="_blank">drawLine</a> – нарисует линию из точки (100,100) в точку (500,50)</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawCircle(float, float, float, android.graphics.Paint)" target="_blank">drawCircle</a> – нарисует круг в точке (100,200) с радиусом 50</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawRect(float, float, float, float, android.graphics.Paint)" target="_blank">drawRect</a> – нарисует прямоугольник с левым верхним углом в точке (200,150) и нижним правым углом в точке (400,200)</p>
+<p>Далее идет другая реализация метода <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawRect(android.graphics.Rect, android.graphics.Paint)" target="_blank">drawRect</a>. Он принимает на вход объект <a href="http://developer.android.com/reference/android/graphics/Rect.html" target="_blank">Rect</a>, в котором ранее были указаны координаты прямоугольника методом <a href="http://developer.android.com/reference/android/graphics/Rect.html#set(int, int, int, int)" target="_blank">set</a>. В итоге метод нарисует нам прямоугольник с верхним левым углом в точке (250,300) и нижним правым в точке (350,500).</p>
+<p>Также есть реализация <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawRect(android.graphics.RectF, android.graphics.Paint)" target="_blank">drawRect</a>, которая на вход требует объект <a href="http://developer.android.com/reference/android/graphics/RectF.html" target="_blank">RectF</a> – это аналог Rect, но значения используются не int, а float.</p>
+<p>И, как вы наверно заметили, все эти draw* методы требуют на вход объект Paint. Это логично, т.к. канва должна знать толщину и цвет линий, которыми мы собрались рисовать.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p>Видим такую картину:</p>
+<p><img src="images/lesson142/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Нулевая точка координат расположена в левом верхнем углу экрана и от нее идет отсчет вправо по оси X и вниз по оси Y. Видим нарисованные нами точку, линию, круг и два прямоугольника.</p>
+<p>С этим все понятно. Давайте посмотрим другие методы рисования и будем менять некоторые используемые объекты в процессе.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    RectF rectf;
+    float[] points;
+    float[] points1;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      rectf = new RectF(700,100,800,150);
+      points = new float[]{100,50,150,100,150,200,50,200,50,100};
+      points1 = new float[]{300,200,600,200,300,300,600,300,400,100,400,400,500,100,500,400};
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      p.setColor(Color.RED);
+      p.setStrokeWidth(10);
+      
+      // рисуем точки их массива points 
+      canvas.drawPoints(points,p);
+      
+      // рисуем линии по точкам из массива points1
+      canvas.drawLines(points1,p);
+      
+      // перенастраиваем кисть на зеленый цвет 
+      p.setColor(Color.GREEN);
+      
+      // рисуем закругленный прямоугольник по координатам из rectf
+      // радиусы закругления = 20
+      canvas.drawRoundRect(rectf, 20, 20, p);
+      
+      // смещаем коорднаты rectf на 150 вниз 
+      rectf.offset(0, 150);
+      // рисуем овал внутри прямоугольника rectf
+      canvas.drawOval(rectf, p);
+      
+      // смещаем rectf в (900,100) (левая верхняя точка) 
+      rectf.offsetTo(900, 100);
+      // увеличиваем rectf по вертикали на 25 вниз и вверх 
+      rectf.inset(0, -25);
+      // рисуем дугу внутри прямоугольника rectf
+      // с началом в 90, и длиной 270
+      // соединение крайних точек через центр
+      canvas.drawArc(rectf, 90, 270, true, p);
+      
+      // смещаем коорднаты rectf на 150 вниз
+      rectf.offset(0, 150);
+      // рисуем дугу внутри прямоугольника rectf
+      // с началом в 90, и длиной 270
+      // соединение крайних точек напрямую
+      canvas.drawArc(rectf, 90, 270, false, p);
+
+      // перенастраиваем кисть на толщину линии = 3
+      p.setStrokeWidth(3);
+      // рисуем линию (150,450) - (150,600)
+      canvas.drawLine(150, 450, 150, 600, p);
+
+      // перенастраиваем кисть на синий цвет       
+      p.setColor(Color.BLUE);
+      
+      // настраиваем размер текста = 30
+      p.setTextSize(30);
+      // рисуем текст в точке (150,500)
+      canvas.drawText("text left", 150, 500, p);
+      
+      // настраиваем выравнивание текста на центр
+      p.setTextAlign(Paint.Align.CENTER);
+      // рисуем текст в точке (150,525)      
+      canvas.drawText("text center", 150, 525, p);
+      
+      // настраиваем выравнивание текста на левое
+      p.setTextAlign(Paint.Align.RIGHT);
+      // рисуем текст в точке (150,550)
+      canvas.drawText("text right", 150, 550, p);      
+    }    
+  }</code></pre>
+<p>Предлагаю вам сразу запустить приложение и посмотреть результат, так мои пояснения будут проще восприниматься.</p>
+<p><img src="images/lesson142/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Смотрим метод <b>onDraw</b>. Первые три строки не менялись, повторяться не буду.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPoints(float[], android.graphics.Paint)" target="_blank">drawPoints</a> – рисует множество точек. Их координаты заданы в виде float массива следующим образом {x1,y1,x2,y2, …}. Соответственно, будут нарисованы точки (x1,y1), (x2,y2), … В нашем примере мы используем массив points.</p>
+<p>Есть также следующая реализация этого метода:<a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPoints(float[], int, int, android.graphics.Paint)" target="_blank"> drawPoints (float[] pts, int offset, int count, Paint paint)</a>. Она позволяет указать с какого (offset) по порядку значения в массиве начинать формировать точки и сколько (count) значений брать. Тут не запутайтесь, идет выборка именно значений массива, а не получившихся точек.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawLines(float[], android.graphics.Paint)" target="_blank">drawLines</a> – рисует множество линий. Их координаты заданы в виде float массива следующим образом {x1,y1,x2,y2,x3,y3,x4,y4, …}. Соответственно будут нарисованы линии (x1,y1)-(x2,y2), (x3,y3)-(x4,y4), … В нашем примере используем массив points1.</p>
+<p>Аналогично точкам, у этого метода также есть реализация с отступом и количеством: <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawLines(float[], int, int, android.graphics.Paint)" target="_parent">drawLines (float[] pts, int offset, int count, Paint paint)</a>, где offset – это отступ, указывающий с какого значения массива брать значения для формирования точек, а count – количество значений, которое необходимо взять.</p>
+<p>Методом <b>setColor</b> сменим для разнообразия цвет кисти на зеленый. Тут важно понимать, что все ранее нарисованные объекты останутся красными. А вот последующие будут нарисованы уже зеленым цветом.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawRoundRect(android.graphics.RectF, float, float, android.graphics.Paint)" target="_blank">drawRoundRect</a> рисует обычный прямоугольник, но со скругленными углами. В объекте rectf мы передаем данные по расположению прямоугольника. Далее два числовых параметра позволяют нам задать радиус скругления по оси X и Y. Тут не смогу объяснить словами про эти радиусы, просто позадавайте различные значения и посмотрите на результат. Чем выше значения, тем более закруглены углы.</p>
+<p>Далее методом <a href="http://developer.android.com/reference/android/graphics/RectF.html#offset(float, float)" target="_blank">offset</a> выполняем смещение в объекте rectf. На вход передаем смещение по оси X (0) и по оси Y (150). Т.е. был RectF со значениями (700,100,800,150), а стал (700 <b>+ 0</b>, 100 <b>+ 150</b>, 800 <b>+ 0</b>, 150 <b>+ 150</b>). Т.е. просто опускаем прямоугольник вниз на 150.</p>
+<p>Эта процедура никак не влияет на фигуры, которые уже были нарисованы с использованием этого RectF объекта. Они где были, там и остаются.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawOval(android.graphics.RectF, android.graphics.Paint)" target="_blank">drawOval</a> рисует овал, который занимает все пространство в переданном ему прямоугольнике (rectf).</p>
+<p>Далее снова меняем координаты объекта rectf, только на этот раз методом <a href="http://developer.android.com/reference/android/graphics/RectF.html#offsetTo(float, float)" target="_blank">offsetTo</a>. Он не добавляет координаты к имеющимся, а устанавливает новую верхнюю левую точку прямоугольника. И прямоугольник смещается к ней, сохраняя при этом свои размеры.</p>
+<p>Далее меняем размер прямоугольника rectf методом <a href="http://developer.android.com/reference/android/graphics/RectF.html#inset(float, float)" target="_blank">inset</a>. На вход метод принимает две дельты, на которые он уменьшит прямоугольник по горизонтали (0) и вертикали (-25). Уменьшит на -25 означает, увеличение на 25.</p>
+<p>Причем, изменения размера происходят с обоих сторон. Т.е. если меняем размер горизонтально (первый параметр метода): левая и правая сторона приближаются к центру на указанное значение дельты, если дельта положительная и отдаляются от центра, если дельта отрицательная. По вертикали (второй параметр метода) – аналогично относительно центра ведут себя верхняя и нижняя стороны.</p>
+<p>Выполнив rectf.inset(0, -25) я увеличиваю размер прямоугольника rectf по вертикали на 25 и вверх и вниз. Итого, размер по вертикали увеличивается на 50. Горизонтальный не меняется.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawArc(android.graphics.RectF, float, float, boolean, android.graphics.Paint)" target="_blank">drawArc</a> – рисует дугу (или можно еще сказать - часть круга), которая занимает предоставленный ей прямоугольник rectf. Далее идут два угловых параметра: начало и длина, в нашем случае это 90 и 270 градусов.</p>
+<p>Начало – угол, с которого дуга начинает рисоваться. Отсчет ведется по часовой стрелке от точки «3 часа», если рассматривать часовой циферблат. Т.е. если от трех часов отложить угол 90 градусов, получится шесть часов. С этой точки и начнется рисоваться дуга.</p>
+<p>Длина – это угол рисуемой дуги. Т.е. полный круг – это 360 градусов. Соответственно 270 – три четверти круга. Если мы отложим три четверти круга от 6 часов, то получим 3 часа. Такая дуга и должна получится: от шести до трех часов по часовой стрелке.</p>
+<p>Следующий boolean параметр определяет, как будут соединены две крайние точки дуги.  Т.е. если рассматривать наш пример, то это точки 6 и 3 часа. Между ними по часовой проходит дуга, но чтобы получилась замкнутая фигура, необходимо соединить между собой эти точки. Тут два варианта: от каждой точки будет проведена прямая к центру круга и в итоге через центр дуга замкнется, либо просто проводится прямая между этими точками. Соответственно если параметр true – то точки соединяются через центр, если false – то между собой. В нашем случае – это true.</p>
+<p>Далее опускаем прямоугольник на 150 вниз. И снова рисуем такую же дугу, но теперь с параметром false. Концы дуги будут соединены между собой напрямую.</p>
+<p>Далее устанавливаем ширину линии в 3 px. И рисуем вертикальную линию с X = 150. Она понадобится, чтобы показать выравнивание текста, который сейчас будем выводить.</p>
+<p>Меняем цвет кисти на синий.</p>
+<p>Методом <a href="http://developer.android.com/reference/android/graphics/Paint.html#setTextSize(float)" target="_blank">setTextSize</a> устанавливаем размер шрифта в 30. Т.е. данные шрифта для текста задаются в той же самой кисти, которой мы только что фигуры рисовали.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawText(java.lang.String, float, float, android.graphics.Paint)" target="_blank">drawText</a> рисует текст: «text left». С параметрами все просто: сам текст и координаты X и Y. Также существует несколько аналогов drawText, которые позволяют выводить не весь текст, а его часть.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#setTextAlign(android.graphics.Paint.Align)" target="_blank">setTextAlign</a> настраивает горизонтальное <a href="http://developer.android.com/reference/android/graphics/Paint.Align.html" target="_blank">выравнивание</a> текста. По умолчанию оно равно Paint.Align.LEFT. И с ним у нас вывелся первый текст. Причем текст вывелся справа. Т.е. в данном случае LEFT означает не "текст будет слева от точки", а "точка будет слева от текста". Вполне можно и запутаться.</p>
+<p>Меняем выравнивание на Paint.Align.CENTER. Теперь выравнивание по центру. Рисуем текст «text center».</p>
+<p>Далее снова меняем выравнивание на Paint.Align.RIGHT и рисуем текст «text right».</p>
+<p>Мы нарисовали три текста указывая одну X-координату = 150. Но разное горизонтальное выравнивание раскидало их по разные стороны. Ранее нарисованная зеленая линия с X = 150 позволяет это четко увидеть.</p>
+<p>И напоследок рассмотрим еще пару моментов.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    Rect rect;
+    StringBuilder sb;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      rect = new Rect(100,200,200,300);
+      sb = new StringBuilder();
+      
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      p.setColor(Color.BLUE);
+      p.setStrokeWidth(10);
+      
+      p.setTextSize(30);
+      
+      // создаем строку с значениями ширины и высоты канвы  
+      sb.setLength(0);
+      sb.append("width = ").append(canvas.getWidth())
+      .append(", height = ").append(canvas.getHeight());
+      canvas.drawText(sb.toString(), 100, 100, p);
+      
+      // перенастраивам кисть на заливку
+      p.setStyle(Paint.Style.FILL);
+      canvas.drawRect(rect, p);
+
+      // перенастраивам кисть на контуры
+      p.setStyle(Paint.Style.STROKE);
+      rect.offset(150, 0);
+      canvas.drawRect(rect, p);
+      
+      // перенастраивам кисть на заливку + контуры
+      p.setStyle(Paint.Style.FILL_AND_STROKE);
+      rect.offset(150, 0);
+      canvas.drawRect(rect, p);
+    }
+    
+  }</code></pre>
+<p>Получится такая картинка</p>
+<p><img src="images/lesson142/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Методы <a href="http://developer.android.com/reference/android/graphics/Canvas.html#getWidth()" target="_blank">getWidth</a> и <a href="http://developer.android.com/reference/android/graphics/Canvas.html#getHeight()" target="_blank">getHeight</a> позволяют получить ширину и высоту канвы. Мы выводим эту инфу на экран методом darwText.</p>
+<p>Далее выводим три прямоугольника с разными <a href="http://developer.android.com/reference/android/graphics/Paint.Style.html" target="_blank">стилями</a> рисования, которые указываем методом <a href="http://developer.android.com/reference/android/graphics/Paint.html#setStyle(android.graphics.Paint.Style)" target="_blank">setStyle</a>:</p>
+<p>Paint.Style.FILL – прямоугольник закрашивается изнутри, а его грани не рисуются</p>
+<p>Paint.Style.STROKE – рисуются только грани прямоугольника, внутри закраски нет</p>
+<p>Paint.Style.FILL_AND_STROKE – есть и закраска внутри и грани</p>
+<p>По умолчанию используется стиль Paint.Style.FILL.</p>
+<p>Чтобы лучше понять все вышеизложенные аспекты, советую вам самостоятельно поэкспериментировать с ними.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

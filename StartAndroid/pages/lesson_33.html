@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 33. Хранение данных. Preferences.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- хранение данных с помощью Preferences</p>
+<p> </p>
+<p>Хватит об Intent и Activity. Поговорим о хранении данных. В Android есть несколько способов хранения данных:</p>
+<p><b>Preferences</b> - в качестве аналогии можно привести виндовые INI-файлы</p>
+<p><b>SQLite</b> - база данных, таблицы</p>
+<p><b>обычные файлы</b> - внутренние и внешние (на SD карте)</p>
+<p>Мы начнем с самого простого – <b>Preferences</b>. Значения сохраняются в виде пары: <b>имя</b>, <b>значение</b>. Так же, как и например extras в Intent.</p>
+<p>Разработаем приложение. В нем будет поле для ввода текста и две кнопки – <b>Save </b>и <b>Load</b>. По нажатию на <b>Save </b>мы будем <b>сохранять </b>значение из поля, по нажатию на <b>Load </b>– <b>загружать</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0331_SharedPreferences<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SharedPreferences<br><b>Package name</b>: ru.startandroid.develop.p0331sharedpreferences<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем <b>main.xml</b> и создадим такой экран:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+        &lt;EditText
+            android:id="@+id/etText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"&gt;
+                &lt;requestFocus&gt;
+                &lt;/requestFocus&gt;
+        &lt;/EditText&gt;
+        &lt;LinearLayout
+            android:id="@+id/linearLayout1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"&gt;
+                &lt;Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Save"&gt;
+                &lt;/Button&gt;
+                &lt;Button
+                    android:id="@+id/btnLoad"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Load"&gt;
+                &lt;/Button&gt;
+        &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Поле ввода и две кнопки.</p>
+<p>Теперь пишем код в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0331sharedpreferences;
+
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends Activity implements OnClickListener {
+  
+  EditText etText;
+  Button btnSave, btnLoad;
+  
+  SharedPreferences sPref;
+  
+  final String SAVED_TEXT = "saved_text";
+  
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        etText = (EditText) findViewById(R.id.etText);
+        
+        btnSave = (Button) findViewById(R.id.btnSave);
+        btnSave.setOnClickListener(this);
+        
+        btnLoad = (Button) findViewById(R.id.btnLoad);
+        btnLoad.setOnClickListener(this);
+    }
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnSave:
+      saveText();
+      break;
+    case R.id.btnLoad:
+      loadText();
+      break;
+    default:
+      break;
+    }
+  }
+  
+  void saveText() {
+    sPref = getPreferences(MODE_PRIVATE);
+    Editor ed = sPref.edit();
+    ed.putString(SAVED_TEXT, etText.getText().toString());
+    ed.commit();
+    Toast.makeText(this, "Text saved", Toast.LENGTH_SHORT).show();
+  }
+  
+  void loadText() {
+    sPref = getPreferences(MODE_PRIVATE);
+    String savedText = sPref.getString(SAVED_TEXT, "");
+    etText.setText(savedText);
+    Toast.makeText(this, "Text loaded", Toast.LENGTH_SHORT).show();
+  }
+}</code></pre>
+<p>Определение элементов экрана, присвоение обработчиков и реализация onClick – тут все понятно и как обычно. Нам интересны <b>методы</b>, которые мы вызываем в onClick</p>
+<p><b>saveText </b>– сохранение данных. Сначала с помощью метода <a href="http://developer.android.com/reference/android/app/Activity.html#getPreferences(int)" target="_blank">getPreferences</a> получаем объект <b>sPref </b>класса <b>SharedPreferences</b>, который позволяет <b>работать </b>с <b>данными </b>(читать и писать). Константа <a href="http://developer.android.com/reference/android/content/Context.html#MODE_PRIVATE" target="_blank">MODE_PRIVATE</a> используется для настройки <b>доступа </b>и означает, что после сохранения, данные будут видны только <b>этому </b>приложению. Далее, чтобы редактировать данные, необходим объект <b>Editor </b>– получаем его из sPref. В метод <a href="http://developer.android.com/reference/android/content/SharedPreferences.Editor.html#putString(java.lang.String, java.lang.String)" target="_blank">putString</a> указываем <b>наименование </b>переменной – это константа <b>SAVED_TEXT</b>, и <b>значение </b>– содержимое поля <b>etText</b>. Чтобы данные сохранились, необходимо выполнить <a href="http://developer.android.com/reference/android/content/SharedPreferences.Editor.html#commit()" target="_blank">commit</a>. И для наглядности выводим <b>сообщение</b>, что данные сохранены.</p>
+<p><b>loadText </b>– загрузка данных. Так же, как и saveText, с помощью метода <b>getPreferences </b>получаем объект sPref класса <b>SharedPreferences</b>. <b>MODE_PRIVATE </b>снова указывается, хотя и используется только при записи данных. Здесь Editor мы не используем, т.к. нас интересует только чтение данных. Читаем с помощью метода <a href="http://developer.android.com/reference/android/content/SharedPreferences.html#getString(java.lang.String, java.lang.String)" target="_blank">getString</a> – в параметрах указываем константу - это <b>имя, </b>и <b>значение </b>по умолчанию (пустая строка). Далее пишем значение в поле ввода <b>etText </b>и выводим <b>сообщение</b>, что данные считаны.</p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p>Для начала, давайте убедимся, что сохранение в принципе нужно. Введите какой-нить текст в поле ввода</p>
+<p><img src="images/lesson_32_0.png" alt="" width="640" height="454"></p>
+<p>и не нажимая кнопку <b>Save </b>закройте приложение кнопкой <b>Назад</b>.</p>
+<p>Теперь найдите приложение в общем списке приложений эмулятора</p>
+<p><img src="images/lesson_32_1.png" alt="" width="640" height="454"></p>
+<p>и запустите снова.</p>
+<p>Поле ввода пустое. То, что мы вводили – пропало при закрытии программы. Нажатие на <b>Load </b>тоже ничего не даст – мы ничего не сохраняли.</p>
+<p><img src="images/lesson_32_2.png" alt="" width="640" height="454"></p>
+<p>Давайте попробуем сохранять. Снова введите значение и нажмите <b>Save</b>.</p>
+<p><img src="images/lesson_32_3.png" alt="" width="640" height="454"></p>
+<p>Значение сохранилось в системе.</p>
+<p>Теперь закроем приложение (<b>Назад</b>), снова откроем и нажмем <b>Load</b>. Значение считалось и отобразилось.</p>
+<p><img src="images/lesson_32_4.png" alt="" width="640" height="454"></p>
+<p>Давайте сделаем так, чтобы сохранение и загрузка происходили <b>автоматически </b>при <b>закрытии </b>и <b>открытии </b>приложения и не надо было жать кнопки.  Для этого метод <b>loadText </b>будем вызывать в <b>onCreate</b>.</p>
+<pre><code class="java; highlight">public void onCreate(Bundle savedInstanceState) {
+  
+    ...
+  
+    btnLoad = (Button) findViewById(R.id.btnLoad);
+    btnLoad.setOnClickListener(this);
+    
+    loadText();
+} </code></pre>
+<p>(Добавляете только строку 8)</p>
+<p>а метод saveText - в onDestroy</p>
+<pre><code class="java">  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    saveText();
+  }</code></pre>
+<p>Все сохраним, запустим. Теперь можно вводить данные, закрывать приложение, снова открывать и данные не потеряются. Кнопки <b>Save </b>и <b>Load </b>также работают. В какой момент сохранять данные в ваших приложениях – решать только вам. По <b>нажатию </b>кнопки, при <b>закрытии </b>программы или еще по какому-либо событию. Главное – теперь вы это умеете.</p>
+<p>Еще немного слов по этой теме.</p>
+<p>Preferences-данные сохраняются в файлы и вы можете посмотреть их. Для этого в Eclipse откройте меню <b>Window </b>&gt; <b>Show View</b> &gt; <b>Other </b>и выберите <b>Android </b>&gt; <b>File Explorer</b>. Отобразилась файловая система эмулятора. <br>Открываем папку<i> data/data/ru.startandroid.develop.p0331sharedpreferences/shared_prefs</i> и видим там файл <b>MainActivity.xml</b>. Если его выгрузить на комп и открыть - увидим следующее:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;map&gt;
+        &lt;string name="saved_text"&gt;abcdefg&lt;/string&gt;
+&lt;/map&gt;</code></pre>
+<p>Все верно, имя - <i>saved_text</i> и значение - <i>abcdefg</i>.</p>
+<p>Обратите внимание, что в пути к файлу используется наш package.</p>
+<p>Теперь разберемся, откуда взялось наименование файла <b>MainActivity.xml</b>. Кроме метода <b>getPreferences</b>, который мы использовали, есть метод <a href="http://developer.android.com/reference/android/content/ContextWrapper.html#getSharedPreferences(java.lang.String, int)" target="_blank">getSharedPreferences</a>. Он выполняет абсолютно те же функции, но позволяет указать имя файла для хранения данных. Т.е., например, если бы мы в <b>saveText </b>использовали для получение SharedPreferences такой код:</p>
+<pre><code class="java">sPref = getSharedPreferences("MyPref", MODE_PRIVATE);</code></pre>
+<p>То данные сохранились бы в файле <b>MyPref.xml</b>, а не в <b>MainActivity.xml</b>.</p>
+<p>Теперь если мы посмотрим исходники метода <b>getPreferences</b>, то видим следующее:</p>
+<pre><code class="java">public SharedPreferences getPreferences(int mode) {
+  return getSharedPreferences(getLocalClassName(), mode);
+}</code></pre>
+<p>Используется метод <b>getSharedPreferences</b>, а в качестве имени файла берется имя класса текущего <b>Activity</b>. Отсюда и появилось имя файла <b>MainActivity.xml</b>.</p>
+<p>В итоге:</p>
+<p>- используете <b>getPreferences</b>, если работаете с данными для текущего Activity и не хотите выдумывать имя файла.</p>
+<p>- используете <b>getSharedPreferences</b>, если сохраняете, например, данные - общие для нескольких Activity и сами выбираете имя файла для сохранения.</p>
+<p>Кстати, в File Explorer вы можете видеть <a href="http://younglinux.info/rwximg" target="_blank">юниксовые rwx-права доступа</a> к файлу. Попробуйте при сохранении данных использовать не <b>MODE_PRIVATE</b>, а <a href="http://developer.android.com/reference/android/content/Context.html#MODE_WORLD_READABLE" target="_blank">MODE_WORLD_READABLE </a>или <a href="http://developer.android.com/reference/android/content/Context.html#MODE_WORLD_WRITEABLE" target="_blank">MODE_WORLD_WRITEABLE</a> и посмотрите, как будут меняться права. </p>
+<p>Полный код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0331sharedpreferences;
+
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends Activity implements OnClickListener {
+  
+  EditText etText;
+  Button btnSave, btnLoad;
+  
+  SharedPreferences sPref;
+  
+  final String SAVED_TEXT = "saved_text";
+  
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        etText = (EditText) findViewById(R.id.etText);
+        
+        btnSave = (Button) findViewById(R.id.btnSave);
+        btnSave.setOnClickListener(this);
+        
+        btnLoad = (Button) findViewById(R.id.btnLoad);
+        btnLoad.setOnClickListener(this);
+        
+        loadText();
+    }
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnSave:
+      saveText();
+      break;
+    case R.id.btnLoad:
+      loadText();
+      break;
+    default:
+      break;
+    }
+  }
+  
+  void saveText() {
+    sPref = getPreferences(MODE_PRIVATE);
+    Editor ed = sPref.edit();
+    ed.putString(SAVED_TEXT, etText.getText().toString());
+    ed.commit();
+    Toast.makeText(this, "Text saved", Toast.LENGTH_SHORT).show();
+  }
+  
+  void loadText() {
+    sPref = getPreferences(MODE_PRIVATE);
+    String savedText = sPref.getString(SAVED_TEXT, "");
+    etText.setText(savedText);
+    Toast.makeText(this, "Text loaded", Toast.LENGTH_SHORT).show();
+  }
+  
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    saveText();
+  }
+
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

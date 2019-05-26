@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 122. Виджеты. Превью, изменение размера, экран блокировки, ручное обновление</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассмотрим прочие возможности виджета: превью, изменение размера, экран блокировки, ручное обновление</p>
+<p>В прошлых уроках мы рассмотрели все основные моменты, касающиеся виджетов. Осталось поговорить о нескольких небольших, но полезных возможностях.</p>
+<p>Не буду создавать отдельный проект под это, покажу только фрагменты кода и скрины. Знаний, полученных в предыдущих уроках, должно хватит, чтобы понять, о чем идет речь.</p>
+<h3>Превью</h3>
+<p><b>(API Level 11)</b></p>
+<p>Когда вы хотите добавить виджет, вы открываете экран выбора и видите там список виджетов с названиями и картинками. По умолчанию, вместо картинки идет иконка приложения. А можно поставить туда свое изображение.</p>
+<p>Я сделаю простой виджет, показывающий время при обновлении</p>
+<p><img src="images/lesson_121_0.png" alt="" width="320" height="480"></p>
+<p>Мой виджет называется WidgetFeatures и в списке виджетов он выглядит так:</p>
+<p><img src="images/lesson_121_1.png" alt="" width="320" height="480"></p>
+<p>В качестве превью-изображения сейчас используется иконка приложения и это не очень информативно.</p>
+<p>Поставим свою картинку. Я сделаю скрин Home-экрана с моим виджетом, затем обрежу картинку до такого состояния</p>
+<p><img src="images/lesson_121_2.png" alt="" width="118" height="37"></p>
+<p>закину в папку res/drawable и пропишу ее в файле метаданных виджета</p>
+<pre><code class="xml">android:previewImage="@drawable/screen"</code></pre>
+<p>Теперь виджет в списке будет выглядеть так:</p>
+<p><img src="images/lesson_121_3.png" alt="" width="320" height="480"></p>
+<p>И пользователь имеет примерное представление, как будет выглядеть виджет после установки.</p>
+<h3>Изменение размера</h3>
+<p><b>(API Level 12)</b></p>
+<p>Вы можете предоставить пользователю возможность менять размеры виджета.</p>
+<p><img src="images/lesson_121_4.png" alt="" width="320" height="480"></p>
+<p>Для этого необходимо прописать в метаданных:</p>
+<pre><code class="xml">android:resizeMode="horizontal|vertical"</code></pre>
+<p>В этом случае виджет будет способен менять размер и по вертикали и по горизонтали. Если вам нужно только одно направление, оставьте только его в значении атрибута.</p>
+<p>Вы можете растянуть виджет на сколько это позволит свободное место на экране. Но не сможете сделать его меньше, чем изначально указанные размеры <b>minHeight</b> и <b>minWidth</b>.</p>
+<p>Для этого в <b>API Level 14</b> появляются еще два атрибута для метаданных: <b>minResizeWidth</b> и <b>minResizeHeight</b>. Они как раз и ставят минимальные значения для изменения размера виджета, а атрибуты minHeight и minWidth становятся значениями по умолчанию и используются для задания первоначального размера виджета при добавлении.</p>
+<p>В <b>API Level 16</b> в классе провайдера появляется метод <a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html#onAppWidgetOptionsChanged(android.content.Context, android.appwidget.AppWidgetManager, int, android.os.Bundle)" target="_blank">onAppWidgetOptionsChanged</a>. Метод срабатывает, когда вы меняете размер виджета. Он предоставляет вам Bundle с данными (тип - int, единицы измерения - dp) о новом размере. Данные можно извлечь с помощью этих ключей:</p>
+<p><a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#OPTION_APPWIDGET_MIN_WIDTH" target="_blank">OPTION_APPWIDGET_MIN_WIDTH</a><br><a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#OPTION_APPWIDGET_MIN_HEIGHT" target="_blank">OPTION_APPWIDGET_MIN_HEIGHT</a><br><a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#OPTION_APPWIDGET_MAX_WIDTH" target="_blank">OPTION_APPWIDGET_MAX_WIDTH</a><br><a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#OPTION_APPWIDGET_MAX_HEIGHT" target="_blank">OPTION_APPWIDGET_MAX_HEIGHT</a></p>
+<p>Как видно по названию переменных, система возвращает не точное значение новой ширины или высоты виджета, а диапазон с минимальным и максимальным значением. Не знаю каким образом формируются эти значения, но нам предлагается использовать их, чтобы подстраивать содержимое виджета под новые размеры.</p>
+<p>Для примера выведу эти цифры в виджет.</p>
+<p>Вот виджет шириной в две ячейки и высотой в одну (2х1).</p>
+<p><img src="images/lesson_121_5.png" alt="" width="320" height="480"></p>
+<p>А вот, что будет, если его растянуть до 3х2</p>
+<p><img src="images/lesson_121_6.png" alt="" width="320" height="480"></p>
+<p>Растянем до 4х3</p>
+<p><img src="images/lesson_121_7.png" alt="" width="320" height="480"></p>
+<p>Данные о текущем размере виджета также можно получить с помощью метода <a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#getAppWidgetOptions(int)" target="_blank">getAppWidgetOptions</a> класса AppWidgetManager. Он вернет вам Bundle с этими же параметрами.</p>
+<h3>Экран блокировки</h3>
+<p><b>(API Level 17)</b></p>
+<p>Атрибут <b>widgetCategory</b> может определять возможность размещения виджета не только в Home (home_screen), но и на экране блокировки (keyguard) .</p>
+<pre><code class="xml">android:widgetCategory="home_screen|keyguard"&gt;</code></pre>
+<p>В этом случае виджет появится в списке виджетов для экрана блокировки</p>
+<p><img src="images/lesson_121_8.png" alt="" width="320" height="480"></p>
+<p>И после добавления он будет виден</p>
+<p><img src="images/lesson_121_9.png" alt="" width="320" height="480"></p>
+<p>Чтобы программно определить где расположен виджет, используйте снова метод getAppWidgetOptions. Он вернет вам Bundle, из которого по ключу <a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#OPTION_APPWIDGET_HOST_CATEGORY" target="_blank">OPTION_APPWIDGET_HOST_CATEGORY</a> можно вытащить категорию (тип int). Она может быть равна либо <a href="http://developer.android.com/reference/android/appwidget/AppWidgetProviderInfo.html#WIDGET_CATEGORY_HOME_SCREEN" target="_blank">WIDGET_CATEGORY_HOME_SCREEN</a> (home), либо <a href="http://developer.android.com/reference/android/appwidget/AppWidgetProviderInfo.html#WIDGET_CATEGORY_KEYGUARD" target="_blank">WIDGET_CATEGORY_KEYGUARD</a> (экран блокировки).</p>
+<p>В метаданных вы также можете отдельно задать layout, использующийся для виджета на экране блокировки. Это атрибут <b>android:initialKeyguardLayout</b>. Аналогично атрибуту <b>android:initialLayout</b> указываете там layout-файл. Правда, у меня он почему-то не сработал и виджет с экрана блокировки использовал тот же layout, что и виджет на экране Home. Я не понял, почему.</p>
+<h3>Ручное обновление виджетов</h3>
+<p>Обычно система сама посылает broadcast-сообщения о том, что пора обновлять виджет, и минимальный порог, который она позволяет задать – это полчаса. Мы можем обойти это и назначить свое расписание. Есть несколько вариантов, как это организовать и что откуда вызывать. Я покажу один из них.</p>
+<p>Все это делается в классе провайдера.</p>
+<p>Создаем переменную:</p>
+<pre><code class="java">final String UPDATE_ALL_WIDGETS = "update_all_widgets";</code></pre>
+<p>Далее пишем в методах <b>onEnabled</b> и <b>onDisabled</b>:</p>
+<pre><code class="java">  @Override
+  public void onEnabled(Context context) {
+    super.onEnabled(context);
+    Intent intent = new Intent(context, MyWidget.class);
+    intent.setAction(UPDATE_ALL_WIDGETS);
+    PendingIntent pIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+    AlarmManager alarmManager = (AlarmManager) context
+        .getSystemService(Context.ALARM_SERVICE);
+    alarmManager.setRepeating(AlarmManager.RTC, System.currentTimeMillis(),
+        60000, pIntent);
+  }
+
+  @Override
+  public void onDisabled(Context context) {
+    super.onDisabled(context);
+    Intent intent = new Intent(context, MyWidget.class);
+    intent.setAction(UPDATE_ALL_WIDGETS);
+    PendingIntent pIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+    AlarmManager alarmManager = (AlarmManager) context
+        .getSystemService(Context.ALARM_SERVICE);
+    alarmManager.cancel(pIntent);
+  }</code></pre>
+<p>Содержимое двух этих методов почти одинаково, только первый запускает посылку broadcast сообщения каждую минуту с помощью AlarmManager, а второй отменяет это.</p>
+<p>В методе <b>onReceive</b> пишем:</p>
+<pre><code class="java">  @Override
+  public void onReceive(Context context, Intent intent) {
+    super.onReceive(context, intent);
+    if (intent.getAction().equalsIgnoreCase(UPDATE_ALL_WIDGETS)) {
+      ComponentName thisAppWidget = new ComponentName(
+          context.getPackageName(), getClass().getName());
+      AppWidgetManager appWidgetManager = AppWidgetManager
+          .getInstance(context);
+      int ids[] = appWidgetManager.getAppWidgetIds(thisAppWidget);
+      for (int appWidgetID : ids) {
+        updateWidget(context, appWidgetManager, appWidgetID);
+      }
+    }
+  }</code></pre>
+<p><span style="line-height: 1.3em;">где updateWidget – это ваш метод, в котором прописана логика обновления виджета.</span></p>
+<p>Здесь мы ловим broadcast, который каждую минуту шлет AlarmManager. Далее создаем <a href="http://developer.android.com/reference/android/content/ComponentName.html" target="_blank">ComponentName</a>, соответствующий провайдеру виджета нашего приложения и, используя его, получаем список ID виджетов с помощью метода <a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#getAppWidgetIds(android.content.ComponentName)" target="_blank">getAppWidgetIds</a>. Далее этот список прогоняем через метод обновления.</p>
+<p>И не забудьте поставить в метаданных атрибут updatePeriodMillis = 0, чтобы выключить для виджета рассылку broadcast-сообщений от системы.</p>
+<p>Тем самым, мы задали свое расписание обновления. Оно включится при создании первого экземпляра виджета (или при старте системы, если есть экземпляры виджета) и выключится при удалении последнего экземпляра.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

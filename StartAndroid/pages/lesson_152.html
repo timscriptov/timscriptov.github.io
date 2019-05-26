@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 152. Рисование. Picture</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- работаем с Picture</p>
+ 
+<p> </p>
+<p>Мы можем записать операции рисования на канве в некий шаблон, а затем многократно воспроизводить его.  Для этого используется объект <a href="http://developer.android.com/reference/android/graphics/Picture.html" target="_blank" rel="noopener noreferrer">Picture</a>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1521_Picture<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Picture<br/> <b>Package name</b>: ru.startandroid.develop.p1521picture<br/> <b>Create Activity</b>: MainActivity</p>
+<p>В манифесте для Activity необходимо прописать такую строку</p>
+<p><i>android:hardwareAccelerated="false"</i></p>
+<p>Без нее не будет работать.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1521picture;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Picture;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(new DrawView(this));
+    }
+    
+    class DrawView extends View {
+      
+      Paint p;
+      Path path;
+      Picture picture;
+      
+      public DrawView(Context context) {
+        super(context);
+        
+        
+        p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        picture = new Picture();
+        
+        Canvas canvas = picture.beginRecording(300, 300);
+
+        p.setColor(Color.GREEN);
+        canvas.drawCircle(150, 100, 80, p);
+        
+        p.setColor(Color.BLUE);
+        canvas.drawRect(20, 70, 150, 200, p);
+        
+        p.setColor(Color.RED);
+        path = new Path();
+        path.moveTo(170,80);
+        path.lineTo(240, 210);
+        path.lineTo(100, 210);
+        path.close();
+        canvas.drawPath(path, p);
+        
+        picture.endRecording();
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.drawPicture(picture);
+        
+      }
+      
+    }
+    
+}</code></pre>
+<p>Сначала создаем объект Picture, затем методом <a href="http://developer.android.com/reference/android/graphics/Picture.html#beginRecording(int, int)" target="_blank" rel="noopener noreferrer">beginRecording</a> начинаем запись. Этот метод возвращает нам канву, на ней мы и будем выполнять все операции, которые будут записаны. А на вход методу beginRecording необходимо передать ширину и высоту изображения, которое вы собираетесь записывать. Т.е. наш шаблон будет размером 300х300.</p>
+<p>Записываем рисование круга, квадрата и треугольника, и затем, методом <a href="http://developer.android.com/reference/android/graphics/Picture.html#endRecording()" target="_blank" rel="noopener noreferrer">endRecording</a>, завершаем запись.</p>
+<p> </p>
+<p>В onDraw методом <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPicture(android.graphics.Picture)" target="_blank" rel="noopener noreferrer">drawPicture</a> выводим на нашу канву все то, что записали в picture.</p>
+<p> </p>
+<p>Результат:</p>
+<p><img src="images/lesson152/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Отобразились все наши записанные действия.</p>
+<p>У drawPicture есть, также, <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPicture(android.graphics.Picture, android.graphics.Rect)" target="_blank" rel="noopener noreferrer">реализация</a>, где мы можем менять размер выводимого изображения.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    Path path;
+    Picture picture;
+    Rect rect;
+    Rect rect1;
+
+    public DrawView(Context context) {
+      super(context);
+
+      rect = new Rect(0, 0, 100, 100);
+      rect1 = new Rect(0, 0, 500, 200);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      picture = new Picture();
+
+      Canvas canvas = picture.beginRecording(300, 300);
+
+      p.setColor(Color.GREEN);
+      canvas.drawCircle(150, 100, 80, p);
+
+      p.setColor(Color.BLUE);
+      canvas.drawRect(20, 70, 150, 200, p);
+
+      p.setColor(Color.RED);
+      path = new Path();
+      path.moveTo(170, 80);
+      path.lineTo(240, 210);
+      path.lineTo(100, 210);
+      path.close();
+      canvas.drawPath(path, p);
+
+      picture.endRecording();
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.drawPicture(picture);
+
+      canvas.translate(300, 0);
+      canvas.drawPicture(picture, rect);
+
+      canvas.translate(0, 300);
+      canvas.drawPicture(picture, rect1);
+
+    }
+
+  }</code></pre>
+<p>В onDraw мы один раз выводим шаблон без изменений, а затем пару раз с указанием областей. Объектами rect и rect1 мы задаем размеры этих областей, и в эти размеры будет смасштабировано изображение</p>
+<p>Результат:</p>
+<p><img src="images/lesson152/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Т.е. кроме оригинала мы вывели то же изображение в размерах 100х100 и 500х200 и наш шаблон подстроился под эти размеры.</p>
+<p>У picture есть метод <a href="http://developer.android.com/reference/android/graphics/Picture.html#draw(android.graphics.Canvas)" target="_blank" rel="noopener noreferrer">draw</a>, который делает то же, что и canvas.drawPicture. Но метод канвы (drawPicture) сохраняет состояние канвы перед выводом picture, а затем восстанавливает его (о состояниях канвы можно прочесть в Уроке 146).</p>
+<p>Если верить документацие, то воспроизведение Picture может дать прибавку к скорости, по сравнению с вызовом методов канвы напрямую.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

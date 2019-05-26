@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 104. Android 3. Fragments. Lifecycle</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p> В этом уроке:</p>
+<p>- используем фрагменты<br> - разбираемся в их lifecycle</p>
+<p><a href="http://developer.android.com/guide/components/fragments.html" target="_blank">Фрагменты</a> – одно из главных новшеств Android 3. Можно рассматривать их как мини-Activity, которые располагаются в основном Activity и имеют свой <a href="http://developer.android.com/reference/android/app/Fragment.html#Lifecycle" target="_blank">lifecycle</a>, немного отличающийся от обычного Activity. В этом уроке разместим пару фрагментов в Activity и разберемся в lifecycle-методах.</p>
+<p>В 4-й версии фрагменты никуда не делись, а AVD для 3-й версии какие-то совсем суровые и тяжелые, поэтому для разработки и тестирования будем использовать версию Android 4.1 (API 16). Если у вас нет такой версии в списке доступных, то открывайте Window &gt; Android SDK Manager и скачивайте ее там.</p>
+<p>Создадим AVD 4.1</p>
+<p><img src="images/lesson_103_0.png" alt="" width="455" height="644"></p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1041_FragmentLifecycle<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: FragmentLifecycle<br><b>Package name</b>: ru.startandroid.develop.p1041fragmentlifecycle<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> добавим пару строк:</p>
+<pre><code class="xml">&lt;string name="frag1_text"&gt;Fragment 1&lt;/string&gt;
+&lt;string name="frag2_text"&gt;Fragment 2&lt;/string&gt;</code></pre>
+<p>Создадим пару фрагментов. Для этого нам необходимо создать для них layout-файлы и классы с предком <b>android.app.Fragment</b>.</p>
+<p>Создаем layout-файлы, как обычно.</p>
+<p><b>fragment1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#77ff0000"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/textView1"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag1_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>fragment2.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#7700ff00"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/textView2"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag2_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Фрагменты будут содержать TextView с текстом, и мы сделали цветной фон для наглядности.</p>
+<p>Теперь классы. Если Activity наследует <b>android.app.Activity</b>, то фрагменты наследуют <b>android.app.Fragment</b>.</p>
+<p>Создаем <b>Fragment1</b>:</p>
+<p><img src="images/lesson_103_1.png" alt="" width="542" height="637"></p>
+<p>и <b>Fragment2</b></p>
+<p><img src="images/lesson_103_2.png" alt="" width="542" height="637"></p>
+<p>Заполняем код. <b>Fragment1.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1041fragmentlifecycle;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment1 extends Fragment {
+
+  final String LOG_TAG = "myLogs";
+
+  @Override
+  public void onAttach(Activity activity) {
+    super.onAttach(activity);
+    Log.d(LOG_TAG, "Fragment1 onAttach");
+  }
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    Log.d(LOG_TAG, "Fragment1 onCreate");
+  }
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    Log.d(LOG_TAG, "Fragment1 onCreateView");
+    return inflater.inflate(R.layout.fragment1, null);
+  }
+
+  public void onActivityCreated(Bundle savedInstanceState) {
+    super.onActivityCreated(savedInstanceState);
+    Log.d(LOG_TAG, "Fragment1 onActivityCreated");
+  }
+
+  public void onStart() {
+    super.onStart();
+    Log.d(LOG_TAG, "Fragment1 onStart");
+  }
+
+  public void onResume() {
+    super.onResume();
+    Log.d(LOG_TAG, "Fragment1 onResume");
+  }
+
+  public void onPause() {
+    super.onPause();
+    Log.d(LOG_TAG, "Fragment1 onPause");
+  }
+
+  public void onStop() {
+    super.onStop();
+    Log.d(LOG_TAG, "Fragment1 onStop");
+  }
+
+  public void onDestroyView() {
+    super.onDestroyView();
+    Log.d(LOG_TAG, "Fragment1 onDestroyView");
+  }
+
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "Fragment1 onDestroy");
+  }
+
+  public void onDetach() {
+    super.onDetach();
+    Log.d(LOG_TAG, "Fragment1 onDetach");
+  }
+}</code></pre>
+<p><b>Fragment2.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1041fragmentlifecycle;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment2 extends Fragment {
+
+  final String LOG_TAG = "myLogs";
+  
+  @Override
+  public void onAttach(Activity activity) {
+    super.onAttach(activity);
+    Log.d(LOG_TAG, "Fragment2 onAttach");
+  }
+  
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    Log.d(LOG_TAG, "Fragment2 onCreate");
+  }
+  
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    Log.d(LOG_TAG, "Fragment2 onCreateView");
+    return inflater.inflate(R.layout.fragment2, null) ;
+  }
+  
+  public void onActivityCreated(Bundle savedInstanceState) {
+    super.onActivityCreated(savedInstanceState);
+    Log.d(LOG_TAG, "Fragment2 onActivityCreated");
+  }
+  
+  public void onStart() {
+    super.onStart();
+    Log.d(LOG_TAG, "Fragment2 onStart");
+  }
+  
+  public void onResume() {
+    super.onResume();
+    Log.d(LOG_TAG, "Fragment2 onResume");
+  }
+  
+  public void onPause() {
+    super.onPause();
+    Log.d(LOG_TAG, "Fragment2 onPause");
+  }
+  
+  public void onStop() {
+    super.onStop();
+    Log.d(LOG_TAG, "Fragment2 onStop");
+  }
+  
+  public void onDestroyView() {
+    super.onDestroyView();
+    Log.d(LOG_TAG, "Fragment2 onDestroyView");
+  }
+  
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "Fragment2 onDestroy");
+  }
+  
+  public void onDetach() {
+    super.onDetach();
+    Log.d(LOG_TAG, "Fragment2 onDetach");
+  }
+}</code></pre>
+<p>В обоих фрагментах просто выводим в лог вызовы всех lifecycle-методов. Чуть дальше рассмотрим эти методы подробнее.</p>
+<p>В методе <a href="http://developer.android.com/reference/android/app/Fragment.html#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)" target="_blank">onCreateView</a> система спрашивает у нас, что ей отображать внутри фрагмента. Мы сообщаем системе, что хотим видеть во фрагменте содержимое соответствующего layout-файла. Для этого мы сами создаем View с помощью inflater и отдаем его системе. Т.е. по смыслу это аналог метода setContentView, который мы вызываем в Activity. Только здесь нам приходится самим создавать View, а не просто передавать идентификатор layout-файла.</p>
+<p>Все (layout и классы) для фрагментов готово. Можем поместить их в основной layout-файл Activity. Открываем <b>main.xml</b>, делаем корневым горизонтальный LinearLayout и помещаем в него пару элементов <b>Fragment</b> (вкладка Layouts). При этом появится диалог, в котором надо будет указать какой класс используется для фрагмента. </p>
+<p><img src="images/lesson_103_3.png" alt="" width="600" height="500"></p>
+<p>Указываем для первого класс Fragment1, а для второго Fragment2. </p>
+<p>Выровняем фрагменты по ширине с помощью веса. В итоге должен получиться такой <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:tools="http://schemas.android.com/tools"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="horizontal"&gt;
+	&lt;fragment
+		android:name="ru.startandroid.develop.p1041fragmentlifecycle.Fragment1"
+		android:layout_width="wrap_content"
+		android:layout_height="match_parent"
+		android:layout_weight="1"&gt;
+	&lt;/fragment&gt;
+	&lt;fragment
+		android:name="ru.startandroid.develop.p1041fragmentlifecycle.Fragment2"
+		android:layout_width="wrap_content"
+		android:layout_height="match_parent"
+		android:layout_weight="1"&gt;
+	&lt;/fragment&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>В <b>MainActivity.java</b> также добавляем запись в лог всех lifecycle методов:</p>
+<pre><code class="java">package ru.startandroid.develop.p1041fragmentlifecycle;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d(LOG_TAG, "MainActivity onCreate");
+  }
+
+  protected void onStart() {
+    super.onStart();
+    Log.d(LOG_TAG, "MainActivity onStart");
+  }
+
+  protected void onResume() {
+    super.onResume();
+    Log.d(LOG_TAG, "MainActivity onResume");
+  }
+
+  protected void onPause() {
+    super.onPause();
+    Log.d(LOG_TAG, "MainActivity onPause");
+  }
+
+  protected void onStop() {
+    super.onStop();
+    Log.d(LOG_TAG, "MainActivity onStop");
+  }
+
+  protected void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "MainActivity onDestroy");
+  }
+
+}</code></pre>
+<p>Все сохраняем. Далее, я сначала запустил эмулятор через AVD, повернул его в горизонтальную ориентацию, затем запустил приложение. Но, в принципе, можно все делать и в вертикальной ориентации. Скрин будет чуть другой, а логи те же.</p>
+<p><img src="images/lesson_103_4.png" alt="" width="640" height="384"></p>
+<p>Все как и заказывали. В горизонтальном LinearLayout размещены пара фрагментов. Содержимое фрагментов взято из layout-файлов fragment1 и fragment2.</p>
+<p>Смотрим логи:</p>
+<p><i>Fragment1 onAttach<br>Fragment1 onCreate<br>Fragment1 onCreateView<br>Fragment2 onAttach<br>Fragment2 onCreate<br>Fragment2 onCreateView<br>MainActivity onCreate<br></i><i><em>Fragment1 onActivityCreated<br></em></i><i><em>Fragment2 onActivityCreated<br></em></i><i>MainActivity onStart<br></i><i>Fragment1 onStart<br></i><i>Fragment2 onStart<br></i><i>MainActivity onResume<br></i><i>Fragment1 onResume<br></i><i>Fragment2 onResume</i></p>
+<p>Первым делом для фрагментов вызываются методы:</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onAttach(android.app.Activity)" target="_blank">onAttach</a> – фрагмент прикреплен к Activity и получает ссылку на него. В дальнейшем мы всегда можем получить ссылку на Activity, вызвав метод getActivity().</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onCreate(android.os.Bundle)" target="_blank">onCreate</a>  - это аналог метода onCreate у Activity, но здесь мы пока не имеем доступа к UI-элементам</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)" target="_blank">onCreateView</a> – здесь вы создаете View, который будет содержимым фрагмента, и отдаете его системе</p>
+<p>Далее срабатывают метод Activity – onCreate, после него метод фрагментов <a href="http://developer.android.com/reference/android/app/Fragment.html#onActivityCreated(android.os.Bundle)" target="_blank">onActivityCreated</a> – сообщает фрагменту о том, что Activity создано и можно работать с UI-элементами</p>
+<p>Далее метод Activity – onStart, после него <a href="http://developer.android.com/reference/android/app/Fragment.html#onStart()" target="_blank">onStart</a> – аналогичен методу Activity, фрагмент виден пользователю</p>
+<p>Далее метод Activity – onResume, после него <a href="http://developer.android.com/reference/android/app/Fragment.html#onResume()" target="_blank">onResume</a> - аналогичен методу Activity, фрагмент доступен для взаимодействия.</p>
+<p>Жмем кнопку назад – закрываем приложение:</p>
+<p><i>Fragment1 onPause<br>Fragment2 onPause<br>MainActivity onPause<br>Fragment1 onStop<br>Fragment2 onStop<br>MainActivity onStop<br>Fragment1 onDestroyView<br>Fragment1 onDestroy<br>Fragment1 onDetach<br>Fragment2 onDestroyView<br>Fragment2 onDestroy<br>Fragment2 onDetach<br>MainActivity onDestroy</i></p>
+<p>Сначала для фрагментов и Activity вызываются методы <a href="http://developer.android.com/reference/android/app/Fragment.html#onPause()" target="_blank">onPause</a> и <a href="http://developer.android.com/reference/android/app/Fragment.html#onStop()" target="_blank">onStop</a>. Это значит, что фрагменты и Activity более недоступны для взаимодействия, а потом не видны пользователю.</p>
+<p>Затем для фрагментов вызываются три метода по уничтожению:</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onDestroyView()" target="_blank">onDestroyView</a> – сообщает нам, что View, которое мы создавали в onCreateView, более недоступно</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onDestroy()" target="_blank">onDestroy</a> – аналог метода onDestroy у Activity</p>
+<p><a href="http://developer.android.com/reference/android/app/Fragment.html#onDetach()" target="_blank">onDetach</a> – фрагмент отсоединен от Activity</p>
+<p>И в конце вызывается метод onDestroy для Activity.</p>
+<p>Т.е. основные lifecycle методы схожи для Activity и фрагмента. Но есть и некоторые различия, связанные с привязкой фрагмента к Activity.</p>
+<p>Фрагменты, так же как и Activity могут сохранять данные при своем пересоздании, например при смене экрана. Для записи используется метод <a href="http://developer.android.com/reference/android/app/Fragment.html#onSaveInstanceState(android.os.Bundle)" target="_blank">onSaveInstanceState</a>. А прочесть данные можно из Bundle в методах onCreate, onCreateView или onActivityCreated.</p>
+<p>А чтобы при пересоздании сохранить сам объект класса Fragment, используйте метод <a href="http://developer.android.com/reference/android/app/Fragment.html#setRetainInstance(boolean)" target="_blank">setRetainInstance</a>. Если передать в него true, то при пересоздании фрагмента <b>не будут</b> вызваны методы <b>onDestroy </b>и <b>onCreate</b>, и не будет создан новый экземпляр класса Fragment.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

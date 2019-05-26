@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 159. Рисование. Bitmap. BitmapFactory.Options, сохранение в файл</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- разбираемся с BitmapFactory.Options<br/>- сохраняем Bitmap в файл</p>
+<p>На первом уроке про Bitmap мы обсудили, что для чтения картинки из файла (ресурсов,потока,…) в Bitmap используются decode* методы BitmapFactory. И при чтении мы можем использовать объект <a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html" target="_blank" rel="noopener noreferrer">BitmapFactory.Options</a>, который позволяет нам задать некоторые параметры. Какие-то из этих параметров весьма специфичны и крайне редко используются, но есть и те, которые могут быть полезны в повседневной работе.</p>
+<p>Разберемся, зачем нужны эти параметры, и рассмотрим некоторые из них на примерах. </p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inJustDecodeBounds" target="_blank" rel="noopener noreferrer">inJustDecodeBounds</a></h3>
+<p>Если включить (true) этот параметр, то система не будет создавать Bitmap, а только вернет информацию о изображение в следующих полях:<br/><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#outWidth" target="_blank" rel="noopener noreferrer">outWidth</a> – ширина<br/><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#outHeight" target="_blank" rel="noopener noreferrer">outHeight</a> – высота<br/><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#outMimeType" target="_blank" rel="noopener noreferrer">outMimeType</a> – mimetype</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1591_BitmapOptions <br/> <b>Build Target</b>: Android 4.4 <br/> <b>Application name</b>: BitmapOptions<br/> <b>Package name</b>: ru.startandroid.develop.p1591bitmapoptions<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package com.example.p1591_bitmapoptions;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inJustDecodeBounds = true;
+      bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher, options);
+      
+      Log.d("log", String.format("bitmap = %s, width = %s, height = %s, mimetype = %s", 
+          bitmap, options.outWidth, options.outHeight, options.outMimeType));
+      
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+    }
+
+  }
+}</code></pre>
+<p>В <b>DrawView</b> указываем inJustDecodeBounds = true, читаем стандартную Android-иконку и выводим в лог информацию о ней.</p>
+<p>Запускаем, смотрим лог:</p>
+<p><i>bitmap = null, width = 48, height = 48, mimetype = image/png</i></p>
+<p>У вас ширина и высота могут быть другие, т.к. при чтении картинок из папок res/drawable-*dpi учитывается density устройства.</p>
+<p>Bitmap равен null, т.к. система только вернула нам инфу, а Bitmap не создавала, а следовательно и память не занимала.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inSampleSize" target="_blank" rel="noopener noreferrer">inSampleSize</a></h3>
+<p>Позволяет указать коэффициент уменьшения размера изображения при чтении. Он должен быть кратным 2. Если зададите другое число, то оно будет изменено на ближайшее число меньшее вашего и кратное 2.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">  class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inSampleSize = 2;
+      bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher, options);
+      
+      Log.d("log", String.format("width = %s, height = %s", bitmap.getWidth(), bitmap.getHeight()));
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+    }
+
+  }</code></pre>
+<p>Используем inSampleSize = 2 и в лог выводим размеры, получившегося Bitmap:</p>
+<p><i>width = 24, height = 24</i></p>
+<p>Как и заказывали, картинка при чтении в Bitmap стала в два раза меньше.</p>
+<p>Параметры <b>inJustDecodeBounds</b> и <b>inSampleSize</b> можно использовать для чтения больших изображений. Т.е. если вы сразу решите считать большое изображение в Bitmap, вы можете занять, тем самым, слишком много памяти или вообще получить OutOfMemory. Поэтому следует сначала получить данные о размерах картинки, а затем с коэффициентом сжатия считать ее в Bitmap примерно нужного размера. Этот алгоритм мы еще подробно разберем на одном из следующих уроков.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inBitmap" target="_blank" rel="noopener noreferrer">inBitmap</a></h3>
+<p>Если передать в этот параметр Bitmap-объект, то он и будет использован для получения результата вместо создания нового Bitmap-объекта.</p>
+<p>Тут есть несколько особенностей с версиями Android.</p>
+<p>- в Android 4.4 (API 19) передаваемый Bitmap должен быть не меньше по размеру (в байтах), чем читаемое изображение.</p>
+<p>- для более ранних версий, передаваемый в inBitmap объект должен быть того же размера (ширина/высота), что и читаемое изображение. Также, в Options необходимо добавлять inSampleSize = 1.</p>
+<p>Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">  class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            
+      Bitmap tempBitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888);
+      BitmapFactory.Options options = new BitmapFactory.Options();
+      options.inBitmap = tempBitmap;
+      bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher, options);
+      
+      Log.d("log", String.format("bitmap = %s (%s,%s), tempBitmap = %s", 
+          bitmap, bitmap.getWidth(), bitmap.getHeight(), tempBitmap));
+      
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+    }
+
+  }</code></pre>
+<p>Создаем новый Bitmap-объект tempBitmap и передаем его в inBitmap параметр.</p>
+<p>Лог:</p>
+<p><i>bitmap = android.graphics.Bitmap@5281a428 (48,48), tempBitmap = android.graphics.Bitmap@5281a428</i></p>
+<p>Видно, что bitmap и tempBitmap указывают на один объект. Т.е. decode-метод не создавал новый Bitmap, а прочел изображение в tempBitmap и вернул его, как результат. Размер Bitmap стал 48х48. Хотя изначально мы создавали его размером 300х300.</p>
+<p>Если систему что-то не устроит, она может вернуть null или сгенерировать IllegalArgumentException.</p>
+<p>Еще раз проговорю, что этот пример сработал на Android 4.4, но на более ранних версиях есть нюансы, которые я чуть выше расписал.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inPreferredConfig" target="_blank" rel="noopener noreferrer">inPreferredConfig</a></h3>
+<p>Указание желаемой конфигурации Bitmap.Config.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inDensity" target="_blank" rel="noopener noreferrer">inDensity</a></h3>
+<p>Задает density-значение для Bitmap, аналогично методу setDensity. Для задания значения используйте константы DENSITY* класса <a href="http://developer.android.com/reference/android/util/DisplayMetrics.html" target="_blank" rel="noopener noreferrer">DisplayMetrics</a>.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inTargetDensity" target="_blank" rel="noopener noreferrer">inTargetDensity</a>, <a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inScaled" target="_blank" rel="noopener noreferrer">inScaled</a></h3>
+<p>Если inTargetDensity отличен от inDensity, и inScaled = true (по умолчанию), то размер изображения будет скорректирован от inDensity к inTargetDensity.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inScreenDensity" target="_blank" rel="noopener noreferrer">inScreenDensity</a></h3>
+<p>К сожалению, мне не удалось понять, зачем он нужен. Если есть мысли, пишите на форуме.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inPurgeable" target="_blank" rel="noopener noreferrer">inPurgeable</a></h3>
+<p>Позволяет системе временно удалить содержимое созданного Bitmap из памяти в случае нехватки таковой. Когда изображение снова понадобится (например при выводе на экран), оно будет восстановлено из источника. Т.е. жертвуем производительностью в пользу памяти.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inInputShareable" target="_blank" rel="noopener noreferrer">inInputShareable</a></h3>
+<p>Если true, то Bitmap хранит ссылку на источник, иначе – данные источника. Но даже если true, то вполне может быть, что по усмотрению системы будут храниться данные, а не ссылка. Этот параметр актуален только при включенном inPurgeable.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inDither" target="_blank" rel="noopener noreferrer">inDither</a></h3>
+<p>Попытка сгладить цвета, если текущей цветовой палитры не достаточно для отображения оригинальных цветов изображения</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inMutable" target="_blank" rel="noopener noreferrer">inMutable</a></h3>
+<p>Если true, то мы получим mutable Bitmap</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inPreferQualityOverSpeed" target="_blank" rel="noopener noreferrer">inPreferQualityOverSpeed</a></h3>
+<p>Включение более качественного декодирования в ущерб скорости</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inPremultiplied" target="_blank" rel="noopener noreferrer">inPremultiplied</a></h3>
+<p>Доступен с API Level 19. Дает возможность выключить premultiplied-режим. Если режим включен (по умолчанию), то RGB компоненты в пикселах сразу рассчитаны с учетом альфа-компонента (для лучшей производительности). Канва принимает Bitmap только в таком режиме. В документацие сказано, что выключение режима может понадобиться для специфических задач: RenderScript  и OpenGL.</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inTempStorage" target="_blank" rel="noopener noreferrer">inTempStorage</a></h3>
+<p>Здесь можем указать свой временный массив, который будет использован в процессе декодирования</p>
+<h3><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#mCancel" target="_blank" rel="noopener noreferrer">mCancel</a></h3>
+<p>По этой метке можно определить был ли процесс декодирования отменен методом <a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#requestCancelDecode()" target="_blank" rel="noopener noreferrer">requestCancelDecode</a></p>
+<h3>Как сохранить Bitmap в файл</h3>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Bitmap.html#compress(android.graphics.Bitmap.CompressFormat, int, java.io.OutputStream)" target="_blank" rel="noopener noreferrer">compress</a> позволяет сохранить Bitmap в разных форматах в исходящий поток. На вход принимает:<br/>- <a href="http://developer.android.com/reference/android/graphics/Bitmap.CompressFormat.html" target="_blank" rel="noopener noreferrer">формат</a> (JPG, PNG, WEBP)<br/>- качество сжатия, от 0 (наихудшее) до 100 (наилучшее)<br/>- поток</p>
+<p>Рассмотрим пример, в котором создадим Bitmap, нарисуем на нем что-нибудь и сохраним на SD.</p>
+<p>Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setTextSize(40);
+      
+      Bitmap bmpIcon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+      bmpIcon = Bitmap.createScaledBitmap(bmpIcon, 500, 500, true);
+      
+      bitmap = Bitmap.createBitmap(500, 500, Bitmap.Config.RGB_565);
+      Canvas canvas = new Canvas(bitmap);
+      canvas.drawColor(Color.WHITE);
+      canvas.drawBitmap(bmpIcon, 0,0, paint);
+      canvas.drawText("Saved bitmap", 100, 50, paint);
+      
+      File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "savedBitmap.png");
+      
+      try {
+        FileOutputStream fos = null;
+        try {
+          fos = new FileOutputStream(file);
+          bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+        } finally {
+          if (fos != null) fos.close();
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      canvas.drawBitmap(bitmap, 100, 100, paint);
+    }
+
+  }</code></pre>
+<p>В bmpIcon читаем стандартную иконку, затем меняем размер на 500х500. Создаем новый bitmap, заполняем его белым, рисуем в нем bmpIcon и пишем текст.</p>
+<p>Далее создаем объект File, который указывает на файл savedBitmap.png в стандартной папке Pictures. Для этого файла создаем поток FileOutputStream, который передаем в метод compress. Также в методе указываем формат JPEG и качество = 100.</p>
+<p>Запускаем приложение</p>
+<p><img src="images/lesson159/lesson1.png" alt="" width="640" height="385"/></p>
+<p>После запуска приложения идем в папку Pictures, там должен быть файл savedBitmap.png.</p>
+<p><img src="images/lesson159/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Открываем его</p>
+<p><img src="images/lesson159/lesson3.png" alt="" width="640" height="385"/></p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

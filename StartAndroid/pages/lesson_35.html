@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 35. SQLite. Методы update и delete с указанием условия</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем методы query и delete с указанием условия</p>
+<p>На прошлом уроке мы разобрали, как <b>вставить </b>запись, <b>считать </b>все записи из таблицы и <b>очистить </b>таблицу. Теперь посмотрим, как <b>обновить </b>и <b>удалить </b>конкретную запись.</p>
+<p>Новый проект создавать не будем, используем <b>P0341_SimpleSQLite</b> с прошлого урока. Немного поменяем экран, добавим <b>поле </b>для ввода <b>ID</b> и <b>кнопки </b>для <b>обновления </b>и <b>удаления</b>.</p>
+<p>Перепишем <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ID"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="25dp"&gt;
+        &lt;/TextView&gt;
+        &lt;EditText
+            android:id="@+id/etID"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"&gt;
+        &lt;/EditText&gt;
+        &lt;Button
+            android:id="@+id/btnUpd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Update"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnDel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Delete"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Name"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"&gt;
+        &lt;/TextView&gt;
+        &lt;EditText
+            android:id="@+id/etName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"&gt;
+            &lt;requestFocus&gt;
+            &lt;/requestFocus&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"&gt;
+        &lt;/TextView&gt;
+        &lt;EditText
+            android:id="@+id/etEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;Button
+            android:id="@+id/btnAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnRead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Read"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>По нажатию кнопки <b>Update </b>мы будем читать содержимое полей <b>Name </b>и <b>Email</b>, и обновлять запись в таблице, для которой <b>id</b> = значению из поля <b>ID</b>. По нажатию кнопки <b>Delete </b>будем удалять запись из таблицы по <b>id </b>= значению из поля <b>ID</b>. Экран получился, конечно, не самый лучший с точки зрения эргономики и юзабилити, но у нас тут не кружок юных дизайнеров, а серьезное изучение БД.</p>
+<p>Подредактируем <b>MainActivity.java</b>. Добавим описание и определение новых экранных элементов, присвоение обработчиков для кнопок.</p>
+<pre><code class="java; highlight">  final String LOG_TAG = "myLogs";
+
+  Button btnAdd, btnRead, btnClear, btnUpd, btnDel;
+  EditText etName, etEmail, etID;
+  
+  ...
+
+  public void onCreate(Bundle savedInstanceState) {
+    
+    ...
+    
+    btnClear = (Button) findViewById(R.id.btnClear);
+    btnClear.setOnClickListener(this);
+
+    btnUpd = (Button) findViewById(R.id.btnUpd);
+    btnUpd.setOnClickListener(this);
+
+    btnDel = (Button) findViewById(R.id.btnDel);
+    btnDel.setOnClickListener(this);
+
+    etName = (EditText) findViewById(R.id.etName);
+    etEmail = (EditText) findViewById(R.id.etEmail);
+    etID = (EditText) findViewById(R.id.etID);
+
+    // создаем объект для создания и управления версиями БД
+    dbHelper = new DBHelper(this);
+  }</code></pre>
+<p>(Обращайте внимание только на выделенные строки)</p>
+<p>Теперь дополним реализацию <b>onClick</b>:</p>
+<pre><code class="java; highlight"> public void onClick(View v) {
+
+    // создаем объект для данных
+    ContentValues cv = new ContentValues();
+
+    // получаем данные из полей ввода
+    String name = etName.getText().toString();
+    String email = etEmail.getText().toString();
+    String id = etID.getText().toString();
+
+    // подключаемся к БД
+    SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+    switch (v.getId()) {
+    case R.id.btnAdd:
+      ...
+    case R.id.btnRead:
+      ...
+    case R.id.btnClear:
+      ...
+    case R.id.btnUpd:
+      if (id.equalsIgnoreCase("")) {
+        break;
+      }
+      Log.d(LOG_TAG, "--- Update mytable: ---");
+      // подготовим значения для обновления
+      cv.put("name", name);
+      cv.put("email", email);
+      // обновляем по id
+      int updCount = db.update("mytable", cv, "id = ?",
+          new String[] { id });
+      Log.d(LOG_TAG, "updated rows count = " + updCount);
+      break;
+    case R.id.btnDel:
+      if (id.equalsIgnoreCase("")) {
+        break;
+      }
+      Log.d(LOG_TAG, "--- Delete from mytable: ---");
+      // удаляем по id
+      int delCount = db.delete("mytable", "id = " + id, null);
+      Log.d(LOG_TAG, "deleted rows count = " + delCount);
+      break;
+    }
+    // закрываем подключение к БД
+    dbHelper.close();
+  }</code></pre>
+<p>(Добавляете только выделенный текст)</p>
+<p>Мы добавляем переменную <b>id</b>, пишем в нее значение поля <b>etID</b>. В <b>switch </b>добавляем две новые ветки:</p>
+<p><b>btnUpd </b>– <b>обновление </b>записи в mytable. Проверяем, что значение <b>id </b>не пустое, заполняем <b>cv </b>данными для апдейта и <b>обновляем </b>запись. Для этого используется метод <b>update</b>. На вход ему подается <b>имя</b> таблицы, заполненный <b>ContentValues </b>с значениями для обновления, строка <b>условия </b>(Where) и массив <b>аргументов </b>для строки условия. В строке условия я использовал знак <i>?</i>. При запросе к БД вместо этого знака будет подставлено значение из массива <b>аргументов</b>, в нашем случае это – значение переменной <b>id</b>. Если знаков <i>?</i> в строке условия несколько, то им будут сопоставлены значения из массива по порядку. Метод <b>update </b>возвращает нам <b>кол-во обновленных</b> записей, которое мы выводим в лог.</p>
+<p><b>btnDel </b>– <b>удаление </b>записи из mytable. Проверяем, что <b>id </b>не пустое и вызываем метод <b>delete</b>. На вход передаем <b>имя </b>таблицы, строку <b>условия </b>и массив <b>аргументов </b>для условия. Метод delete возвращает кол-во удаленных строк, которое мы выводим в лог.</p>
+<p>Обратите внимание, что <b>условия </b>и для <b>update </b>и для <b>delete </b>у меня одинаковые, а именно <i><b>id </b>= значение из поля <b>etID</b></i>. Но реализовал я их немного по-разному. Для <b>update </b>использовал символ <i>?</i> в строке условия и <b>массив </b>аргументов. А для <b>delete </b>вставил значение сразу в строку <b>условия</b>. Таким образом, я просто показал<b> способы формирования условия</b>. А вы уже используйте тот, что больше нравится или лучше в конкретной ситуации.</p>
+<p>Все сохраним и запустим. На прошлом уроке мы добавляли пару записей, но потом их удалили. Так что я буду добавлять снова. <b>Добавлю </b>пару записей, нажму <b>Read</b>, вижу в логе:</p>
+<p><i>ID = 3, name = Ivan Petrov, email = ipetrov @abc.com<br>ID = 4, name = Anton Sidorov, email = asidorov @def.com</i></p>
+<p>Теперь попробуем обновить запись с <b>ID</b>=3. Для этого вводим 3 в поле <b>ID</b> и новые данные в поля <b>Name </b>и <b>Email</b>:</p>
+<p><img src="images/lesson_34_0.png" alt=""></p>
+<p>Жмем <b>Update</b>, смотрим лог:</p>
+<p><i>-- Update mytable: ---<br>updated rows count = 1</i></p>
+<p>обновилась одна запись, все верно.</p>
+<p>Нажмем <b>Read </b>и убедимся в этом. Лог:</p>
+<p><i>ID = 3, name = Petr Ivanov, email = pivanov @abc.com<br>ID = 4, name = Anton Sidorov, email = asidorov @def.com</i></p>
+<p>Запись действительно обновилась.</p>
+<p>Теперь давайте удалим запись с <b>ID </b>= 4. Вводим 4 в поле <b>ID</b></p>
+<p><img src="images/lesson_34_1.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Delete</b>, смотрим лог:</p>
+<p><i>--- Delete from mytable: ---<br>deleted rows count = 1</i></p>
+<p>одна запись удалена.</p>
+<p>Жмем <b>Read</b>, смотрим лог:</p>
+<p><i>--- Rows in mytable: ---<br>ID = 3, name = Petr Ivanov, email = pivanov @abc.com</i></p>
+<p>осталась одна запись.</p>
+<p>Если попробовать удалить запись с <b>пустым </b>полем <b>ID</b>, то ничего не будет, т.к. мы реализовали проверку. Если же попробовать удалить запись с несуществующим <b>ID</b>, то метод <b>delete </b>вернет <b>0</b>. Т.е. ничего не было удалено, т.к. не нашлось записей для удаления.</p>
+<p>Теперь вы умеете <b>читать</b>, <b>вставлять</b>, <b>удалять </b>и <b>изменять </b>записи в SQLite.</p>
+<p>Полный код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0341simplesqlite;
+
+import ru.startandroid.develop.p0341simpelsqlite.R;
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  Button btnAdd, btnRead, btnClear, btnUpd, btnDel;
+  EditText etName, etEmail, etID;
+
+  DBHelper dbHelper;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    btnAdd = (Button) findViewById(R.id.btnAdd);
+    btnAdd.setOnClickListener(this);
+
+    btnRead = (Button) findViewById(R.id.btnRead);
+    btnRead.setOnClickListener(this);
+
+    btnClear = (Button) findViewById(R.id.btnClear);
+    btnClear.setOnClickListener(this);
+
+    btnUpd = (Button) findViewById(R.id.btnUpd);
+    btnUpd.setOnClickListener(this);
+
+    btnDel = (Button) findViewById(R.id.btnDel);
+    btnDel.setOnClickListener(this);
+
+    etName = (EditText) findViewById(R.id.etName);
+    etEmail = (EditText) findViewById(R.id.etEmail);
+    etID = (EditText) findViewById(R.id.etID);
+
+    // создаем объект для создания и управления версиями БД
+    dbHelper = new DBHelper(this);
+  }
+
+  public void onClick(View v) {
+
+    // создаем объект для данных
+    ContentValues cv = new ContentValues();
+
+    // получаем данные из полей ввода
+    String name = etName.getText().toString();
+    String email = etEmail.getText().toString();
+    String id = etID.getText().toString();
+
+    // подключаемся к БД
+    SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+    switch (v.getId()) {
+    case R.id.btnAdd:
+      Log.d(LOG_TAG, "--- Insert in mytable: ---");
+      // подготовим данные для вставки в виде пар: наименование столбца -
+      // значение
+      cv.put("name", name);
+      cv.put("email", email);
+      // вставляем запись и получаем ее ID
+      long rowID = db.insert("mytable", null, cv);
+      Log.d(LOG_TAG, "row inserted, ID = " + rowID);
+      break;
+    case R.id.btnRead:
+      Log.d(LOG_TAG, "--- Rows in mytable: ---");
+      // делаем запрос всех данных из таблицы mytable, получаем Cursor
+      Cursor c = db.query("mytable", null, null, null, null, null, null);
+
+      // ставим позицию курсора на первую строку выборки
+      // если в выборке нет строк, вернется false
+      if (c.moveToFirst()) {
+
+        // определяем номера столбцов по имени в выборке
+        int idColIndex = c.getColumnIndex("id");
+        int nameColIndex = c.getColumnIndex("name");
+        int emailColIndex = c.getColumnIndex("email");
+
+        do {
+          // получаем значения по номерам столбцов и пишем все в лог
+          Log.d(LOG_TAG,
+              "ID = " + c.getInt(idColIndex) + ", name = "
+                  + c.getString(nameColIndex) + ", email = "
+                  + c.getString(emailColIndex));
+          // переход на следующую строку
+          // а если следующей нет (текущая - последняя), то false -
+          // выходим из цикла
+        } while (c.moveToNext());
+      } else
+        Log.d(LOG_TAG, "0 rows");
+      c.close();
+      break;
+    case R.id.btnClear:
+      Log.d(LOG_TAG, "--- Clear mytable: ---");
+      // удаляем все записи
+      int clearCount = db.delete("mytable", null, null);
+      Log.d(LOG_TAG, "deleted rows count = " + clearCount);
+      break;
+    case R.id.btnUpd:
+      if (id.equalsIgnoreCase("")) {
+        break;
+      }
+      Log.d(LOG_TAG, "--- Update mytable: ---");
+      // подготовим значения для обновления
+      cv.put("name", name);
+      cv.put("email", email);
+      // обновляем по id
+      int updCount = db.update("mytable", cv, "id = ?",
+          new String[] { id });
+      Log.d(LOG_TAG, "updated rows count = " + updCount);
+      break;
+    case R.id.btnDel:
+      if (id.equalsIgnoreCase("")) {
+        break;
+      }
+      Log.d(LOG_TAG, "--- Delete from mytable: ---");
+      // удаляем по id
+      int delCount = db.delete("mytable", "id = " + id, null);
+      Log.d(LOG_TAG, "deleted rows count = " + delCount);
+      break;
+    }
+    // закрываем подключение к БД
+    dbHelper.close();
+  }
+
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      // конструктор суперкласса
+      super(context, "myDB", null, 1);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, "--- onCreate database ---");
+      // создаем таблицу с полями
+      db.execSQL("create table mytable ("
+          + "id integer primary key autoincrement," 
+          + "name text,"
+          + "email text" + ");");
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

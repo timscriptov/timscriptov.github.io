@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 174. OpenGL. Модель</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- перемещаем отдельный объект</p>
+<p>В двух последних уроках мы рассмотрели две матрицы.</p>
+<p>Первая (<b>projection</b>) позволила нам использовать трехмерные координаты для построения изображения. Всю работу по переводу трехмера в плоское изображение на экране она взяла на себя.</p>
+<p>Вторая (<b>view</b>) позволяла управлять камерой. Мы могли посмотреть на изображение с любой точки и под любым углом.</p>
+<p>В этом уроке рассмотрим третью матрицу (<b>model</b>), которая позволит нам перемещать, поворачивать, сжимать и растягивать отдельные объекты нашего изображения.</p>
+<p>Итак, у нас есть задача – перемещать объект в итоговом изображении. Т.е. надо подвинуть только один объект, а остальные не трогать. Можно конечно динамически менять вершины этого объекта в массиве, который мы передаем в шейдер. Но это не очень хороший путь. Особенно, если необходимо объект повернуть – вам придется самим рассчитывать результат. Да и в производительности проиграем, если каждый кадр будем все координаты в шейдер тащить.</p>
+<p>Гораздо удобнее использовать матрицу model. Ей надо будет просто указать какие преобразование вам необходимы, и она сама все рассчитает.</p>
+<p>Давайте вспомним, как у нас все работает. Мы из нескольких матриц получаем одну итоговую. И передаем ее в вершинный шейдер. И у нас есть массив вершин. Эти вершины мы прогоняем через шейдер, который преобразует их с помощью итоговой матрицы.</p>
+<p>В прошлом уроке мы использовали две матрицы: projection и view. Из них получали итоговую и передавали ее в шейдер. В результате все объекты нашего изображения (т.е. оси и треугольники) проходили через шейдер и были преобразованы в 2D (с помощью projection части итоговой матрицы) и отображены с определенного ракурса и под определенным углом (с помощью view части итоговой матрицы).</p>
+<p>В общем, я веду к тому, что две этих матрицы мы применяли для всех объектов. А в этом уроке нам понадобится для одного из объектов применить еще и третью матрицу (в дополнение к тем двум), чтобы влиять на расположение/размеры/поворот только этого объекта и не трогать остальные.</p>
+<p>Т.е. projection и view обработают наш объект наравне с остальными объектами, он будет частью общего изображения, а третья матрица дополнительно преобразует (например, сдвинет или повернет) его и только его. Остальные объекты не будут затронуты.</p>
+<p>Давайте смотреть код, с ним все это станет понятнее. Скачивайте <a href="https://github.com/startandroid/lessons_opengl" target="_blank" rel="noopener noreferrer">исходники</a> и открывайте модуль lesson174_model</p>
+<p>Смотрим класс <b>OpenGLRenderer</b>. Код в целом уже знаком по прошлым урокам. Прокомментирую только изменения.</p>
+<p>У нас описаны 4 матрицы:</p>
+<p>mProjectionMatrix – projection матрица</p>
+<p>mViewMatrix – view матрица</p>
+<p>mModelMatrix  - model матрица</p>
+<p>mMatrix – итоговая матрица</p>
+<p>В методе <b>prepareData</b> задаем массив vertices, в котором описываем три оси и один треугольник.</p>
+<p>В методе <b>bindMatrix</b> мы добавили model матрицу к вычислению итоговой матрицы. Перемножаем view и model матрицы, затем результат перемножаем с projection матрицей, получаем итоговую матрицу и передаем ее в шейдер.</p>
+<p>Весь основной код из <b>onDrawFrame</b> я для удобства и наглядности разбил на два метода drawAxes и drawTriangle.</p>
+<p>В <b>drawAxes</b> мы методом <a href="http://developer.android.com/reference/android/opengl/Matrix.html#setIdentityM(float[], int)" target="_blank" rel="noopener noreferrer">setIdentityM</a> сбрасываем model матрицу. Затем мы вычисляем и передаем в шейдер итоговую матрицу методом bindMatrix. Т.к. мы сбросили model матрицу, то ее перемножение с view матрицей даст view матрицу без изменений. Т.е. сброшенная model матрица никак не повлияет на итоговую матрицу, которая будет содержать только данные из view и projection матриц. Именно это нам и нужно, чтобы нарисовать оси.</p>
+<p>Дальнейшие вызовы метода glDrawArrays будут прогонять вершины через шейдер, а шейдер, для получения конечного результата будет использовать итоговую матрицу.</p>
+<p>Метод <b>drawTriangle</b> будет рисовать треугольник. Сначала мы на всякий случай снова сбрасываем model матрицу, т.к. перед тем как мы будем ее настраивать, она нужна нам чистой. Далее, в методе setModelMatrix будем задавать нужные нам преобразования в model матрице. И в методе bindMatrix формируем итоговую матрицу и передаем ее в шейдер. Теперь последующие вызовы метода glDrawArrays будут прогонять вершины через шейдер, который содержит матрицу, построенную с учетом настроенной model матрицы. И соответственно те преобразования, которые мы задали в model матрице, будут применены к объекту, который будет нарисован шейдером. В нашем случае – это треугольник.</p>
+<p>Это, пожалуй, ключевой момент урока и его надо понять. Т.е. для отрисовки осей мы вычисляем итоговую матрицу с пустой model матрицей, а для треугольника – с model матрицей, в которой будем настраивать преобразования. В итоге оси будут нарисованы так, как и должны, а треугольник будет сдвинут/повернут/сжат/растянут, смотря какие преобразования настроим в model матрице.</p>
+<p>Метод <b>setModelMatrix</b> пока что пустой. Т.е. мы пока никак не настраиваем model матрицу, и треугольник будет нарисован без каких-либо преобразований.</p>
+<p>Запускаем</p>
+<p><img src="images/lesson174/lesson1.png" alt="" width="640" height="385"/></p>
+<h3>Translate</h3>
+<p>Теперь давайте сдвинем треугольник вправо на 1. Перепишем setModelMatrix</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 1, 0, 0);
+}
+</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/opengl/Matrix.html#translateM(float[], int, float, float, float)" target="_blank" rel="noopener noreferrer">translateM</a> настраивает матрицу на перемещение.  В нем мы указываем model матрицу и нулевой отступ. Последние три параметра – это значение смещения соответственно по осям X, Y и Z. Мы задаем смещение по оси X, на 1. Т.к. камера смотрит на изображение с оси Z, то сместив треугольник по оси X на 1, мы получим смещение вправо.</p>
+<p>Теперь при запуcке bindMatrix, который идет перед рисованием треугольника, итоговая матрица будет рассчитана с учетом настроенной model-матрицы, и это скажется на том, как будет нарисован треугольник – он будет сдвинут вправо.</p>
+<p>Запускаем</p>
+<p><img src="images/lesson174/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Треугольник смещен вправо. Обратите внимание, что мы не меняли изначальные вершины треугольника в массиве. Смещение реализовано матрицей. И реализовано оно только для треугольника, а оси остались на месте. Так получилось из-за того, что использовались разные итоговые матрицы при отрисовке осей и треугольника.</p>
+<p>Давайте дальше тестировать</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, -1, 0, 0);
+}
+</code></pre>
+<p>Смещение на -1 по X</p>
+<p><img src="images/lesson174/lesson3.png" alt="" width="640" height="385"/></p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 0, 2, 0);
+}
+</code></pre>
+<p>Смещение по оси Y на 2</p>
+<p><img src="images/lesson174/lesson4.png" alt="" width="640" height="385"/></p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 0, 0, 2);
+}
+</code></pre>
+<p>Смещение по оси Z на 2.</p>
+<p><img src="images/lesson174/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Т.к. камера у нас в точке (0,0,5), то треугольник, сместившись по оси Z, стал располагаться ближе к камере и стал выглядеть крупнее.</p>
+<p>Давайте теперь отдалим его</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 0, 0, -1);
+}
+</code></pre>
+<p>Смещение по оси Z на -1.</p>
+<p><img src="images/lesson174/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Треугольник стал расположен дальше и видно, что он ушел за пересечение осей.</p>
+<p>Разумеется, одновременно можно указывать смещение по нескольким осям сразу. Попробуйте это самостоятельно.</p>
+<h3>Scale</h3>
+<p>Рассмотрим возможности сжатия/растягивания. Метод <a href="http://developer.android.com/reference/android/opengl/Matrix.html#scaleM(float[], int, float, float, float)" target="_blank" rel="noopener noreferrer">scaleM</a> аналогичен методу translateM, но последние три параметра задают не смещение, а коэффициент сжатия по каждой оси.</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 1, 1, 1);
+}
+</code></pre>
+<p>Задаем три единицы, т.е. объект никак не изменится ни по одной из осей.</p>
+<p><img src="images/lesson174/lesson7.png" alt="" width="640" height="385"/></p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 2, 1, 1);
+}
+</code></pre>
+<p>Мы задали коэффициент 2 для оси X, т.е. объект будет увеличен в два раза вдоль оси X. В нашем примере – это будет увеличение ширины.</p>
+<p><img src="images/lesson174/lesson8.png" alt="" width="640" height="385"/></p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 1, 3, 1);
+}
+</code></pre>
+<p>Коэффициент 3 по оси Y. В нашем примере это будет увеличение высоты в три раза.</p>
+<p><img src="images/lesson174/lesson9.png" alt="" width="640" height="385"/></p>
+<p>Если задать коэффициент меньше единицы, то объект будет сжат. Сожмем его по оси X.</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 0.5f, 1, 1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson10.png" alt="" width="640" height="385"/></p>
+<p>Если задать отрицательный коэффициент, то объект будет зеркально отражен.</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 1, -2, 1);
+}
+</code></pre>
+<p>Мы задали коэффициент -2 для оси Y. Объект будет увеличен в два раза в высоту и зеркально отражен по оси Y.</p>
+<p><img src="images/lesson174/lesson11.png" alt="" width="640" height="385"/></p>
+<p>Можно задавать значения сразу для несколько осей</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 2, 0.5f, 1);
+}
+</code></pre>
+<p>Растянули по оси X и сжали по Y</p>
+<p><img src="images/lesson174/lesson12.png" alt="" width="640" height="385"/></p>
+<h3>Rotate</h3>
+<p>Осталось рассмотреть поворот. Для этого используется метод <a href="http://developer.android.com/reference/android/opengl/Matrix.html#rotateM(float[], int, float, float, float, float)" target="_blank" rel="noopener noreferrer">rotateM</a>, в котором мы задаем угол поворота и ось поворота.</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.rotateM(mModelMatrix, 0, 45, 0, 0, 1);
+}
+</code></pre>
+<p>Здесь мы задали угол в 45 градусов, а ось поворота – (0,0,1). Т.е. из начала системы координат (точка (0,0,0)) проводится ось через заданную нами точку (0,0,1). И вокруг этой оси и будет выполнен поворот.</p>
+<p><img src="images/lesson174/lesson13.png" alt="" width="640" height="385"/></p>
+<p>Треугольник повернулся на 45 против часовой стрелки. Почему против часовой?</p>
+<p>Ось из (0,0,0) в (0,0,1) смотрит прямо в камеру. Треугольник повернулся на 45 по часовой, если смотреть вдоль по направлению этой оси. Т.к. камера смотрит прямо противоположно оси поворота, то она видит, как треугольник повернулся на 45 против часовой.</p>
+<p>Давайте поменяем направление оси так, чтобы оно совпадало с направлением камеры. Для этого надо просто задать отрицательное значение Z.</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.rotateM(mModelMatrix, 0, 45, 0, 0, -1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson14.png" alt="" width="640" height="385"/></p>
+<p>Ось из точки (0,0,0) в точку (0,0,-1) совпадает с направлением камеры и теперь камера видит поворот по часовой.</p>
+<p>Зададим угол в 180 градусов</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.rotateM(mModelMatrix, 0, 180, 0, 0, -1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson15.png" alt="" width="640" height="385"/></p>
+<p>Треугольник повернулся вниз головой.</p>
+<p>Чуть позже рассмотрим повороты вокруг осей X и Y и добавим анимации, но сначала давайте разберем один важный момент.</p>
+<p>Вы можете задавать более одного преобразования в матрице. Причем преобразования могут быть как одного типа, так и разных.</p>
+<p>Например, два изменения размера</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 2, 1, 1);
+    Matrix.scaleM(mModelMatrix, 0, 1, 0.5f, 1);
+}
+</code></pre>
+<p>Результат будет суммирован.</p>
+<p><img src="images/lesson174/lesson16.png" alt="" width="640" height="385"/></p>
+<p>Треугольник и растянулся в два раза по оси X и сжался до 0.5 по оси Y. Разумеется, результат будет таким же, если мы укажем сразу оба преобразования в одном вызове метода</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 2, 0.5f, 1);
+}
+</code></pre>
+<p>Пример с двумя перемещениями</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 1, 0, 0);
+    Matrix.translateM(mModelMatrix, 0, 0, 2, 0);
+}
+</code></pre>
+<p>Оба перемещения будут применены</p>
+<p><img src="images/lesson174/lesson17.png" alt="" width="640" height="385"/></p>
+<p>Треугольник сдвинут на 1 по оси X и на 2 по оси Y.</p>
+<p>Их также можно объединить в одно</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 1, 2, 0);
+}
+</code></pre>
+<p>Перемещение и размер</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.scaleM(mModelMatrix, 0, 1, 2, 1);
+    Matrix.translateM(mModelMatrix, 0, 1, 0, 0);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson18.png" alt="" width="640" height="385"/></p>
+<p>Треугольник подвинут на 1 по оси X и растянут в два раза вдоль оси Y</p>
+<p>Все просто вроде, но будьте аккуратны. В некоторых случаях порядок преобразований имеет значение.</p>
+<p>Рассмотрим пример: поворот + перемещение</p>
+<p>Для начала давайте сдвинем камеру чуть дальше от треугольника, чтобы обзор был больше. Для этого в методе createViewMatrix поменяйте значение</p>
+<pre><code class="java">float eyeZ = 8;
+</code></pre>
+<p>Далее задаем преобразования</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.translateM(mModelMatrix, 0, 2f, 0, 0);
+    Matrix.rotateM(mModelMatrix, 0, 45, 0, 0, 1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson19.png" alt="" width="640" height="385"/></p>
+<p>Видим, что треугольник был повернут на 45 градусов вокруг оси Z и смещен на 2 по оси X.</p>
+<p>Т.е. сначала был выполнен поворот, затем перемещение.</p>
+<p>Поменяем местами преобразования:</p>
+<pre><code class="java">private void setModelMatrix() {
+    Matrix.rotateM(mModelMatrix, 0, 45, 0, 0, 1);
+    Matrix.translateM(mModelMatrix, 0, 2f, 0, 0);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson20.png" alt="" width="640" height="385"/></p>
+<p>Казалось бы, те же операции, а результат другой. Это потому, что изменился порядок операций. Сначала треугольник был смещен на 2 по оси X. А затем из этой позиции был повернут относительно оси Z, и соответственно уехал вверх.</p>
+<p>Т.е. похоже, что операции выполняются в порядке обратном тому, что мы задаем в коде. Учитывайте этот момент, когда выполняете несколько преобразований.</p>
+<p>Давайте добавим анимации для наглядности</p>
+<pre><code class="java">private void setModelMatrix() {
+    float angle = (float)(SystemClock.uptimeMillis() % TIME) / TIME * 360;
+    Matrix.rotateM(mModelMatrix, 0, angle, 0, 0, 1);
+    Matrix.translateM(mModelMatrix, 0, 2f, 0, 0);
+}
+</code></pre>
+<p>В переменной angle будет меняться угол от 0 до 360 каждые 10 секунд.</p>
+<p><img src="images/lesson174/lesson21.gif" alt="" width="640" height="385"/></p>
+<p>С анимацией явно видно, что треугольник каждый кадр сначала сдвигается по оси X, а затем поворачивается вокруг оси Z.</p>
+<p>Снова поменяем местами операции преобразования, чтобы посмотреть как это будет выглядеть в анимации</p>
+<pre><code class="java">private void setModelMatrix() {
+    float angle = (float)(SystemClock.uptimeMillis() % TIME) / TIME * 360;
+    Matrix.translateM(mModelMatrix, 0, 2f, 0, 0);
+    Matrix.rotateM(mModelMatrix, 0, angle, 0, 0, 1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson22.gif" alt="" width="640" height="385"/></p>
+<p>Тут уже видно, что каждый кадр треугольник сначала поворачивается вокруг оси Z, а затем мы его сдвигаем по оси X вправо.</p>
+<p>Еще раз распишу на всякий случай, что вообще происходит.</p>
+<p>1) В методе prepareData мы подготовили в массиве данные по вершинам, а в методе bindData передали их вершинному шейдеру. Эти методы у нас были вызваны один раз в самом начале, в методе onSurfaceCreated. Т.е. мы передаем данные по вершинам только один раз, а не каждый кадр!</p>
+<p>2) При отрисовке каждого кадра система вызывает метод onDrawFrame. В нем мы вызываем glDrawArrays, в котором указываем какие вершины (из тех, что мы передали в пункте 1) шейдер должен взять и какой примитив из них нарисовать.</p>
+<p>3) Кроме этого, в onDrawFrame мы пересчитываем матрицу и передаем ее в шейдер. Т.е. мы делаем это не один раз в самом начале, как вершины, а именно каждый кадр. И т.к. мы каждый кадр настраиваем model матрицу с помощью метода rotateM и постоянно меняющейся переменной angle, то каждый новый кадр итоговая матрица содержит данные, отличающиеся от данных которые она содержала во время отрисовки предыдущего кадра.</p>
+<p>4) В итоге, каждый кадр шейдер берет данные, которые мы передали ему в пункте 1, применяет к ним полученную в текущем кадре итоговую матрицу и отдает системе рассчитанные координаты вершин. В результате каждый новый кадр объект рисуется на другом месте и именно это дает нам анимацию.</p>
+<p>Теперь можно вернуться к повороту и рассмотреть его подробнее.</p>
+<p>Немного сместим камеру, чтобы видеть треугольник под углом. Так будет лучше видны повороты по всем осям. Для этого в методе createViewMatrix поменяйте положение камеры</p>
+<pre><code class="java">float eyeX = 2;
+float eyeY = 2;
+float eyeZ = 3;
+</code></pre>
+<p>А в преобразовании зададим поворот</p>
+<pre><code class="java">private void setModelMatrix() {
+    float angle = (float)(SystemClock.uptimeMillis() % TIME) / TIME * 360;
+    Matrix.rotateM(mModelMatrix, 0, angle, 0, 0, -1);
+}
+</code></pre>
+<p><img src="images/lesson174/lesson23.gif" alt="" width="640" height="385"/></p>
+<p>Видим вращение вокруг оси Z (желтая). Давайте попробуем также оси X и Y.</p>
+<p>В методе setModelMatrix поменяйте параметры метода rotateM:</p>
+<pre><code class="java">Matrix.rotateM(mModelMatrix, 0, angle, 1, 0, 0);
+</code></pre>
+<p>Теперь треугольник будет крутиться вокруг оси X (красная)</p>
+<p><img src="images/lesson174/lesson24.gif" alt="" width="640" height="385"/></p>
+<p>Ось Y (синяя)</p>
+<pre><code class="java">Matrix.rotateM(mModelMatrix, 0, angle, 0, 1, 0);
+</code></pre>
+<p><img src="images/lesson174/lesson25.gif" alt="" width="640" height="385"/></p>
+<p>Теперь ось, проведенная в точку (0,1,1)</p>
+<pre><code class="java">Matrix.rotateM(mModelMatrix, 0, angle, 0, 1, 1);
+</code></pre>
+<p>Попробуйте представить себе ось, которая идет из точки (0,0,0) в точку (0,1,1) – т.е. она будет пролегать между осями Y и Z. И вокруг нее будет крутиться треугольник.</p>
+<p><img src="images/lesson174/lesson26.gif" alt="" width="640" height="385"/></p>
+<p>В качестве небольшой самостоятельной работы, попробуйте выводить на экран ось поворота, так же, как мы в прошлом уроке выводили up-вектор. Это даст больше наглядности повороту.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

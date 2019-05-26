@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 109. Android 3. Fragments. ListFragment - список</title>
+	
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с ListFragment</p>
+<p>Вернемся к фрагментам. В Android есть несколько полезных классов – наследников класса Fragment. Мы рассмотрим несколько из них. Начнем с <a href="http://developer.android.com/reference/android/app/ListFragment.html" target="_blank">ListFragment</a>. В принципе, это просто Fragment, в котором есть методы, упрощающие доступ к ListView и некоторым его операциям.</p>
+<p>Тут можно провести аналогию - для Activity есть класс наследник <a href="http://developer.android.com/reference/android/app/ListActivity.html" target="_blank">ListActivity</a>. Когда мы только знакомились со списками, я не стал рассматривать этот класс, чтобы не вносить путаницы в непростую тему. Но в учебниках и документацие о нем обычно говорят. Думаю, многие уже сталкивались с ним и примерно знают, что это такое. Если да, то ListFragment будет совсем прост для понимания.</p>
+<p>Напишем приложение и рассмотрим основные возможности ListFragment.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1091_ListFragment<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: ListFragment<br><b>Package name</b>: ru.startandroid.develop.p1091listfragment<br><b>Create Activity</b>: MainActivity</p>
+<p>Создадим класс фрагмента, наследующий не android.app.Fragment как обычно, а android.app.ListFragment.</p>
+<p><b>MainList.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1091listfragment;
+
+import android.app.ListFragment;
+
+public class MainList extends ListFragment {
+
+}</code></pre>
+<p>Класс так и оставляем пока пустым. И пока что не будем создавать Layout-файл для этого фрагмента. Дело в том, что ListFragment по умолчанию уже содержит ListView и мы вполне можем обойтись им. Адаптер мы пока также никакой не создаем, посмотрим чего получится.</p>
+<p>Редактируем layout для MainActivity</p>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;fragment
+		android:name="ru.startandroid.develop.p1091listfragment.MainList"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/fragment&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Здесь только компонент fragment, использующий наш класс.</p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_0.png" alt="" width="384" height="640"></p>
+<p>ListFragment показывает нам, что он ждет данных. </p>
+<p>Ок, давайте дадим ему данные. Перепишем <b>MainList.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1091listfragment;
+
+import android.app.ListFragment;
+import android.os.Bundle;
+import android.widget.ArrayAdapter;
+
+public class MainList extends ListFragment {
+
+  String data[] = new String[] { "one", "two", "three", "four" };
+
+  @Override
+  public void onActivityCreated(Bundle savedInstanceState) {
+    super.onActivityCreated(savedInstanceState);
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(getActivity(),
+        android.R.layout.simple_list_item_1, data);
+    setListAdapter(adapter);
+  }
+
+}</code></pre>
+<p>Мы создаем адаптер и используем метод <a href="http://developer.android.com/reference/android/app/ListFragment.html#setListAdapter(android.widget.ListAdapter)" target="_blank">setListAdapter</a>, чтобы передать его списку. Обратите внимание - мы даже не создаем или не находим (findViewById) список (ListView), он уже есть где-то внутри фрагмента и метод setListAdapter сам знает, как до него добраться. В принципе, это и есть основная фишка ListFragment - нам не надо работать с ListView.</p>
+<p>Все сохраним, запустим приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_1.png" alt="" width="384" height="640"></p>
+<p>Данные появились.</p>
+<p>Еще раз обращаю ваше внимание на то, что мы вообще не создавали никаких layout с ListView. ListFragment работает с каким-то своим, встроенным списком. </p>
+<p>Если же вас чем-то не устраивает этот дефолтный список, можно использовать свой layout-файл для фрагмента.</p>
+<p>В <b>strings.xml</b> добавим строки</p>
+<pre><code class="xml">&lt;string name="number_list"&gt;Список чисел&lt;/string&gt;
+&lt;string name="empty"&gt;Нет данных&lt;/string&gt;</code></pre>
+<p>И создадим layout файл <b>fragment.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/number_list"&gt;
+	&lt;/TextView&gt;
+	&lt;ListView
+		android:id="@id/android:list"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/ListView&gt;
+	&lt;TextView
+		android:id="@id/android:empty"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:gravity="center"
+		android:text="@string/empty"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Первый TextView – просто заголовок списка. Далее идет ListView. Его ID обязательно должен быть равен <b>@id/android:list</b>. Чтобы ListFragment сам его нашел и мог с ним работать. Второй TextView – будет показан, если нет данных для списка. Его ID обязательно должен быть равен <b>@id/android:empty</b>.</p>
+<p>Допишем в <b>MainList.java</b> метод создания View.</p>
+<pre><code class="java">  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment, null);
+  }</code></pre>
+<p>Фрагмент будет отображать компоненты из layout-файла, который мы только что создавали.</p>
+<p>Все сохраняем и запускаем.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_2.png" alt="" width="384" height="640"></p>
+<p>Видим заголовок и данные. Наш layout был использован.</p>
+<p>Если не дать списку данные, то приложение будет выглядеть так</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_3.png" alt="" width="384" height="640"></p>
+<p>Отобразился наш второй TextView с ID = @id/android:empty. Причем, это вовсе не обязательно должен быть TextView. Главное тут именно этот ID. Компонент с этим ID будет показан вместо ListView, если нет данных.</p>
+<p>Чтобы включать одиночный и множественный выбор, необходимо провести все те же действия, которые мы рассматривали в Уроке 43: передать в адаптер соответствующий layout-файл и включить соответствующий режим выбора для списка. В этом же 43-м Уроке можно посмотреть, как определять, какие пункты списка выбраны. Чтобы в ListFragment получить доступ к списку – используйте метод <a href="http://developer.android.com/reference/android/app/ListFragment.html#getListView()" target="_blank">getListView</a>.</p>
+<p>Результаты включения режима выбора будут такие:</p>
+<p>одиночный выбор</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_4.png" alt="" width="384" height="640"></p>
+<p>множественный выбор</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_5.png" alt="" width="384" height="640"></p>
+<p>Еще, как вариант, можно в адаптер передавать layout-файл <b>android.R.layout.simple_list_item_activated_1</b>.</p>
+<p>В этом случае результаты будут такие:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_6.png" alt="" width="384" height="640"></p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_7.png" alt="" width="384" height="640"></p>
+<p>Это хорошо подходит для случая, когда у вас на экране слева фрагмент-список, а справа фрагмент-содержимое и вы всегда видите какой именно пункт из списка сейчас просматриваете.</p>
+<p>Чуть не забыл про самое главное )  Ловить нажатия можно в методе <a href="http://developer.android.com/reference/android/app/ListFragment.html#onListItemClick(android.widget.ListView, android.view.View, int, long)" target="_blank">onListItemClick</a>. Он очень похож на метод onItemClick из Урока 44.</p>
+<p>Если добавим в MainList.java его реализацию:</p>
+<pre><code class="java">  public void onListItemClick(ListView l, View v, int position, long id) {
+    super.onListItemClick(l, v, position, id);
+    Toast.makeText(getActivity(), "position = " + position, Toast.LENGTH_SHORT).show();
+  }</code></pre>
+<p>то при нажатии на пункт списка, увидим результат:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_108_8.png" alt="" width="384" height="640"></p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

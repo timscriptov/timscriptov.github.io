@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 75. Хранение данных. Работа с файлами.</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с файлами</p>
+<p>Работа с файлами в Android не сильно отличается от таковой в Java. В этом уроке рассмотрим, как записать/прочесть файл во внутреннюю память и на флэшку.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0751_Files<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Files<br><b>Package name</b>: ru.startandroid.develop.p0751files<br><b>Create Activity</b>: MainActivity</p>
+<p>Заполним <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;P0751_Files&lt;/string&gt;
+    &lt;string name="write_file"&gt;Записать файл&lt;/string&gt;
+    &lt;string name="read_file"&gt;Прочесть файл&lt;/string&gt;
+    &lt;string name="write_file_sd"&gt;Записать файл на SD&lt;/string&gt;
+    &lt;string name="read_file_sd"&gt;Прочесть файл с SD&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;Button
+            android:id="@+id/btnWrite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/write_file"
+            android:onClick="onclick"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnRead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/read_file"
+            android:onClick="onclick"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;Button
+            android:id="@+id/btnWriteSD"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/write_file_sd"
+            android:onClick="onclick"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnReadSD"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/read_file_sd"
+            android:onClick="onclick"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>4 кнопки, смысл которых понятен по тексту на них.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0751files;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final String FILENAME = "file";
+
+  final String DIR_SD = "MyFiles";
+  final String FILENAME_SD = "fileSD";
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnWrite:
+      writeFile();
+      break;
+    case R.id.btnRead:
+      readFile();
+      break;
+    case R.id.btnWriteSD:
+      writeFileSD();
+      break;
+    case R.id.btnReadSD:
+      readFileSD();
+      break;
+    }
+  }
+
+  void writeFile() {
+    try {
+      // отрываем поток для записи
+      BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(
+          openFileOutput(FILENAME, MODE_PRIVATE)));
+      // пишем данные
+      bw.write("Содержимое файла");
+      // закрываем поток
+      bw.close();
+      Log.d(LOG_TAG, "Файл записан");
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  void readFile() {
+    try {
+      // открываем поток для чтения
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+          openFileInput(FILENAME)));
+      String str = "";
+      // читаем содержимое
+      while ((str = br.readLine()) != null) {
+        Log.d(LOG_TAG, str);
+      }
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  void writeFileSD() {
+    // проверяем доступность SD
+    if (!Environment.getExternalStorageState().equals(
+        Environment.MEDIA_MOUNTED)) {
+      Log.d(LOG_TAG, "SD-карта не доступна: " + Environment.getExternalStorageState());
+      return;
+    }
+    // получаем путь к SD
+    File sdPath = Environment.getExternalStorageDirectory();
+    // добавляем свой каталог к пути
+    sdPath = new File(sdPath.getAbsolutePath() + "/" + DIR_SD);
+    // создаем каталог
+    sdPath.mkdirs();
+    // формируем объект File, который содержит путь к файлу
+    File sdFile = new File(sdPath, FILENAME_SD);
+    try {
+      // открываем поток для записи
+      BufferedWriter bw = new BufferedWriter(new FileWriter(sdFile));
+      // пишем данные
+      bw.write("Содержимое файла на SD");
+      // закрываем поток
+      bw.close();
+      Log.d(LOG_TAG, "Файл записан на SD: " + sdFile.getAbsolutePath());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  void readFileSD() {
+    // проверяем доступность SD
+    if (!Environment.getExternalStorageState().equals(
+        Environment.MEDIA_MOUNTED)) {
+      Log.d(LOG_TAG, "SD-карта не доступна: " + Environment.getExternalStorageState());
+      return;
+    }
+    // получаем путь к SD
+    File sdPath = Environment.getExternalStorageDirectory();
+    // добавляем свой каталог к пути
+    sdPath = new File(sdPath.getAbsolutePath() + "/" + DIR_SD);
+    // формируем объект File, который содержит путь к файлу
+    File sdFile = new File(sdPath, FILENAME_SD);
+    try {
+      // открываем поток для чтения
+      BufferedReader br = new BufferedReader(new FileReader(sdFile));
+      String str = "";
+      // читаем содержимое
+      while ((str = br.readLine()) != null) {
+        Log.d(LOG_TAG, str);
+      }
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+}</code></pre>
+<p>В <b>onclick</b> обрабатываем нажатия 4-х кнопок и вызываем соответствующие методы.</p>
+<p><b>writeFile</b> – запись файла во внутреннюю память. Используется метод <a href="http://developer.android.com/reference/android/content/Context.html#openFileOutput(java.lang.String, int)" target="_blank">openFileOutput</a>, который на вход берет имя файла и режим записи: <a href="http://developer.android.com/reference/android/content/Context.html#MODE_PRIVATE" target="_blank">MODE_PRIVATE</a> – файл доступен только этому приложению, <a href="http://developer.android.com/reference/android/content/Context.html#MODE_WORLD_READABLE" target="_blank">MODE_WORLD_READABLE</a> – файл доступен для чтения всем, <a href="http://developer.android.com/reference/android/content/Context.html#MODE_WORLD_WRITEABLE" target="_blank">MODE_WORLD_WRITEABLE</a> - файл доступен для записи всем, <a href="http://developer.android.com/reference/android/content/Context.html#MODE_APPEND" target="_blank">MODE_APPEND</a> – файл будет дописан, а не начат заново.</p>
+<p><b>readFile</b> – чтение файла из внутренней памяти. Используем метод <a href="http://developer.android.com/reference/android/content/Context.html#openFileInput(java.lang.String)" target="_blank">openFileInput</a>, принимающий на вход имя файла. Здесь и в методе записи внутреннего файла вы можете задать только имя файла, а каталог для ваших файлов вам уже выделен.</p>
+<p><b>writeFileSD</b> – запись файла на SD. Используем метод <a href="http://developer.android.com/reference/android/os/Environment.html#getExternalStorageState()" target="_blank">getExternalStorageState</a> для получения состояния SD-карты. <a href="http://developer.android.com/reference/android/os/Environment.html#constants" target="_blank">Здесь</a> можно посмотреть какие бывают состояния. Нам нужно MEDIA_MOUNTED – когда SD-карта вставлена и готова к работе. Далее мы получаем путь к SD-карте (метод <a href="http://developer.android.com/reference/android/os/Environment.html#getExternalStorageDirectory()" target="_blank">getExternalStorageDirectory</a>), добавляем свой каталог и имя файла, создаем каталог и пишем данные в файл.</p>
+<p><b>readFileSD</b> – чтение файла с SD. Все аналогично предыдущему методу, только файл не пишем, а читаем.</p>
+<p>Осталось в манифест добавить разрешение на работу с файлами на SD - android.permission.WRITE_EXTERNAL_STORAGE.</p>
+<p>Все сохраним и запустим. Видим экран с 4-мя кнопками:</p>
+<p><img src="images/lesson_74_0.png" alt="" width="640" height="449"></p>
+<h3>Внутренняя память</h3>
+<p>Жмем кнопку <b>Записать файл</b>.  Видим в логе:</p>
+<p><em>Файл записан</em></p>
+<p>Проверим. Идем в <b>File Explorer</b> (Window &gt; Show View &gt; Other &gt; Android &gt; File Explorer) и открываем там папку <b>data/data/ru.startandroid.develop.p0751files/files</b> и видим там наш файл <b>file</b>.</p>
+<p>Возвращаемся в эмулятор. Жмем <b>Прочесть файл</b> и в логе видим:</p>
+<p><em>Содержимое файла</em></p>
+<p>Это тот текст, который мы записывали в файл.</p>
+<h3>SD карта</h3>
+<p>Теперь жмем <b>Записать файл на SD</b>.</p>
+<p>В логе видим:</p>
+<p><i>Файл записан на SD: /mnt/sdcard/MyFiles/fileSD</i></p>
+<p>Проверяем. Идем в <b>FileExplorer</b> и открываем там папку <b>mnt/sdcard/MyFiles/</b> а в ней файл <b>fileSD</b>.</p>
+<p>Возвращаемся в эмулятор и жмем кнопку Прочесть файл с SD. В логе видим:</p>
+<p><i>Содержимое файла на SD</i></p>
+<p>Этот текст мы и записывали.</p>
+<p><b>mnt/sdcard</b> - обычно этот путь ведет к содержимому SD-карты. Возможно у вас он будет другой.</p>
+<p>В общем, при работе с файлами на SD вы используете стандартные java механизмы. А при работе с внутренним хранилищем для удобства можно использовать методы-оболочки от Activity:</p>
+<p><a href="http://developer.android.com/reference/android/content/Context.html#openFileOutput(java.lang.String, int)" target="_blank">openFileOutput</a> – открыть файл на запись</p>
+<p><a href="http://developer.android.com/reference/android/content/Context.html#openFileInput(java.lang.String)" target="_blank">openFileInput</a> – открыть файл на чтение</p>
+<p><a href="http://developer.android.com/reference/android/content/Context.html#deleteFile(java.lang.String)" target="_blank">deleteFile</a> – удалить файл</p>
+<p>И есть метод <a href="http://developer.android.com/reference/android/content/Context.html#getFilesDir()" target="_blank">getFilesDir</a> – возвращает объект File, соответствующий каталогу для файлов вашей программы. Используйте его, чтобы работать напрямую, без методов-оболочек.</p>
+<p>Подробности работы в java с файловой системой я здесь описывать не буду. На нашем форуме пользователь SKR сделал отличную <a href="http://forum.startandroid.ru/viewtopic.php?f=26&amp;t=860" target="_blank">памятку по работе с файлами</a>. Скорее всего, вы найдете там все что нужно.</p>
+<p>Если у вас проверка SD-карты показывает, что карта недоступна (см. лог), то убедитесь в свойствах AVD, что у вас для SDCard указан Size или File. Если указаны, то попробуйте перезапустить AVD.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

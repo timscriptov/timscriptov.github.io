@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 94. Service. Подробно про onStartCommand</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассмотрим подробнее метод onStartCommand</p>
+<p>Метод <a href="http://developer.android.com/reference/android/app/Service.html#onStartCommand(android.content.Intent, int, int)" target="_blank">onStartCommand</a> должен возвращать <b>int</b>. В прошлых примерах мы использовали ответ метода супер-класса. В этом уроке разберемся, что мы можем возвращать, и чем нам это грозит. Также посмотрим, что за флаги (второй параметр) идут на вход этому методу.</p>
+<p>Система может убить сервис, если ей будет не хватать памяти. Но в наших силах сделать так, чтобы наш сервис ожил, когда проблема с памятью будет устранена. И более того, не просто ожил, а еще и снова начал выполнять незавершенные вызовы <b>startService</b>.</p>
+<p>Т.е. мы вызываем startService, срабатывает <b>onStartCommand </b>и возвращает одну из следующих констант:</p>
+<p><a href="http://developer.android.com/reference/android/app/Service.html#START_NOT_STICKY" target="_blank">START_NOT_STICKY </a>– сервис не будет перезапущен после того, как был убит системой</p>
+<p><a href="http://developer.android.com/reference/android/app/Service.html#START_STICKY" target="_blank">START_STICKY </a>– сервис будет перезапущен после того, как был убит системой</p>
+<p><a href="http://developer.android.com/reference/android/app/Service.html#START_REDELIVER_INTENT" target="_blank">START_REDELIVER_INTENT </a>– сервис будет перезапущен после того, как был убит системой. Кроме этого, сервис снова получит все вызовы startService, которые не были завершены методом <b>stopSelf(startId)</b>.</p>
+<p>А второй параметр <b>flags </b>метода onStartCommand дает нам понять, что это повторная попытка вызова onStartCommand.</p>
+<p>В документацие написано, что flags может принимать значения 0, <a href="http://developer.android.com/reference/android/app/Service.html#START_FLAG_RETRY" target="_blank">START_FLAG_RETRY </a>или <a href="http://developer.android.com/reference/android/app/Service.html#START_FLAG_REDELIVERY" target="_blank">START_FLAG_REDELIVERY</a>.</p>
+<p>На практике я ни разу не встречал значения 0. Постоянно приходит START_FLAG_RETRY. По этому поводу я видел в инете мнение, что это реальный баг системы.</p>
+<p>А вот на флаг <b>START_FLAG_REDELIVERY </b>можно положиться. Если он пришел вам в методе onStartCommand, значит, прошлый вызов этого метода вернул <b>START_REDELIVER_INTENT</b>, но не был завершен успешно методом stopSelf(startId).</p>
+<p>В общем, на словах трудно все это объяснять, сейчас нарисуем приложение, и все станет понятнее.</p>
+<p>Будем создавать два проекта - соответственно, два Application-а у нас получится. В <b>первом</b> будет только одно <b>Activity</b>, которое будет вызывать сервис. А во <b>втором </b>собственно и будет этот <b>сервис</b>. Т.е. в прошлых уроках у нас приложение и сервис были в <b>одном </b>Application, а в этом уроке мы их раскидаем по <b>двум разным</b> Application. И сейчас даже объясню, зачем мы так сделаем.</p>
+<p>В начале урока я написал «Система может убить сервис». Этим мы и будем сейчас заниматься, чтобы на практике проверить поведение сервиса в таких случаях. Мы будем убивать процесс, который отвечает за сервис. Если бы у нас сервис и приложение были бы в одном Application, то они выполнялись бы в одном процессе. И убив процесс, мы грохнули бы и сервис и приложение. А нам надо убить только сервис, поэтому выносим его в отдельное Application, и он в своем процессе будет работать.</p>
+<p>Я раскидал сервис и приложение по разным проектам для большей наглядности. А вообще, организовать работу сервиса и приложения в разных процессах можно было и в одном проекте (в одном Application). Для этого в манифесте для сервиса надо прописать атрибут: <i>android:process=":newproc"</i>. Вместо newproc можно использовать свое слово. </p>
+<p>Итак, создадим первый проект:</p>
+<p><b>Project name</b>: P0941_ServiceKillClient<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceKillClient<br><b>Package name</b>: ru.startandroid.develop.p0941servicekillclient<br><b>Create Activity</b>: MainActivity</p>
+<p>Это у нас будет приложение-клиент, оно будет вызывать сервис.</p>
+<p>Добавим в<b> strings.xml </b>строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0941servicekillclient;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  public void onClickStart(View v) {
+    startService(new Intent("ru.startandroid.develop.p0942servicekillserver.MyService").putExtra("name", "value"));
+  }
+}</code></pre>
+<p>Просто вызов сервиса. Вспоминаем способы вызова Activity, которые мы знаем, и понимаем, что здесь идет аналогичный вызов сервиса через Action. А значит, когда будем создавать сервис, надо будет настроить Intent Filter с этим Action. На прошлых уроках мы сервис вызывали через класс, т.к. там приложение и сервис в одном Application у нас были.</p>
+<p>В Intent помещаем параметр с именем name и значением value. Это нам понадобится, чтобы убедиться, что система при восстановлении сервиса и повторном вызове не потеряет наши данные.</p>
+<p>Создадим второй проект, без Activity:</p>
+<p><b>Project name</b>: P0942_ServiceKillServer<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceKillServer<br><b>Package name</b>: ru.startandroid.develop.p0942servicekillserver</p>
+<p>Уберите эту галку</p>
+<p><img src="images/lesson_93_0.png" alt="" width="500" height="548"></p>
+<p>Нам в этом Application не понадобится Activity.</p>
+<p>В втором проекте создаем сервис, класс <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0942servicekillserver;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+
+public class MyService extends Service {
+
+  final String LOG_TAG = "myLogs";
+
+  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "MyService onCreate");
+  }
+
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "MyService onDestroy");
+  }
+
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(LOG_TAG, "MyService onStartCommand");
+    readFlags(flags);
+    MyRun mr = new MyRun(startId);
+    new Thread(mr).start();
+    return START_NOT_STICKY;
+  }
+
+  public IBinder onBind(Intent arg0) {
+    return null;
+  }
+  
+  void readFlags(int flags) {
+    if ((flags&amp;START_FLAG_REDELIVERY) == START_FLAG_REDELIVERY) 
+      Log.d(LOG_TAG, "START_FLAG_REDELIVERY");  
+    if ((flags&amp;START_FLAG_RETRY) == START_FLAG_RETRY) 
+      Log.d(LOG_TAG, "START_FLAG_RETRY");
+  }
+
+  class MyRun implements Runnable {
+
+    int startId;
+
+    public MyRun(int startId) {
+      this.startId = startId;
+      Log.d(LOG_TAG, "MyRun#" + startId + " create");
+    }
+
+    public void run() {
+      Log.d(LOG_TAG, "MyRun#" + startId + " start");
+      try {
+        TimeUnit.SECONDS.sleep(15);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      stop();
+    }
+
+    void stop() {
+      Log.d(LOG_TAG, "MyRun#" + startId + " end, stopSelfResult("
+          + startId + ") = " + stopSelfResult(startId));
+    }
+  }
+}</code></pre>
+<p>Он похож на сервис с прошлого урока.</p>
+<p><b>MyRun </b>– Runnable класс, который эмулирует долгую работу. Ставим в нем паузу 15 секунд. После этого вызываем stopSelfResult.</p>
+<p>В <b>onStartCommand </b>пишем в лог значение из Intent, создаем экземпляр MyRun и отправляем его работать в новый поток. Также здесь вызываем метод readFlags и передаем ему flags. И возвращаем константу START_NOT_STICKY. Напомню, что START_NOT_STICKY означает, что сервис не будет перезапущен после того, как будет убит.</p>
+<p>В методе <b>readFlags </b>определяем, какие флаги содержатся в readFlags, и отмечаем это в логе.</p>
+<p>Прописываем сервис в манифесте и добавляем к нему IntentFilter c action = <i>ru.startandroid.develop.p0942servicekillserver.MyService</i>.</p>
+<p>Все сохраняем. Для начала, запускаем второй проект (P0942_ServiceKillServer), он установится в эмулятор, но ничего не произойдет, т.к. Activity никаких не было, только сервис.</p>
+<p>В консоли будут такие строки:</p>
+<p><i>Installing P0942_ServiceKillServer.apk...<br>Success!<br>\P0942_ServiceKillServer\bin\P0942_ServiceKillServer.apk installed on device<br>Done!</i></p>
+<p>Теперь запускаем первый проект. Приложение установится в эмулятор и запустится.</p>
+<p><img src="images/lesson_93_1.png" alt="" width="640" height="449"></p>
+<p>Нам надо получить доступ к процессам. Для этого можно открыть перспективу DDMS и там увидеть все процессы.</p>
+<p>А можно и в нашу текущую перспективу добавить это окно.</p>
+<p>В Eclipse меню Window &gt; Show View &gt; Other &gt; Android &gt; Devices.</p>
+<p>Снизу должна появиться вкладка <b>Devices</b>. В ней показан наш эмулятор и запущенные процессы.</p>
+<p><img src="images/lesson_93_2.png" alt="" width="640" height="401"></p>
+<p>Мы видим, что запущено наше приложение. А когда мы нажмем в приложении кнопку <b>Start</b>, запустится сервис и в списке процессов появится еще один процесс. Вот его нам и надо будет остановить. </p>
+<p>У нас будет 15 секунд, чтобы удалить его. Потому что через 15 секунд он успешно вызовет <b>stopSelfResult </b>и сам закроется.</p>
+<p>Итак, жмем <b>Start</b>. Появился процесс</p>
+<p><img src="images/lesson_93_3.png" alt="" width="640" height="368"></p>
+<p>Выделяем его и жмем кнопку<b> Stop Process</b>. Процесс исчез. Смотрим логи:</p>
+<p><i>MyService onCreate<br> MyService onStartCommand, name = value<br> START_FLAG_RETRY<br> MyRun#1 create<br> MyRun#1 start</i></p>
+<p>Сервис создался и начал выполнять вызов startService. При этом почему-то мы получили флаг START_FLAG_RETRY. Хотя это у нас первая попытка вызова сервиса. Это я, к сожалению, никак не могу прокомментировать.</p>
+<p>Далее видим, как создался и начал работу MyRun#1. А потом мы убили процесс, и все закончилось на этом. Метод onStartCommand вернул START_NOT_STICKY и поэтому не был восстановлен после убийства.</p>
+<p>Давайте проверим следующую константу. Перепишем <b>onStartCommand</b>:</p>
+<pre><code class="java">  public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(LOG_TAG, "MyService onStartCommand, name = " + intent.getStringExtra("name"));
+    readFlags(flags);
+    MyRun mr = new MyRun(startId);
+    new Thread(mr).start();
+    return START_STICKY;
+  }</code></pre>
+<p>Теперь будем возвращать START_STICKY. Это значит, что сервис будет восстановлен после убийства.</p>
+<p>Все сохраняем, запускаем (CTRL+F11). Наш сервис инсталлится на эмулятор. А приложение так и работает до сих пор.</p>
+<p>Жмем Start и сразу же в процессах убиваем появившийся процесс сервиса. Но! Фокус еще не закончен. Проходит несколько секунд (у меня около 5, у вас может быть по-другому), и процесс снова появляется в списке! Система восстановила убитый сервис и сколько вы его теперь не грохайте, он постоянно будет восстанавливаться. Это нам обеспечила константа START_STICKY, которую мы возвращаем в onStartCommand.</p>
+<p>Смотрим логи:</p>
+<p><i>MyService onCreate<br>MyService onStartCommand, name = value<br>START_FLAG_RETRY<br>MyRun#1 create<br>MyRun#1 start</i></p>
+<p>Почти все так же, как и в прошлый раз. Сервис запустился, получил вызов startService, создал и запустил MyRun. Потом мы его убили - в логах это никак не отражено.</p>
+<p><i>MyService onCreate</i></p>
+<p>И далее сервис снова создан (MyService onCreate). Но вызов startService, который он получил в прошлый раз, потерян.</p>
+<p>Для того, чтобы этот вызов не терялся, нужна константа START_REDELIVER_INTENT. Будем возвращать ее в методе onStartCommand:</p>
+<pre><code class="java">  public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(LOG_TAG, "MyService onStartCommand, name = " + intent.getStringExtra("name"));
+    readFlags(flags);
+    MyRun mr = new MyRun(startId);
+    new Thread(mr).start();
+    return START_REDELIVER_INTENT;
+  }</code></pre>
+<p>Сохраняем, инсталлим сервис. Жмем <b>Start </b>и убиваем процесс. Процесс снова появляется спустя какое-то время. Смотрим логи:</p>
+<p><i>MyService onCreate<br> MyService onStartCommand, name = value<br> START_FLAG_RETRY<br> MyRun#1 create<br> MyRun#1 start</i></p>
+<p>Сервис начал работу и был убит, как в прошлые разы.</p>
+<p><br><i> MyService onCreate<br> MyService onStartCommand, name = value<br> START_FLAG_REDELIVERY<br> START_FLAG_RETRY<br> MyRun#1 create<br> MyRun#1 start<br> MyRun#1 end, stopSelfResult(1) = true<br> MyService onDestroy</i></p>
+<p>А далее он был снова запущен, снова получил вызов startService и успешно его отработал вплоть до stopSelfResult. После чего сервис сам остановился. Обратите внимание, что Intent мы получили тот же, что и в первую попытку, с параметром name = value. Т.е. система сохранила все, а когда процесс был убит, восстановила его и вернула нам данные.</p>
+<p>В этот раз кроме START_FLAG_RETRY  мы получили еще флаг <b>START_FLAG_REDELIVERY</b>, который говорит нам о том, что мы уже получали такой вызов, но в прошлый раз он по каким-то причинам не завершился методом stopSelf или stopSelfResult.</p>
+<p>Если во время убийства сервиса будет висеть несколько таких работающих START_FLAG_REDELIVERY вызовов, для которых еще не был выполнен stopSelf, то все они будут снова отправлены в сервис при его восстановлении.</p>
+<p><br> Вот такие три замечательные константы, которые позволяют нам управлять поведением сервиса после его насильственной смерти.</p>
+<p>Наверняка возникает вопрос типа «Как поведет себя сервис, если отправить ему несколько вызовов и в каждом onStartCommand возвращать разные константы». Я в одном уроке не смогу рассмотреть все эти комбинации и варианты. Предлагаю потестить вам это самостоятельно.</p>
+<p>И еще имеет смысл сказать, что метод onStartCommand появился только начиная с Android 2.0. До этого использовался более простой onStart, без механизма восстановления.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

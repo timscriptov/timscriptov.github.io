@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 134. Камера. Настройки</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- меняем настройки камеры</p>
+ 
+<p>По работе с камерой нам осталась одна тема – настройки камеры. Т.е. это разрешения, эффекты, фокусы, качество, вспышка и пр.  Полный список настроек можно посмотреть в <a href="http://developer.android.com/guide/topics/media/camera.html#camera-features" target="_blank" rel="noopener noreferrer">документацие</a> (обращайте внимание на минимальную версию API).</p>
+<p>Для работы с настройками используется объект <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html" target="_blank" rel="noopener noreferrer">Camera.Parameters</a>. Он содержит кучу методов, которые можно разделить на несколько групп.</p>
+<p>Методы <b>is&lt;…&gt;Supported</b> позволяют узнать поддерживается ли данная опция/настройка камерой.</p>
+<p>Методы <b>get&lt;…&gt;Supported</b> и <b>getMax&lt;…&gt;</b> предоставят вам набор поддерживаемых значений или максимальное значение опции/настройки.</p>
+<p>Методы <b>get&lt;…&gt;</b> вернут текущее значение настройки.</p>
+<p>Методы <b>set&lt;…&gt;</b> установят текущее значение настройки.</p>
+<p> </p>
+<p>В этом уроке рассмотрим на практике работу с парой настроек: цветовые эффекты и режимы вспышки. А также я опишу работу с настройками, которые выбиваются из общего алгоритма.</p>
+<p>Напомню, что в Уроке 132 мы разбирались с тем, как совместить размеры экрана и превью камеры, и учесть поворот устройства. А в Уроке 133 – как сохранить фото или видео. В этом уроке я не буду это использовать, чтобы не повторяться и не усложнять материал.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1341_CameraFeatures<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CameraFeatures<br/> <b>Package name</b>: ru.startandroid.develop.p1341camerafeatures<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="color_effect"&gt;Color Effect&lt;/string&gt;
+&lt;string name="flash_mode"&gt;Flash Mode&lt;/string&gt;</code></pre>
+<p> </p>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"&gt;
+    &lt;SurfaceView
+        android:id="@+id/surfaceView"
+        android:layout_width="400dp"
+        android:layout_height="300dp"
+        android:layout_marginBottom="10dp"&gt;
+    &lt;/SurfaceView&gt;
+    &lt;TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"&gt;
+        &lt;TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"&gt;
+            &lt;TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/color_effect"&gt;
+            &lt;/TextView&gt;
+            &lt;Spinner
+                android:id="@+id/spEffect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Spinner&gt;
+        &lt;/TableRow&gt;
+        &lt;TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"&gt;
+            &lt;TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/flash_mode"&gt;
+            &lt;/TextView&gt;
+            &lt;Spinner
+                android:id="@+id/spFlash"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Spinner&gt;
+        &lt;/TableRow&gt;
+    &lt;/TableLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране у нас SurfaceView для вывода изображения и два спиннера настроек. Первый будет предоставлять выбор цветовых эффектов, а второй – режимы работы вспышки. Про спиннеры я рассказывал в Уроке 56.</p>
+<p> </p>
+<p>В манифесте добавляем права на работу с камерой</p>
+<p><i>&lt;uses-permission android:name="android.permission.CAMERA"/&gt;</i></p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1341camerafeatures;
+
+import java.util.List;
+
+import android.app.Activity;
+import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
+import android.os.Bundle;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+
+public class MainActivity extends Activity {
+
+  SurfaceView surfaceView;
+  Camera camera;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+
+    SurfaceHolder holder = surfaceView.getHolder();
+    holder.addCallback(new SurfaceHolder.Callback() {
+      @Override
+      public void surfaceCreated(SurfaceHolder holder) {
+        try {
+          camera.setPreviewDisplay(holder);
+          camera.startPreview();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+
+      @Override
+      public void surfaceChanged(SurfaceHolder holder, int format,
+          int width, int height) {
+      }
+
+      @Override
+      public void surfaceDestroyed(SurfaceHolder holder) {
+      }
+    });
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    camera = Camera.open();
+    initSpinners();
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    if (camera != null)
+      camera.release();
+    camera = null;
+  }
+
+  void initSpinners() {
+    // Цветовые эффекты
+    // получаем список цветовых эффектов
+    final List&lt;String&gt; colorEffects = camera.getParameters()
+        .getSupportedColorEffects();
+    Spinner spEffect = initSpinner(R.id.spEffect, colorEffects, camera
+        .getParameters().getColorEffect());
+    // обработчик выбора
+    spEffect.setOnItemSelectedListener(new OnItemSelectedListener() {
+      @Override
+      public void onItemSelected(AdapterView&lt;?&gt; arg0, View arg1,
+          int arg2, long arg3) {
+        Parameters params = camera.getParameters();
+        params.setColorEffect(colorEffects.get(arg2));
+        camera.setParameters(params);
+      }
+
+      @Override
+      public void onNothingSelected(AdapterView&lt;?&gt; arg0) {
+      }
+    });
+
+    // Режимы вспышки
+    // получаем список режимов вспышки
+    final List&lt;String&gt; flashModes = camera.getParameters()
+        .getSupportedFlashModes();
+    // настройка спиннера
+    Spinner spFlash = initSpinner(R.id.spFlash, flashModes, camera
+        .getParameters().getFlashMode());
+    // обработчик выбора
+    spFlash.setOnItemSelectedListener(new OnItemSelectedListener() {
+      @Override
+      public void onItemSelected(AdapterView&lt;?&gt; arg0, View arg1,
+          int arg2, long arg3) {
+        Parameters params = camera.getParameters();
+        params.setFlashMode(flashModes.get(arg2));
+        camera.setParameters(params);
+      }
+
+      @Override
+      public void onNothingSelected(AdapterView&lt;?&gt; arg0) {
+      }
+    });
+  }
+
+  Spinner initSpinner(int spinnerId, List&lt;String&gt; data, String currentValue) {
+    // настройка спиннера и адаптера для него
+    Spinner spinner = (Spinner) findViewById(spinnerId);
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+        android.R.layout.simple_spinner_item, data);
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    spinner.setAdapter(adapter);
+
+    // определеяем какое значение в списке является текущей настройкой
+    for (int i = 0; i &lt; data.size(); i++) {
+      String item = data.get(i);
+      if (item.equals(currentValue)) {
+        spinner.setSelection(i);
+      }
+    }
+
+    return spinner;
+  }
+
+}</code></pre>
+<p>В <b>onCreate</b> мы, как обычно, определяем SurfaceView, холдер и callback для холдера.</p>
+<p>В <b>onResume</b> подключаемся к камере и вызываем метод initSpinners, который заполнит спиннеры значениями настроек. Об этом чуть ниже.</p>
+<p>В <b>onPause</b> освобождаем ресурсы.</p>
+<p> </p>
+<p>В <b>initSpinners</b> мы поочередно настраиваем спиннеры. Сначала тот, который для выбора цветовых эффектов.</p>
+<p>Используем метод <a href="http://developer.android.com/reference/android/hardware/Camera.html#getParameters()" target="_blank" rel="noopener noreferrer">getParameters</a>, чтобы получить текущие настройки камеры. И метод <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#getSupportedColorEffects()" target="_blank" rel="noopener noreferrer">getSupportedColorEffects</a>, чтобы из этих настроек получить цветовые эффекты, которые поддерживаются этим устройством. Результат приходит в виде списка строк.</p>
+<p>Далее вызываем свой метод initSpinner (чуть ниже обсудим и его), который заполнит спиннер. На вход ему передаем: <br/> - id спиннера<br/> - набор значений, которые он будет отображать<br/> - текущее значение настройки цветовых эффектов, которые мы получаем из настроек методом <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#getColorEffect()" target="_blank" rel="noopener noreferrer">getColorEffect</a></p>
+<p>Методом setOnItemSelectedListener ставим обработчик выбора значения из спиннера. При выборе мы получаем настройки, устанавливаем выбранный цветовой эффект методом <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#setColorEffect(java.lang.String)" target="_blank" rel="noopener noreferrer">setColorEffect</a> и присваиваем эти настройки камере методом <a href="http://developer.android.com/reference/android/hardware/Camera.html#setParameters(android.hardware.Camera.Parameters)" target="_blank" rel="noopener noreferrer">setParameters</a>. После этого камера подхватит новые настройки и мы увидим в превью результат.</p>
+<p>Аналогично мы настраиваем спиннер для режимов вспышки. Получаем доступные режимы, получаем текущий, заполняем спиннер и в обработчике передаем камере выбранный режим.</p>
+<p> </p>
+<p>Метод <b>initSpinner</b> находит спиннер, создает для него адаптер с полученными данными и устанавливает текущее значение спиннера соответственно текущей настройке камеры.</p>
+<p> </p>
+<p>Читатель на форуме абсолютно верно заметил, что имеет смысл в код добавить проверку на null для списков, которые мы получаем от методов getSupportedColorEffects и getSupportedFlashModes. Т.к. камера может вообще не поддерживать эти настройки.</p>
+<p> </p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p>Видим такой экран</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0134_010.png.pagespeed.ic.ioeldg0qch.png" alt="" width="640" height="400"/></p>
+<p> </p>
+<p>Попробуем применить цветовой эффект. Жмем спиннер <b>Color Effect</b> и видим варианты.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0134_020.png.pagespeed.ic.qmfmshppyx.png" alt="" width="640" height="400"/></p>
+<p>У вас, скорее всего, будут другие, это от камеры девайса зависит.</p>
+<p>Я выберу <b>negative</b> и получаю такую картинку</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0134_030.png.pagespeed.ic.8eb9hdnbkt.png" alt="" width="640" height="400"/></p>
+<p> </p>
+<p>Снова выберу цветовой эффект <b>none</b>.</p>
+<p>Теперь проверим режимы вспышки. Жмем <b>Flash Mode</b>.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0134_040.png.pagespeed.ic.jvmdxjyriv.png" alt="" width="640" height="400"/></p>
+<p><b>аuto </b>– камера сама решит, использовать ей вспышку или нет<br/><b> on </b>– вспышка будет использована при снимке<br/><b> off </b>- вспышка не будет использована при снимке<br/><b> torch </b>– режим фонарика</p>
+<p>Я выберу <b>torch </b>и вспышка начинает гореть, это видно в отражении монитора.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0134_050.png.pagespeed.ic.nalkkli-aw.png" alt="" width="640" height="400"/></p>
+<p> </p>
+<p>Почти все остальные настройки меняются по такому же алгоритму. Я не буду все их рассматривать. Если будут какие-либо вопросы по ним, давайте обсуждать на форуме.</p>
+<p>Есть пара особенных настроек, с другим алгоритмом. О них поговорим. Примеры тут у меня не получится сделать, поэтому без них. Буду использовать код и картинки из документацие.</p>
+<p> </p>
+<h3>Замер света и фокус</h3>
+<p>Для хорошей съемки камере надо: <br/> - знать на чем фокусироваться, чтобы не получить размытую картинку<br/> - определить уровень освещенности, чтобы не получить пересвеченную или затемненную картинку.</p>
+<p>Мы можем указать те области экрана, которые будут использоваться для этих целей. В документацие приводится пример задания областей замера света.</p>
+<pre><code class="java">    // Create an instance of Camera
+    mCamera = getCameraInstance();
+
+    // set Camera parameters
+    Camera.Parameters params = mCamera.getParameters();
+
+    if (params.getMaxNumMeteringAreas() &gt; 0){ // check that metering areas are supported
+        List&lt;Camera.Area&gt; meteringAreas = new ArrayList&lt;Camera.Area&gt;();
+
+        Rect areaRect1 = new Rect(-100, -100, 100, 100);    // specify an area in center of image
+        meteringAreas.add(new Camera.Area(areaRect1, 600)); // set weight to 60%
+        Rect areaRect2 = new Rect(800, -1000, 1000, -800);  // specify an area in upper right of image
+        meteringAreas.add(new Camera.Area(areaRect2, 400)); // set weight to 40%
+        params.setMeteringAreas(meteringAreas);
+    }
+
+    mCamera.setParameters(params);</code></pre>
+<p>Здесь мы получаем камеру и ее параметры. Методом <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#getMaxNumMeteringAreas()" target="_blank" rel="noopener noreferrer">getMaxNumMeteringAreas</a> определяем, кол-во областей, которое сможет учитывать камера. Если значение = 0, то эта функция не поддерживается.</p>
+<p>Затем создаем список и помещаем в него пару областей. Область представляет из себя Rect-объект. Он должен лежать в пределах от -1000,-1000 до 1000,1000. Т.е. превью камеры представлено как система координат, у которой центр (0,0) находится в центре экрана и обе оси по обоим направлениям имеют длину 1000. И в этой системе мы задаем Rect.</p>
+<p>Картинка из документации</p>
+<p><img src="images/xl0134_060.png.pagespeed.ic.j3ye9nxr6g.png" alt="" width="502" height="292"/></p>
+<p><em>На рисунке показано где будет расположен </em><em>Rect</em><em> с значениями 333,333,666,666</em>.</p>
+<p>Созданный Rect оборачивается в объект <a href="http://developer.android.com/reference/android/hardware/Camera.Area.html" target="_blank" rel="noopener noreferrer">Camera.Area</a>. При этом указывается вес, от 1 до 1000. Чем больше вес области, тем больше значения будет придаваться полученным из нее данным по замеру света.</p>
+<p>Полученный список с двумя областями передаем параметрам камеры с помощью метода <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#setMeteringAreas(java.util.List&lt;android.hardware.Camera.Area&gt;)" target="_blank" rel="noopener noreferrer">setMeteringAreas</a>. И в конце отдаем параметры камере.</p>
+<p> </p>
+<p>С областями для фокуса аналогично. Метод <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#getMaxNumFocusAreas()" target="_blank" rel="noopener noreferrer">getMaxNumFocusAreas</a> дает нам кол-во поддерживаемых областей фокуса. Создаем список областей, указывая координаты и вес, и отдаем список методу <a href="http://developer.android.com/reference/android/hardware/Camera.Parameters.html#setFocusAreas(java.util.List&lt;android.hardware.Camera.Area&gt;)" target="_blank" rel="noopener noreferrer">setFocusAreas</a>.</p>
+<p> </p>
+<h3>Распознавание лиц</h3>
+<p>Для использования этой опции нам необходимо в приложении выполнить следующие действия:</p>
+<p>- определить, что такая опция поддерживается<br/> - создать слушателя, который будет получать данные по распознанным лицам<br/> - отдать этого слушателя камере<br/> - включать режим определения лиц после каждого старта превью</p>
+<p> </p>
+<p>Примеры кода из документации:</p>
+<pre><code class="java">  class MyFaceDetectionListener implements Camera.FaceDetectionListener {
+
+    @Override
+    public void onFaceDetection(Face[] faces, Camera camera) {
+      if (faces.length &gt; 0) {
+        Log.d("FaceDetection", "face detected: " + faces.length
+            + " Face 1 Location X: " + faces[0].rect.centerX()
+            + "Y: " + faces[0].rect.centerY());
+      }
+    }
+  }</code></pre>
+<p>Это создание класса-слушателя, который реализует интерфейс <a href="http://developer.android.com/reference/android/hardware/Camera.FaceDetectionListener.html" target="_blank" rel="noopener noreferrer">Camera.FaceDetectionListener</a>. В методе <a href="http://developer.android.com/reference/android/hardware/Camera.FaceDetectionListener.html#onFaceDetection(android.hardware.Camera.Face[], android.hardware.Camera)" target="_blank" rel="noopener noreferrer">onFaceDetection</a> будет получать сведения о распознанных лицах (<a href="http://developer.android.com/reference/android/hardware/Camera.Face.html" target="_blank" rel="noopener noreferrer">Face</a>) и выводит в лог координаты первого лица (атрибут rect). Правда, судя по документацие, координаты эти будут не экранными, а из знакомой нам уже системы  (-1000,-1000) – (1000,1000). Но та же <a href="http://developer.android.com/reference/android/hardware/Camera.Face.html#rect" target="_blank" rel="noopener noreferrer">документация</a> любезно дает код для настройки матрицы преобразования с учетом расположения и поворота камеры.</p>
+<p>Также Face имеет атрибуты:</p>
+<p>id – идентификатор лица<br/> leftEye – координаты центра левого глаза, может быть null<br/> rightEye - координаты центра правого глаза, может быть null<br/> mouth - координаты центра рта, может быть null<br/> score – уверенность системы в том, что это реальное лицо. Варьируется от 0, до 100. Рекомендуется отфильтровывать лица, с score &lt; 50.</p>
+<p> </p>
+<pre><code class="java">mCamera.setFaceDetectionListener(new MyFaceDetectionListener());</code></pre>
+<p>Здесь мы созданный слушатель отдаем камере с помощью метода <a href="http://developer.android.com/reference/android/hardware/Camera.html#setFaceDetectionListener(android.hardware.Camera.FaceDetectionListener)" target="_blank" rel="noopener noreferrer">setFaceDetectionListener</a>.</p>
+<p> </p>
+<pre><code class="java">  public void startFaceDetection(){
+      // Try starting Face Detection
+      Camera.Parameters params = mCamera.getParameters();
+
+      // start face detection only *after* preview has started
+      if (params.getMaxNumDetectedFaces() &gt; 0){
+          // camera supports face detection, so can start it:
+          mCamera.startFaceDetection();
+      }
+  }</code></pre>
+<p>Это метод для включения режима распознавания. Предварительно идет проверка, что опция поддерживается.</p>
+<p> </p>
+<p>Ну а далее вызывайте метод startFaceDetection после каждого вызова <a href="http://developer.android.com/reference/android/hardware/Camera.html#startPreview()" target="_blank" rel="noopener noreferrer">startPreview</a>. Обычно это происходит в surfaceCreated и surfaceChanged (см. Урок 132).</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

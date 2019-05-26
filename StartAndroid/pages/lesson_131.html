@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	<title>Урок 131. Камера. Используем системное приложение</title>
+	
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- получаем фото и видео, используя системное приложение</p>
+ 
+<p> </p>
+<p>Открываем серию уроков по работе с камерой. И начнем с самого простого. Если вам в приложении необходимо сделать снимок или снять видео, вовсе необязательно для этого создавать отдельное Activity и работать в нем с объектом Camera. Можно использовать уже существующее в системе приложение.</p>
+<p>Для этого ваше приложение должно отправить Intent с action = <a href="http://developer.android.com/reference/android/provider/MediaStore.html#ACTION_IMAGE_CAPTURE" target="_blank" rel="noopener noreferrer">MediaStore.ACTION_IMAGE_CAPTURE</a> (фото) или <a href="http://developer.android.com/reference/android/provider/MediaStore.html#ACTION_VIDEO_CAPTURE" target="_blank" rel="noopener noreferrer">MediaStore.ACTION_VIDEO_CAPTURE</a> (видео) и ждать ответ. Т.е. надо использовать методы <a href="http://developer.android.com/reference/android/app/Activity.html#startActivityForResult(android.content.Intent, int)" target="_blank" rel="noopener noreferrer">startActivityForResult</a> и <a href="http://developer.android.com/reference/android/app/Activity.html#onActivityResult(int, int, android.content.Intent)" target="_blank" rel="noopener noreferrer">onActivityResult</a>.</p>
+<p>Также, в этот Intent вы можете поместить желаемый путь к файлу и туда будет сохранен результат работы камеры. Для этого в Intent необходимо добавить Uri с ключом <a href="http://developer.android.com/reference/android/provider/MediaStore.html#EXTRA_OUTPUT" target="_blank" rel="noopener noreferrer">MediaStore.EXTRA_OUTPUT</a>.</p>
+<p>Напишем простое приложение, демонстрирующее эти возможности.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1311_CameraIntent<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CameraIntent<br/> <b>Package name</b>: ru.startandroid.develop.p1311cameraintent<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="photo"&gt;Photo&lt;/string&gt;
+&lt;string name="video"&gt;Video&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;Button
+        android:id="@+id/btnPhoto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickPhoto"
+        android:text="@string/photo"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnPhoto"
+        android:onClick="onClickVideo"
+        android:text="@string/video"&gt;
+    &lt;/Button&gt;
+    &lt;ImageView
+        android:id="@+id/ivPhoto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnVideo"&gt;
+    &lt;/ImageView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>На экране только кнопки для получения фото и видео, и ImageView, в котором будем отображать полученное фото.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1311cameraintent;
+
+import java.io.File;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
+
+public class MainActivity extends Activity {
+
+  File directory;
+  final int TYPE_PHOTO = 1;
+  final int TYPE_VIDEO = 2;
+
+  final int REQUEST_CODE_PHOTO = 1;
+  final int REQUEST_CODE_VIDEO = 2;
+
+  final String TAG = "myLogs";
+
+  ImageView ivPhoto;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    createDirectory();
+    ivPhoto = (ImageView) findViewById(R.id.ivPhoto);
+  }
+
+  public void onClickPhoto(View view) {
+    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(TYPE_PHOTO));
+    startActivityForResult(intent, REQUEST_CODE_PHOTO);
+  }
+
+  public void onClickVideo(View view) {
+    Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+    intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(TYPE_VIDEO));
+    startActivityForResult(intent, REQUEST_CODE_VIDEO);
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode,
+      Intent intent) {
+    if (requestCode == REQUEST_CODE_PHOTO) {
+      if (resultCode == RESULT_OK) {
+        if (intent == null) {
+          Log.d(TAG, "Intent is null");
+        } else {
+          Log.d(TAG, "Photo uri: " + intent.getData());
+          Bundle bndl = intent.getExtras();
+          if (bndl != null) {
+            Object obj = intent.getExtras().get("data");
+            if (obj instanceof Bitmap) {
+              Bitmap bitmap = (Bitmap) obj;
+              Log.d(TAG, "bitmap " + bitmap.getWidth() + " x "
+                  + bitmap.getHeight());
+              ivPhoto.setImageBitmap(bitmap);
+            }
+          }
+        }
+      } else if (resultCode == RESULT_CANCELED) {
+        Log.d(TAG, "Canceled");
+      }
+    }
+
+    if (requestCode == REQUEST_CODE_VIDEO) {
+      if (resultCode == RESULT_OK) {
+        if (intent == null) {
+          Log.d(TAG, "Intent is null");
+        } else {
+          Log.d(TAG, "Video uri: " + intent.getData());
+        }
+      } else if (resultCode == RESULT_CANCELED) {
+        Log.d(TAG, "Canceled");
+      }
+    }
+  }
+
+  private Uri generateFileUri(int type) {
+    File file = null;
+    switch (type) {
+    case TYPE_PHOTO:
+      file = new File(directory.getPath() + "/" + "photo_"
+          + System.currentTimeMillis() + ".jpg");
+      break;
+    case TYPE_VIDEO:
+      file = new File(directory.getPath() + "/" + "video_"
+          + System.currentTimeMillis() + ".mp4");
+      break;
+    }
+    Log.d(TAG, "fileName = " + file);
+    return Uri.fromFile(file);
+  }
+
+  private void createDirectory() {
+    directory = new File(
+        Environment
+            .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+        "MyFolder");
+    if (!directory.exists())
+      directory.mkdirs();
+  }
+
+}</code></pre>
+<p>В <b>onCreate</b> мы вызываем свой метод createDirectory, который в папке Pictures создаст папку для наших файлов и поместит соответствующий объект File в переменную directory.</p>
+<p>В <b>onClickPhoto</b> и <b>onClickVideo</b> создаем Intent с соответствующим action, добавляем в этот Intent желаемый путь к файлу и отправляем методом startActivityForResult.</p>
+<p>В <b>onActivityResult</b> мы ловим результат от приложения камеры.  Код громоздкий, т.к. там куча проверок на null. Для фото и для видео я пытаюсь вытащить путь к получившемуся файлу, используя Intent.getData. Кроме этого, для фото я еще пытаюсь вытащить Bitmap с получившимся изображением.</p>
+<p>Метод <b>generateFileUri</b> генерирует путь к файлу. Для этого он берет путь из directory, определяет префикс и расширение в зависимости от типа (фото или видео) и использует системное время, как основную часть имени файла. Далее все это конвертируется в Uri и возвращается как результат метода.</p>
+<p> </p>
+<p>Осталось дописать в манифест пару настроек.</p>
+<p><i>&lt;uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/&gt;</i> - право на запись на SD карту</p>
+<p><i>&lt;uses-feature android:name="android.hardware.camera" /&gt;</i> - ваше приложение в маркете будет видно только устройствам с камерой</p>
+<p> </p>
+<p>Сохраняем все и запускаем приложение.</p>
+<p> </p>
+<p>Жмем <b>Photo</b> – открывается системное приложение камеры. Делаем фото и подтверждаем, что нас устраивает полученный снимок. Нас возвращают в наше приложение.</p>
+<p>Смотрим логи:</p>
+<p><i>fileName = /storage/emulated/0/Pictures/MyFolder/photo_1376465721626.jpg<br/> Intent is null</i></p>
+<p>В ответе мы не получили ничего, Intent = null. Но мы указывали путь, куда надо сохранить фото. Идем в папку Pictures/MyFolder и ищем свой файл, он должен там быть.</p>
+<p> </p>
+<p>Попробуем получить видео. Жмем кнопку <b>Video</b>, снимаем ролик и подтверждаем, что он нас устраивает.</p>
+<p>Смотрим логи:</p>
+<p><i>fileName = /storage/emulated/0/Pictures/MyFolder/video_1376466182087.mp4<br/> Video uri: file:///storage/emulated/0/Pictures/MyFolder/video_1376466182087.mp4</i></p>
+<p>В случае с видео Intent не null. И его метод getData вернул нам инфу о пути к файлу. Идем в папку и ищем свой файл.</p>
+<p> </p>
+<p>Теперь давайте не будем явно указывать путь для сохранения, и посмотрим, как поведет себя приложение камеры.</p>
+<p>Закомментируем соответствующие строки кода:</p>
+<pre><code class="java">  public void onClickPhoto(View view) {
+    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    //intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(TYPE_PHOTO));
+    startActivityForResult(intent, REQUEST_CODE_PHOTO);
+  }
+
+  public void onClickVideo(View view) {
+    Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+    //intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(TYPE_VIDEO));
+    startActivityForResult(intent, REQUEST_CODE_VIDEO);
+  }</code></pre>
+<p>Сохраняем, запускаем приложение.</p>
+<p> </p>
+<p>Жмем <b>Photo</b>, делаем снимок и подтверждаем его, открывается наше приложение и ImageView показывает только что сделанное фото.</p>
+<p><img style="border: 1px solid black;" src="images/384x640xl0131_010.png.pagespeed.ic.bcqnifyklr.png" alt="" width="384" height="640"/></p>
+<p>Смотрим логи:</p>
+<p><i>Photo uri: null<br/> bitmap 120 x 160</i></p>
+<p>getData вернул null, хотя документация обещала, что там будет путь к файлу. Зато в Intent мы получили Bitmap. Но, как видим, размер его оставляет желать лучшего. Получается, что вообще нет доступа к полноценному сделанному фото. Оно у меня даже не создалось в папке, куда камера по дефолту фоты сохраняет.</p>
+<p>Скорее всего, это зависит от версии Android и системного приложения камеры. И у вас вполне может быть другое поведение системы.</p>
+<p> </p>
+<p>Попробуем с видео. Жмем <b>Video</b>, снимаем и подтверждаем ролик.</p>
+<p>В логах:</p>
+<p><i>Video uri: content://media/external/video/media/8018</i></p>
+<p>С видео все ок. Камера сохранила видео в папку по умолчанию, и в Intent вернула нам Uri.</p>
+<p> </p>
+<p> </p>
+<p>Кроме желаемого пути для видео вы можете указать еще некоторые параметры в intent:</p>
+<p><a href="http://developer.android.com/reference/android/provider/MediaStore.html#EXTRA_VIDEO_QUALITY" target="_blank" rel="noopener noreferrer">MediaStore.EXTRA_VIDEO_QUALITY</a> – качество видео. 0 (плохое) или 1 (хорошее).</p>
+<p><a href="http://developer.android.com/reference/android/provider/MediaStore.html#EXTRA_DURATION_LIMIT" target="_blank" rel="noopener noreferrer">MediaStore.EXTRA_DURATION_LIMIT</a> – лимит продолжительности видео в секундах</p>
+<p><a href="http://developer.android.com/reference/android/provider/MediaStore.html#EXTRA_SIZE_LIMIT" target="_blank" rel="noopener noreferrer">MediaStore.EXTRA_SIZE_LIMIT</a> – лимит размера получившегося видео в байтах</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

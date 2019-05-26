@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 65. Диалоги. AlertDialog. Кастомизация</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем свои View для построения диалога</p>
+<p>Кроме сообщения или списка мы можем помещать в диалог свои View-компоненты. Для этого доступно как основное тело диалога, так и заголовок. Для этого нам необходимо создать View и с помощью методов setCustomTitle или setView вставить этот View соответственно в заголовок или тело диалога. Я буду использовать только setView и работать с телом диалога. Использование метода setCustomTitle и работа с заголовком диалога полностью аналогична.</p>
+<p>Нарисуем приложение, которое будет использовать свой View-компонент в теле диалога и рассмотрим, как можно модифицировать содержимое этого компонента. Будем добавлять и удалять TextView в теле диалога.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0651_AlertDialogCustom<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogCustom<br><b>Package name</b>: ru.startandroid.develop.p0651alertdialogcustom<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;AlertDialogCustom&lt;/string&gt;
+    &lt;string name="add"&gt;Добавить&lt;/string&gt;
+    &lt;string name="remove"&gt;Удалить&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b> – экран с двумя кнопками для удаления и добавления элементов в диалог</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/btnAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/add"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnRemove"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/remove"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>dialog.xml</b> – наше будущее кастом-тело диалога.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>В <b>tvTime</b>- будем отображать текущее время, а в <b>tvCount</b> – кол-во добавленных TextView.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0651alertdialogcustom;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final int DIALOG = 1;
+
+  int btn;
+  LinearLayout view;
+  SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+  TextView tvCount;
+  ArrayList&lt;TextView&gt; textViews;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    textViews = new ArrayList&lt;TextView&gt;(10);
+  }
+
+  public void onclick(View v) {
+    btn = v.getId();
+    showDialog(DIALOG);
+  }
+
+  @Override
+  protected Dialog onCreateDialog(int id) {
+    AlertDialog.Builder adb = new AlertDialog.Builder(this);
+    adb.setTitle("Custom dialog");
+    // создаем view из dialog.xml
+    view = (LinearLayout) getLayoutInflater()
+        .inflate(R.layout.dialog, null);
+    // устанавливаем ее, как содержимое тела диалога
+    adb.setView(view);
+    // находим TexView для отображения кол-ва
+    tvCount = (TextView) view.findViewById(R.id.tvCount);
+    return adb.create();
+  }
+
+  @Override
+  protected void onPrepareDialog(int id, Dialog dialog) {
+    super.onPrepareDialog(id, dialog);
+    if (id == DIALOG) {
+      // Находим TextView для отображения времени и показываем текущее
+      // время
+      TextView tvTime = (TextView) dialog.getWindow().findViewById(
+          R.id.tvTime);
+      tvTime.setText(sdf.format(new Date(System.currentTimeMillis())));
+      // если была нажата кнопка Добавить
+      if (btn == R.id.btnAdd) {
+        // создаем новое TextView, добавляем в диалог, указываем текст
+        TextView tv = new TextView(this);
+        view.addView(tv, new LayoutParams(LayoutParams.MATCH_PARENT,
+            LayoutParams.WRAP_CONTENT));
+        tv.setText("TextView " + (textViews.size() + 1));
+        // добавляем новое TextView в коллекцию
+        textViews.add(tv);
+        // иначе
+      } else {
+        // если коллекция созданных TextView непуста
+        if (textViews.size() &gt; 0) {
+          // находим в коллекции последний TextView
+          TextView tv = textViews.get(textViews.size() - 1);
+          // удаляем из диалога
+          view.removeView(tv);
+          // удаляем из коллекции
+          textViews.remove(tv);
+        }
+      }
+      // обновляем счетчик
+      tvCount.setText("Кол-во TextView = " + textViews.size());
+    }
+  }
+}</code></pre>
+<p>Рассмотрим код. В методе <b>onCreate</b> выполняем стандартные процедуры и создаем коллекцию textViews для хранения добавляемых TextView.</p>
+<p>Метод <b>onclick</b> – обработчик нажатий на кнопки, сохраняет в btn идентификатор нажатой кнопки и показывает диалог.</p>
+<p>В методе создания диалога <b>onCreateDialog </b>мы задаем текст заголовка диалога, создаем <b>view</b> из layout-файла dialog.xml и с помощью метода <a href="http://developer.android.com/reference/android/app/AlertDialog.html#setView(android.view.View)" target="_blank">setView</a> говорим диалогу, что надо использовать наше <b>view</b> в качестве тела диалога. И теперь, работая с <b>view</b>, мы будем формировать тело диалога. В только что созданном <b>view</b> сразу находим tvCount – для отображения кол-ва добавленных TextView.</p>
+<p>Метод <b>onPrepareDialog</b> – здесь мы с помощью метода <a href="http://developer.android.com/reference/android/app/Dialog.html#getWindow()" target="_blank">getWindow</a> получаем доступ к View-компонентам диалога, находим среди них tvTime и показываем в нем время. Далее определяем, какая кнопка была нажата. Если кнопка добавления, то создаем TextView и помещаем его в <b>view </b>(который определили в методе onCreateDialog) и добавляем в коллекцию textViews. Таким образом TextView добавится в тело диалога. Если же хотим удалить TextView, то находим в коллекции последний добавленный и удаляем его из компонента view и из коллекции textViews. В конце обновляем счетчик кол-ва добавленных TextView в диалоге.</p>
+<p>Обратите внимание, что я использую два разных способа для получения доступа к tvCount и tvTime. tvCount я нашел сразу после создания <b>view </b>в методе onCreateDialog. А в случае с tvTime я показываю, как найти View-компонент в диалоге без использования объекта <b>view</b>. Какой вам удобнее по ситуации, тот и используйте.</p>
+<p>Все сохраним и запустим приложение. Нажмем кнопку Добавить</p>
+<p><img src="images/lesson_64_0.png" alt="" width="640"></p>
+<p>Появился диалог. Отображает время, кол-во добавленных TextView и собственно сами добавленные TextView.</p>
+<p>Закрываем диалог кнопкой Назад, жмем еще раз добавить</p>
+<p><img src="images/lesson_64_1.png" alt="" width="640" height="449"></p>
+<p>Добавилось еще одно TextView.</p>
+<p>Закрываем диалог, жмем кнопку Удалить.</p>
+<p><img src="images/lesson_64_2.png" alt="" width="640" height="449"></p>
+<p>Последнее TextView удалилось.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

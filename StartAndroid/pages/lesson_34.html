@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 34. Хранение данных. SQLite</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- хранение данных с помощью SQLite</p>
+<p>На прошлом уроке мы рассмотрели самый простой способ хранения данных - <b>Preferences</b>. Но способ этот достаточно ограничен и для хранения большого количества структурированных данных неудобен. На этом уроке рассмотрим <a href="http://www.sqlite.org/index.html" target="_blank">SQLite</a>. Это база данных с таблицами и запросами - все как в обычных БД.</p>
+<p>Для начала, немного теории по взаимодействию приложения и БД.</p>
+<p>В приложении, при подключении к БД мы указываем <b>имя </b>БД и <b>версию</b>. При этом могут возникнуть следующие ситуации:</p>
+<p>1) БД <b>не существует</b>. Это может быть например в случае первичной установки программы. В этом случае приложение должно само <b>создать </b>БД и все таблицы в ней. И далее оно уже работает с только что созданной БД.</p>
+<p>2) БД <b>существует</b>, но ее версия <b>устарела</b>. Это может быть в случае обновления программы. Например новой версии программы нужны дополнительные поля в старых таблицах или новые таблицы. В этом случае приложение должно <b>апдейтить </b>существующие таблицы и создать новые, если это необходимо.</p>
+<p>3) БД <b>существует </b>и ее версия <b>актуальна</b>. В этом случае приложение успешно <b>подключается </b>к БД и работает.</p>
+<p>Как вы понимаете, фраза "приложение должно" равнозначна фразе "разработчик должен", т.е. это наша задача. Для обработки описанных выше ситуаций нам надо создать <b>класс</b>, являющийся наследником для <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper.html" target="_blank">SQLiteOpenHelper</a>. Назовем его DBHelper. Этот класс предоставит нам методы для <b>создания </b>или <b>обновления </b>БД в случаях ее <b>отсутствия </b>или <b>устаревания</b>.</p>
+<p><b>onCreate </b>- метод, который будет вызван, если БД, к которой мы хотим подключиться – не существует</p>
+<p><b>onUpgrade </b>- будет вызван в случае, если мы пытаемся подключиться к БД более новой версии, чем существующая</p>
+<p>Давайте накидаем простое приложение – справочник контактов, которое будет хранить <b>имя </b>и <b>email</b>. <b>Вводить </b>данные будем на <b>экране </b>приложения, а для <b>отображения </b>информации используем <b>логи</b>. Обычно для этого используется List (список) – но мы эту тему пока не знаем. Да и не хочется перегружать приложение. Главное – освоить приемы работы с БД. </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0341_SimpleSQLite<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleSQLite<br><b>Package name</b>: ru.startandroid.develop.p0341simplesqlite<br><b>Create Activity</b>: MainActivity</p>
+<p>Нарисуем экран для ввода записей и очистки таблицы. Открываем<b> main.xml</b> и пишем:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Name"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"&gt;
+        &lt;/TextView&gt;
+        &lt;EditText
+            android:id="@+id/etName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"&gt;
+            &lt;requestFocus&gt;
+            &lt;/requestFocus&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"&gt;
+        &lt;/TextView&gt;
+        &lt;EditText
+            android:id="@+id/etEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;Button
+            android:id="@+id/btnAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnRead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Read"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Пара полей для ввода и кнопки добавления записи, вывода существующих записей и очистки таблицы.</p>
+<p>Открываем <b>MainActivity.java</b> и пишем:</p>
+<pre><code class="java">package ru.startandroid.develop.p0341simplesqlite;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  Button btnAdd, btnRead, btnClear;
+  EditText etName, etEmail;
+
+  DBHelper dbHelper;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    btnAdd = (Button) findViewById(R.id.btnAdd);
+    btnAdd.setOnClickListener(this);
+
+    btnRead = (Button) findViewById(R.id.btnRead);
+    btnRead.setOnClickListener(this);
+
+    btnClear = (Button) findViewById(R.id.btnClear);
+    btnClear.setOnClickListener(this);
+
+    etName = (EditText) findViewById(R.id.etName);
+    etEmail = (EditText) findViewById(R.id.etEmail);
+    
+    // создаем объект для создания и управления версиями БД
+    dbHelper = new DBHelper(this);
+  }
+
+  
+  @Override
+  public void onClick(View v) {
+    
+    // создаем объект для данных
+    ContentValues cv = new ContentValues();
+    
+    // получаем данные из полей ввода
+    String name = etName.getText().toString();
+    String email = etEmail.getText().toString();
+
+    // подключаемся к БД
+    SQLiteDatabase db = dbHelper.getWritableDatabase();
+    
+
+    switch (v.getId()) {
+    case R.id.btnAdd:
+      Log.d(LOG_TAG, "--- Insert in mytable: ---");
+      // подготовим данные для вставки в виде пар: наименование столбца - значение
+      
+      cv.put("name", name);
+      cv.put("email", email);
+      // вставляем запись и получаем ее ID
+      long rowID = db.insert("mytable", null, cv);
+      Log.d(LOG_TAG, "row inserted, ID = " + rowID);
+      break;
+    case R.id.btnRead:
+      Log.d(LOG_TAG, "--- Rows in mytable: ---");
+      // делаем запрос всех данных из таблицы mytable, получаем Cursor 
+      Cursor c = db.query("mytable", null, null, null, null, null, null);
+
+      // ставим позицию курсора на первую строку выборки
+      // если в выборке нет строк, вернется false
+      if (c.moveToFirst()) {
+
+        // определяем номера столбцов по имени в выборке
+        int idColIndex = c.getColumnIndex("id");
+        int nameColIndex = c.getColumnIndex("name");
+        int emailColIndex = c.getColumnIndex("email");
+
+        do {
+          // получаем значения по номерам столбцов и пишем все в лог
+          Log.d(LOG_TAG,
+              "ID = " + c.getInt(idColIndex) + 
+              ", name = " + c.getString(nameColIndex) + 
+              ", email = " + c.getString(emailColIndex));
+          // переход на следующую строку 
+          // а если следующей нет (текущая - последняя), то false - выходим из цикла
+        } while (c.moveToNext());
+      } else
+        Log.d(LOG_TAG, "0 rows");
+      c.close();
+      break;
+    case R.id.btnClear:
+      Log.d(LOG_TAG, "--- Clear mytable: ---");
+      // удаляем все записи
+      int clearCount = db.delete("mytable", null, null);
+      Log.d(LOG_TAG, "deleted rows count = " + clearCount);
+      break;
+    }
+    // закрываем подключение к БД
+    dbHelper.close();
+  }
+  
+  
+
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      // конструктор суперкласса
+      super(context, "myDB", null, 1);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, "--- onCreate database ---");
+      // создаем таблицу с полями
+      db.execSQL("create table mytable ("
+          + "id integer primary key autoincrement," 
+          + "name text,"
+          + "email text" + ");");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+
+}</code></pre>
+<p>Куча новых незнакомых слов в коде. Давайте разбираться.</p>
+<p>В методе Activity - <b>onCreate </b>мы определяем объекты, присваиваем обработчики и создаем объект dbHelper класса <b>DBHelper </b>для управления БД. Сам класс будет описан ниже.</p>
+<p>Далее смотрим метод Activity – <b>onClick</b>, в котором мы обрабатываем нажатия на кнопки.</p>
+<p>Класс <a href="http://developer.android.com/reference/android/content/ContentValues.html" target="_blank">ContentValues</a> используется для указания <b>полей </b>таблицы и <b>значений</b>, которые мы в эти поля будем вставлять. Мы создаем объект <b>cv</b>, и позже его используем. Далее мы записываем в переменные значения из <b>полей </b>ввода. Затем, с помощью метода <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper.html#getWritableDatabase()" target="_blank">getWritableDatabase</a> подключаемся к БД и получаем объект <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html" target="_blank">SQLiteDatabase</a>. Он позволит нам работать с БД. Мы будем использовать его методы <b>insert </b>– вставка записи, <b>query </b>– чтение, <b>delete </b>– удаление. У них много разных параметров на вход, но мы пока используем самый минимум.</p>
+<p>Далее смотрим, какая кнопка была нажата:</p>
+<p><b>btnAdd </b>– добавление записи в таблицу <i>mytable</i>.  Мы заполняем объект <b>cv</b> парами: <b>имя</b> поля и <b>значение</b>. И (при вставке записи в таблицу) в указанные поля будут вставлены соответствующие значения. Мы заполняем поля <i>name </i>и <i>email</i>. <i>id</i> у нас заполнится автоматически (primary key autoincrement). Вызываем метод <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#insert(java.lang.String, java.lang.String, android.content.ContentValues)" target="_blank">insert</a> – передаем ему <b>имя таблицы </b>и объект <b>cv </b>с вставляемыми значениями. Второй аргумент метода используется, при вставке в таблицу пустой строки. Нам это сейчас не нужно, поэтому передаем null. Метод <b>insert </b>возвращает <b>ID </b>вставленной строки, мы его сохраняем в <b>rowID </b>и выводим в <b>лог</b>.</p>
+<p><b>btnRead </b>– чтение всех записей из таблицы <i>mytable</i>. Для чтения используется метод <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#query(java.lang.String, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String, java.lang.String, java.lang.String)" target="_blank">query</a>. На вход ему подается <b>имя таблицы</b>, список запрашиваемых полей, условия выборки, группировка, сортировка. Т.к. нам нужны все данные во всех полях без сортировок и группировок - мы используем везде <b>null</b>. Только имя таблицы указываем. Метод возвращает нам объект класса <a href="http://developer.android.com/reference/android/database/Cursor.html" target="_blank">Cursor</a>. Его можно рассматривать как таблицу с данными. Метод <a href="http://developer.android.com/reference/android/database/Cursor.html#moveToFirst()" target="_blank">moveToFirst</a> – делает <b>первую </b>запись в Cursor <b>активной </b>и заодно проверяет, есть ли вообще записи в нем (т.е. выбралось ли что-либо в методе <b>query</b>). Далее мы получаем порядковые номера столбцов в Cursor по их именам с помощью метода <a href="http://developer.android.com/reference/android/database/Cursor.html#getColumnIndex(java.lang.String)" target="_blank">getColumnIndex</a>. Эти номера потом используем для чтения данных в методах <a href="http://developer.android.com/reference/android/database/Cursor.html#getInt(int)" target="_blank">getInt</a> и <a href="http://developer.android.com/reference/android/database/Cursor.html#getString(int)" target="_blank">getString</a> и выводим данные в лог. С помощью метода <a href="http://developer.android.com/reference/android/database/Cursor.html#moveToNext()" target="_blank">moveToNext</a> мы перебираем все строки в Cursor пока не добираемся до последней. Если же записей не было, то выводим в лог соответствующее сообщение – <i>0 rows</i>. В конце закрываем курсор (освобождаем занимаемые им ресурсы) методом <a href="http://developer.android.com/reference/android/database/Cursor.html#close()" target="_blank">close</a>, т.к. далее мы его нигде не используем. </p>
+<p><b>btnClear </b>– очистка таблицы. Метод <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#delete(java.lang.String, java.lang.String, java.lang.String[])" target="_blank">delete</a> удаляет записи. На вход передаем <b>имя таблицы </b>и <b>null </b>в качестве условий для удаления, а значит удалится все. Метод возвращает <b>кол-во</b> <b>удаленных </b>записей.</p>
+<p>После этого закрываем соединение с БД методом <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper.html#close()" target="_blank">close</a>.</p>
+<p>Класс <b>DBHelper </b>является <b>вложенным </b>в <b>MainActivity </b>и описан в конце кода. Как я уже писал выше, этот класс должен наследовать класс <b>SQLiteOpenHelper</b>.</p>
+<p>В <b>конструкторе </b>мы вызываем конструктор суперкласса и передаем ему: <br><b> context </b>- контекст<br><i> mydb </i>- название базы данных<br><b> null </b>– объект для работы с курсорами, нам пока не нужен, поэтому null<br><i> 1</i> – версия базы данных</p>
+<p>В методе <b>onCreate </b>этого класса мы используем метод execSQL объекта SQLiteDatabase для выполнения SQL-запроса, который создает таблицу. Напомню – этот метод вызывается, если БД не существует и ее надо создавать. По запросу видно, что мы создаем таблицу <i>mytable</i> с полями <i>id</i>, <i>name</i> и <i>email</i>.</p>
+<p>Метод <b>onUpgrade </b>пока не заполняем, т.к. используем одну версию БД и менять ее не планируем.</p>
+<p>Все сохраним и запустим приложение. Будем работать с БД и смотреть логи, которые покажут, какие методы выполняются, и что в них происходит.</p>
+<p>Введем чего-нить в поля ввода и нажмем <b>Add</b>.</p>
+<p><img src="images/lesson_33_0.png" alt="" width="640" height="454"></p>
+<p>Смотрим лог:</p>
+<p><em>--- onCreate database ---<br></em><em>--- Insert in mytable: ---<br></em><em>row inserted, ID = 1</em></p>
+<p>Мы видим, что вызывался метод <b>onCreate </b>в классе <b>DBHelper</b>, а значит выполнялся скрипт по <b>созданию </b>таблицы. Это произошло потому, что это <b>первый </b>запуск приложения и БД еще <b>не была создана</b>. Теперь БД существует и с ней можно работать.</p>
+<p>Далее видим, что вызывался метод вставки записи и вернул <b>ID </b>= 1.</p>
+<p>Вставим еще какую-нибудь запись.</p>
+<p><img src="images/lesson_33_1.png" alt=""></p>
+<p>Смотрим лог:</p>
+<p><em>--- Insert in mytable: ---<br> row inserted, ID = 2</em></p>
+<p>На этот раз <b>onCreate не вызывался</b>, т.к. БД уже <b>существует</b>. Вставилась запись с ID = 2.</p>
+<p>Давайте посмотрим содержимое таблицы - нажмем кнопку <b>Read </b>и посмотрим лог:</p>
+<p><i>--- Rows in mytable: ---<br> ID = 1, name = John Smith, email = <span id="cloak349e618237e43e8ba754bcc9f12b8d00">Этот адрес электронной почты защищён от спам-ботов. У вас должен быть включен JavaScript для просмотра.</span><script type="text/javascript">
+				document.getElementById('cloak349e618237e43e8ba754bcc9f12b8d00').innerHTML = '';
+				var prefix = '&#109;a' + 'i&#108;' + '&#116;o';
+				var path = 'hr' + 'ef' + '=';
+				var addy349e618237e43e8ba754bcc9f12b8d00 = 'j&#111;hn.sm&#105;th' + '&#64;';
+				addy349e618237e43e8ba754bcc9f12b8d00 = addy349e618237e43e8ba754bcc9f12b8d00 + '&#97;bc' + '&#46;' + 'c&#111;m';
+				var addy_text349e618237e43e8ba754bcc9f12b8d00 = 'j&#111;hn.sm&#105;th' + '&#64;' + '&#97;bc' + '&#46;' + 'c&#111;m';document.getElementById('cloak349e618237e43e8ba754bcc9f12b8d00').innerHTML += '<a ' + path + '\'' + prefix + ':' + addy349e618237e43e8ba754bcc9f12b8d00 + '\'>'+addy_text349e618237e43e8ba754bcc9f12b8d00+'<\/a>';
+		</script><br> ID = 2, name = Some body, email = <span id="cloake6b9f415a8809a4cfd7c3658114fe574">Этот адрес электронной почты защищён от спам-ботов. У вас должен быть включен JavaScript для просмотра.</span><script type="text/javascript">
+				document.getElementById('cloake6b9f415a8809a4cfd7c3658114fe574').innerHTML = '';
+				var prefix = '&#109;a' + 'i&#108;' + '&#116;o';
+				var path = 'hr' + 'ef' + '=';
+				var addye6b9f415a8809a4cfd7c3658114fe574 = 's&#111;m&#101;b&#111;dy' + '&#64;';
+				addye6b9f415a8809a4cfd7c3658114fe574 = addye6b9f415a8809a4cfd7c3658114fe574 + '&#97;ny' + '&#46;' + 'c&#111;m';
+				var addy_texte6b9f415a8809a4cfd7c3658114fe574 = 's&#111;m&#101;b&#111;dy' + '&#64;' + '&#97;ny' + '&#46;' + 'c&#111;m';document.getElementById('cloake6b9f415a8809a4cfd7c3658114fe574').innerHTML += '<a ' + path + '\'' + prefix + ':' + addye6b9f415a8809a4cfd7c3658114fe574 + '\'>'+addy_texte6b9f415a8809a4cfd7c3658114fe574+'<\/a>';
+		</script></i></p>
+<p>Мы видим записи, которые вставляли. Тут все верно.</p>
+<p>Теперь очистим таблицу - нажмем <b>Clear</b>. Смотрим лог:</p>
+<p><i>--- Clear mytable: ---<br> deleted rows count = 2</i></p>
+<p>Удалено две записи, все верно. Если теперь посмотрим содержимое таблицы – кнопка Read:</p>
+<p><i>--- Rows in mytable: ---<br> 0 rows</i></p>
+<p>Записей нет.</p>
+<p>В этой теме важно понять, что для работы с БД мы использовали два класса:</p>
+<p>- <b>DBHelper</b>, наследующий <b>SQLiteOpenHelper</b>. В его <b>конструкторе </b>мы вызываем конструктор супер-класса и указываем имя и версию БД. Метод <b>getWritableDatabase </b>выполняет подключение к базе данных и возвращает нам объект <b>SQLiteDatabase </b>для работы с ней. Метод <b>close </b>закрывает подключение к БД. В случае, когда БД отсутствует или устарела, класс предоставляет нам самим реализовать создание или обновление в методах <b>onCreate </b>и <b>onUpgrate</b>.</p>
+<p>- <b>SQLiteDatabase</b>. Содержит методы для работы с данными – т.е. <b>вставка</b>, <b>обновление</b>, <b>удаление </b>и <b>чтение</b>.</p>
+<p>Файл базы можно найти в <b>File Explorer</b>, как и на прошлом уроке. Путь к нему <i>data/data/ru.startandroid.develop.p0341simpelsqlite/databases/myDB</i>.</p>
+<p>На следующем уроке продолжим это приложение. Добавим возможность обновления и удаления конкретных записей.</p>
+<h3><br>Важное замечание</h3>
+<p>Я в своих примерах выполняю все операции с базой данных в основном потоке. Я делаю так, чтобы не усложнять урок. Но в реале вам следует использовать для работы с БД отдельный поток, чтобы ваше приложение не тормозило визуально. О том, как это сделать, я пишу в уроках 80-91 и 135-136. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

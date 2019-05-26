@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 71. Preferences как настройки приложения. PreferenceActivity</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем Preferences для работы с настройками приложения</p>
+<p>Мы уже проходили Preferences, использовали их для хранения своих данных, знаем механизм. Теперь посмотрим, как они используются для хранения настроек приложения. Android предоставляет специальное Activity для работы с настройками – <a href="http://developer.android.com/reference/android/preference/PreferenceActivity.html" target="_blank">PreferenceActivity</a>. Оно умеет читать определенные xml-файлы и создавать из них экран с настройками.</p>
+<p>Создадим простое приложение. На первом экране будем читать и отображать настройки приложения, а на втором будем их задавать с помощью PreferenceActivity.</p>
+<p>Надо придумать какие-нибудь настройки. Пусть это будут настройки неких уведомлений, а именно возможность включить/выключить уведомления (чекбокс) и возможность прописать адрес получателя (поле для ввода текста).</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0711_PreferencesSimple<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: PreferencesSimple<br><b>Package name</b>: ru.startandroid.develop.p0711preferencessimple<br><b>Create Activity</b>: MainActivity</p>
+<p>Сначала создадим xml-файл с описанием настроек. В папке <b>res </b>создаем папку <b>xml</b>, а в ней создаем файл <b>pref.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;CheckBoxPreference
+        android:key="notif"
+        android:summary="Enable notifications"
+        android:title="Notifications"&gt;
+    &lt;/CheckBoxPreference&gt;
+    &lt;EditTextPreference
+        android:key="address"
+        android:summary="Address for notifications"
+        android:title="Address"&gt;
+    &lt;/EditTextPreference&gt;
+&lt;/PreferenceScreen&gt;</code></pre>
+<p>Здесь мы указали, что наш экран настроек (<b>PreferenceScreen</b>) будет содержать чекбокс (<b>CheckBoxPreference</b>) и поле (<b>EditTextPreference</b>) для ввода значения. Параметры: <b>key </b>– ключ для сохранения/чтения, <b>summary </b>– текст-пояснение, <b>title </b>– заголовок. Далее увидим, что и где используется.</p>
+<p>Создаем Activity для настроек. <b>PrefActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0711preferencessimple;
+
+import android.os.Bundle;
+import android.preference.PreferenceActivity;
+
+public class PrefActivity extends PreferenceActivity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    addPreferencesFromResource(R.xml.pref);
+  }
+}</code></pre>
+<p>Вместо setContentView используется метод <a href="http://developer.android.com/reference/android/preference/PreferenceActivity.html#addPreferencesFromResource(int)" target="_blank">addPreferencesFromResource</a>, который берет файл pref.xml и по нему создает экран настроек.</p>
+<p>Не забудьте добавить это Activity в манифест. Тут никаких особенностей, все как обычно.</p>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Одно TextView, которое будет читать и отображать настройки приложения.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0711preferencessimple;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  TextView tvInfo;
+  SharedPreferences sp;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+
+    // получаем SharedPreferences, которое работает с файлом настроек
+    sp = PreferenceManager.getDefaultSharedPreferences(this);
+    // полная очистка настроек
+    // sp.edit().clear().commit();
+  }
+
+  protected void onResume() {
+    Boolean notif = sp.getBoolean("notif", false);
+    String address = sp.getString("address", "");
+    String text = "Notifications are "
+        + ((notif) ? "enabled, address = " + address : "disabled");
+    tvInfo.setText(text);
+    super.onResume();
+  }
+
+  public boolean onCreateOptionsMenu(Menu menu) {
+    MenuItem mi = menu.add(0, 1, 0, "Preferences");
+    mi.setIntent(new Intent(this, PrefActivity.class));
+    return super.onCreateOptionsMenu(menu);
+  }
+}</code></pre>
+<p>В <b>onCreate</b> мы находим TextView и получаем объект для работы с настройками - SharedPreferences. Он нам знаком, мы с ним работали ранее в уроке про Preferences. Далее идет закоментированный код полной очистки настроек приложения. Мы его не используем, я на всякий случай указал, может кому понадобится.</p>
+<p>В <b>onResume </b>мы читаем из SharedPreferences настройки и выводим их в TextView. При чтении используем те самые ключи, которые прописывали в xml-файле в атрибутах <b>key</b>.</p>
+<p>В <b>onCreateOptionsMenu </b>просто настраиваем меню для вызова окна настроек. Мы создаем пункт меню и вешаем на него Intent - в итоге при нажатии вызовется Activity.</p>
+<p>На всякий случай уточню, почему для вывода инфы на экран здесь использую <b>onResume</b>, а не <b>onCreate</b>. Потому что, когда мы будем возвращаться с экрана настроек в главное окно, то onCreate главного окна не сработает (т.к. окно уже создано и висит в памяти) и изменения мы не увидим. А onResume точно сработает.</p>
+<p>Все сохраняем и запускаем приложение. Видим такой экран:</p>
+<p><img src="images/lesson_70_0.png" alt="" width="640" height="449"></p>
+<p>По умолчанию, если настройки еще не заданы, мы получаем false и пустую строку, как и указывали в методах getBoolean и getString в onResume.</p>
+<p>Жмем menu и переходим к настройкам.</p>
+<p><img src="images/lesson_70_1.png" alt="" width="640" height="449"></p>
+<p>То, что мы указывали в <b>pref.xml</b> система прочитала и сама создала экран настроек. Теперь мы можем здесь указывать нужные нам значения и они сразу же будут сохраняться без всяких кнопок Save. Впрочем, это стандартное поведение Android-настроек. Думаю, каждый из вас когда-нить копался в настройках и знает это.</p>
+<p>Давайте включим наши уведомления</p>
+<p><img src="images/lesson_70_2.png" alt="" width="640" height="449"></p>
+<p>и пропишем адрес</p>
+<p><img src="images/lesson_70_3.png" alt="" width="640" height="449"></p>
+<p>Жмем ОК.</p>
+<p>Жмем кнопку назад, попадаем на главный экран</p>
+<p><img src="images/lesson_70_4.png" alt="" width="640" height="449"></p>
+<p>который в onResume прочел свежие настройки и отобразил их.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

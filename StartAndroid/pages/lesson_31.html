@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 31. Зачем у Intent есть атрибут data. Что такое Uri. Вызываем системные приложения</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- узнаем, что такое Uri и Intent-атрибут data<br> - вызываем системные приложения (браузер, звонилка, карта)</p>
+<p>Мы знаем, что <b>Intent </b>имеет атрибут <b>action</b>. С помощью этого атрибута обычно дается указание <b>действия</b>. Например, <b>просмотр </b>или <b>редактирование</b>. Но действие обычно совершается не просто так, а с чем-либо. Значит кроме указания действия, мы должны указывать на <b>объект</b>, с которым эти действия нужно произвести. Для этого <b>Intent </b>имеет атрибут <b>data</b>.</p>
+<p>Один из способов присвоения значения этому атрибуту – метод <a href="http://developer.android.com/reference/android/content/Intent.html#setData(android.net.Uri)" target="_blank">setData (Uri data)</a> у объекта <b>Intent</b>. На вход этому методу подается объект <a href="http://developer.android.com/reference/android/net/Uri.html" target="_blank">Uri</a>.</p>
+<p>Uri – это объект, который берет <b>строку</b>, <b>разбирает </b>ее на составляющие и хранит в себе эту информацию. Строка, конечно, должна быть не любая, а составлена в соответствии с этим документом <a href="http://www.faqs.org/rfcs/rfc2396.html" target="_blank">RFC 2396</a>. Uri имеет кучу <b>методов</b>, которые позволяют <b>извлекать </b>из распарсенной <b>строки </b>отдельные <b>элементы</b>.</p>
+<p>Я создам объект Uri из строки, а в лог буду выводить название метода и (через двоеточие) значение, которое он возвращает. Например возьмем такую строку - http адрес:</p>
+<pre><code class="java">Uri uri = Uri.parse("http://developer.android.com/reference/android/net/Uri.html");</code></pre>
+<p>Смотрим, чего нам возвращают методы:</p>
+<p><em>uri.getScheme(): http<br></em><em>uri.getSchemeSpecificPart(): //developer.android.com/reference/android/net/Uri.html<br></em><em>uri.getAuthority(): developer.android.com<br></em><em>uri.getHost(): developer.android.com<br></em><em>uri.getPath(): /reference/android/net/Uri.html<br></em><em>uri.getLastPathSegment(): Uri.html</em></p>
+<p>Понятия Scheme, Authority, Host, Path и пр. – взяты из RFC дока, ссылку на который я дал выше. Там можно найти их полное описание, понять что они означают и свериться с тем, что нам вернул Uri.</p>
+<p>Рассмотрим еще примеры:</p>
+<p>FTP</p>
+<pre><code class="java">Uri uri = Uri.parse("ftp://bob @ google.com:80/data/files");</code></pre>
+<p>(<em>Код, написанный выше, идет одной строкой на самом деле. Здесь идут пробелы вокруг @ из-за особенностей разметки</em>)</p>
+<p><em>uri.getScheme(): ftp<br>uri.getSchemeSpecificPart(): //<span id="cloak38ae6fc84359a6734c55982502429b01">Этот адрес электронной почты защищён от спам-ботов. У вас должен быть включен JavaScript для просмотра.</span><script type="text/javascript">
+				document.getElementById('cloak38ae6fc84359a6734c55982502429b01').innerHTML = '';
+				var prefix = '&#109;a' + 'i&#108;' + '&#116;o';
+				var path = 'hr' + 'ef' + '=';
+				var addy38ae6fc84359a6734c55982502429b01 = 'b&#111;b' + '&#64;';
+				addy38ae6fc84359a6734c55982502429b01 = addy38ae6fc84359a6734c55982502429b01 + 'g&#111;&#111;gl&#101;' + '&#46;' + 'c&#111;m';
+				var addy_text38ae6fc84359a6734c55982502429b01 = 'b&#111;b' + '&#64;' + 'g&#111;&#111;gl&#101;' + '&#46;' + 'c&#111;m';document.getElementById('cloak38ae6fc84359a6734c55982502429b01').innerHTML += '<a ' + path + '\'' + prefix + ':' + addy38ae6fc84359a6734c55982502429b01 + '\'>'+addy_text38ae6fc84359a6734c55982502429b01+'<\/a>';
+		</script>:80/data/files<br>uri.getAuthority(): <span id="cloak47e771c3d624fa16224faec2ee769d1f">Этот адрес электронной почты защищён от спам-ботов. У вас должен быть включен JavaScript для просмотра.</span><script type="text/javascript">
+				document.getElementById('cloak47e771c3d624fa16224faec2ee769d1f').innerHTML = '';
+				var prefix = '&#109;a' + 'i&#108;' + '&#116;o';
+				var path = 'hr' + 'ef' + '=';
+				var addy47e771c3d624fa16224faec2ee769d1f = 'b&#111;b' + '&#64;';
+				addy47e771c3d624fa16224faec2ee769d1f = addy47e771c3d624fa16224faec2ee769d1f + 'g&#111;&#111;gl&#101;' + '&#46;' + 'c&#111;m';
+				var addy_text47e771c3d624fa16224faec2ee769d1f = 'b&#111;b' + '&#64;' + 'g&#111;&#111;gl&#101;' + '&#46;' + 'c&#111;m';document.getElementById('cloak47e771c3d624fa16224faec2ee769d1f').innerHTML += '<a ' + path + '\'' + prefix + ':' + addy47e771c3d624fa16224faec2ee769d1f + '\'>'+addy_text47e771c3d624fa16224faec2ee769d1f+'<\/a>';
+		</script>:80<br>uri.getHost(): google.com<br>uri.getPort(): 80<br>uri.getPath(): /data/files<br>uri.getLastPathSegment(): files<br>uri.getUserInfo(): bob</em></p>
+<p>Координаты</p>
+<pre><code class="java">Uri uri = Uri.parse("geo:55.754283,37.62002"); </code></pre>
+<p><em>uri.getScheme(): geo<br>uri.getSchemeSpecificPart(): 55.754283,37.62002</em></p>
+<p>Здесь уже получилось выделить только Scheme и SchemeSpecificPart.</p>
+<p>Номер телефона</p>
+<pre><code class="java">Uri uri = Uri.parse("tel:12345");</code></pre>
+<p><em>uri.getScheme(): tel<br>uri.getSchemeSpecificPart():12345</em></p>
+<p>Аналогично, получилось выделить только две части из строки.</p>
+<p>Контакт из адресной книги</p>
+<pre><code class="java">Uri uri = Uri.parse("content://contacts/people/1");</code></pre>
+<p><em>uri.getScheme(): content<br>uri.getSchemeSpecificPart(): //contacts/people/1<br>uri.getAuthority(): contacts<br>uri.getPath(): /people/1<br>uri.getLastPathSegment(): 1</em></p>
+<p>В этом примере <b>Scheme </b>равен <em>content</em>. Это особый тип данных – Content Provider. Он позволяет любой программе давать доступ к своим данным, а другим программам – читать и менять эти данные. Эту тему мы рассмотрим позднее, и сами будем создавать такой тип данных.</p>
+<p><a href="http://developer.android.com/guide/appendix/g-app-intents.html" target="_blank">Здесь</a> можно посмотреть какие стандартные Uri поддерживаются.</p>
+<p>Примеры показывают, что <b>Uri </b>можно создать из абсолютно разных строк: http-адрес, ftp-адрес, координаты, номер телефона, контакт из адресной книги.</p>
+<p>Тип содержимого можно определить по <b>Scheme</b>. И этот же <b>Scheme </b>можно настроить в<b> Intent Filter</b> и отсеивать <b>Intent</b>, только с нужным нам типом данных в <b>Uri</b>, например только http. Этим мы еще займемся позднее, а пока сделаем простой пример, в котором будем формировать Intent с action и data, отправлять его и смотреть, что получится. Попробуем просмотреть следующее: http-адрес, координаты на карте и открыть окно набора номера.</p>
+<p>Чтобы посмотреть координаты на карте, необходимо приложение Google Maps. Его нет в стандартных образах Android систем (тех, что вы в SDK Manager скачивали). Нужен образ, название которого начинается с "Google APIs"</p>
+<p>Создайте AVD на платформе Google APIs с API Level 10. Назовите его на ваше усмотрение.</p>
+<p><img src="images/lesson_30_0.png" alt="" width="404" height="640" border="0"></p>
+<p>Создадим проект. Обратите внимание, используем платформу Google APIs версии 4.0</p>
+<p><img src="images/lesson_30_1.png" alt="" width="525" height="573" border="0"></p>
+<p><b>Project name</b>: P0311_SimpleIntents<br><b>Build Target</b>: Google APIs 4.0<br><b>Application name</b>: SimpleIntents<br><b>Package name</b>: ru.startandroid.develop.p0311simpleintents<br><b>Create Activity</b>: MainActivity</p>
+<p>Сформируем экран <b>main.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+        &lt;Button
+            android:id="@+id/btnWeb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:text="Web"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnMap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:text="Map"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnCall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_weight="1"
+            android:text="Call"&gt;
+        &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране три кнопки. Первая будет открывать веб-страницу, вторая - карту, третья – звонилку.</p>
+<p>Пишем код в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0311simpleintents;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  Button btnWeb;
+  Button btnMap;
+  Button btnCall;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    btnWeb = (Button) findViewById(R.id.btnWeb);
+    btnMap = (Button) findViewById(R.id.btnMap);
+    btnCall = (Button) findViewById(R.id.btnCall);
+
+    btnWeb.setOnClickListener(this);
+    btnMap.setOnClickListener(this);
+    btnCall.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    Intent intent;
+    switch (v.getId()) {
+    case R.id.btnWeb:
+      intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://developer.android.com"));
+      startActivity(intent);
+      break;
+    case R.id.btnMap:
+      intent = new Intent();
+      intent.setAction(Intent.ACTION_VIEW);
+      intent.setData(Uri.parse("geo:55.754283,37.62002"));
+      startActivity(intent);
+      break;
+    case R.id.btnCall:
+      intent = new Intent(Intent.ACTION_DIAL);
+      intent.setData(Uri.parse("tel:12345"));
+      startActivity(intent);
+      break;
+    }
+  }
+}</code></pre>
+<p>Я использовал три разных способа создания Intent-а и задания его атрибутов.</p>
+<p>В случае <b>btnWeb </b>я использовал конструктор <a href="http://developer.android.com/reference/android/content/Intent.html#Intent(java.lang.String, android.net.Uri)" target="_blank">Intent (String action, Uri uri)</a>. Он создает <b>Intent </b>и на вход сразу принимает <b>action </b>и <b>data</b>. Мы используем стандартный системный <b>action </b>– <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_VIEW" target="_blank">ACTION_VIEW</a>. Это константа в классе <b>Intent</b> – означает, что мы хотим <b>просмотреть </b>что-либо. В качестве <b>data </b>мы подаем объект <b>Uri</b>, созданный из веб-ссылки: <a href="http://developer.android.com/">http://developer.android.com</a>. И если попытаться описать словами наш код, то получится так: этот Intent означает, что мы хотим посмотреть содержимое этой ссылки и ищем Activity, которая могла бы нам помочь.</p>
+<p>В случае <b>btnMap </b>использовался конструктор <a href="http://developer.android.com/reference/android/content/Intent.html#Intent()" target="_blank">Intent()</a>. Он просто создает <b>Intent</b>. А в следующих строках мы уже присваиваем ему атрибуты <b>action </b>и <b>data</b>. <b>action </b>– снова <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_VIEW" target="_blank">ACTION_VIEW</a>, а в качестве <b>data </b>мы создаем <b>Uri </b>из пары координат - <em>55.754283,37.62002</em>. Этот <b>Intent </b>означает, что мы хотим посмотреть на карте указанные координаты.</p>
+<p>В случае <b>btnCall </b>используем конструктор <a href="http://developer.android.com/reference/android/content/Intent.html#Intent(java.lang.String)" target="_blank">Intent (String action)</a>. На вход ему сразу подается <b>action</b>, а <b>data </b>указывается позже. <b>action</b> в данном случае – <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_DIAL" target="_blank">ACTION_DIAL</a> – открывает звонилку и набирает номер, указанный в <b>data</b>, но не начинает звонок. В <b>data </b>– помещаем <b>Uri</b>, созданный из номера телефона <em>12345</em>.</p>
+<p>Три этих способа приводят к одному результату - <b>Intent </b>с заполненными атрибутами <b>action </b>и <b>data</b>. Какой из них использовать - решать вам в зависимости от ситуации.</p>
+<p>Т.к. нашему приложению понадобится интернет, чтобы открыть ссылку и посмотреть карту, надо чтобы на вашем компе интернет был.</p>
+<p>Также в файле <b>манифеста </b>приложения, на вкладке <b>Permission </b>добавьте элемент <b>Uses Permission</b> и справа в поле <b>Name</b> выберите <em>android.permission.INTERNET</em>. Это даст приложению доступ в интернет. Правда у меня почему-то и без этого все работает … Пока не понял почему.</p>
+<p>Все сохраняем и запускаем приложение</p>
+<p><img src="images/lesson_30_2.png" alt="" width="640" height="454" border="0"></p>
+<p>Жмем кнопку Web,</p>
+<p>открывается стандартный браузер и отображает содержимое страницы по ссылке</p>
+<p><img src="images/lesson_30_3.png" alt="" width="640" height="454" border="0"></p>
+<p>Возвращаемся, жмем Map. Отображается карта, которая показывает место, соответствующее указанным координатам.</p>
+<p><img src="images/lesson_30_4.png" alt="" width="640" height="454" border="0"></p>
+<p>Возвращаемся, жмем Call. Отображается стандартный экран набора номера и видим, что номер, который мы указывали в data, уже набран. Нам остается только нажать кнопку звонка.</p>
+<p><img src="images/lesson_30_5.png" alt="" width="640" height="454" border="0"></p>
+<p>Скорее всего, сейчас есть много вопросов типа «Что будет если … ». На некоторые из них сразу могу ответить и предлагаю вам поэкспериментировать в текущем приложении:</p>
+<p>1) Что будет, если указать координаты без приставки <em>geo</em>:</p>
+<p>Система ругнется, что не нашла подходящего Activity (см. логи). Т.к. в Activity карты настроен Intent Filter, который (как я думаю) настроен на data c Schema = <em>geo</em>.</p>
+<p>Аналогично не сработает звонилка, если указать номер без приставки <em>tel</em>.</p>
+<p>2) Что будет, если в координатах оставить <em>geo</em>, но координаты указать кривые?</p>
+<p>Если мы попробуем посмотреть, например, такие координаты <em>geo:a,b</em>, то карта запустится, но скажет нам <em>Unable to load the URL</em>. Т.е. данные подошли по Schema, но оказались некорректными.</p>
+<p>3) Что будет, если координаты указать верно, но action использовать не ACTION_VIEW, а ACTION_EDIT.</p>
+<p>Получается, что мы хотим отредактировать место на карте заданное этими координатами. Но система говорит нам, что она не нашла такое Activity. Потому что приложение Google Maps ожидает Intent с action = ACTION_VIEW и оно сможет показать нам это место на карте. А на редактирование оно не подписывалось )</p>
+<p>Необходимо понять, что все приложения в системе заточены под конкретные действия с конкретными типами данных. И если вы попробуете позвонить на адрес сайта, или открыть на карте номер телефона – то система просто не найдет приложения, способные на это. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

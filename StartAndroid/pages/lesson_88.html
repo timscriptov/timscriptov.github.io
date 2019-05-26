@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 88. AsyncTask. Итоговый результат. Метод get</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем третий параметр<br> - используем метод get для получения результата</p>
+<p>На прошлом уроке мы рассмотрели типы данных, которые указываем в угловых скобках при описании класса-наследника AsyncTask. Их три:</p>
+<p>1) Тип <b>входных </b>данных. Это данные, которые пойдут на вход AsyncTask</p>
+<p>2) Тип <b>промежуточных </b>данных. Данные, которые используются для вывода промежуточных результатов</p>
+<p>3) Тип <b>возвращаемых </b>данных. То, что вернет AsyncTask после работы.</p>
+<p>Мы уже поработали с первыми двумя. Сейчас будем использовать <b>третий</b>. Это тип (класс) объекта, который должен нам <b>вернуться </b>из AsyncTask. Получить этот объект мы можем двумя способами:</p>
+<p>1) Он передается на вход метода <b>onPostExecute</b>, который срабатывает по окончании задачи</p>
+<p>2) Метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#get()" target="_blank">get </a>возвращает нам этот объект</p>
+<p>Мы вызываем метод get, чтобы получить результат работы AsyncTask. Но что будет, если задача еще не завершена, а мы вызвали get? Метод get будет ждать. Т.е. просто блокирует поток, в котором он выполняется, и не отпустит, пока не получит какой-то результат или не выскочит exception.</p>
+<p>Есть еще реализация метода <a href="http://developer.android.com/reference/android/os/AsyncTask.html#get(long, java.util.concurrent.TimeUnit)" target="_blank">get</a> с таймаутом. В этом случае get будет ждать указанное время, а потом сгенерирует Exception. Если же задача уже была завершена, то метод выполнится сразу и ждать ничего не будет.</p>
+<p>Посмотрим на примере. Создадим приложение, будем запускать задачу, которая будет висеть 5 секунд, и попробуем повызывать метод get.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0881_AsyncTaskResult<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AsyncTaskResult<br><b>Package name</b>: ru.startandroid.develop.p0881asynctaskresult<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;AsyncTaskResult&lt;/string&gt;
+	&lt;string name="start"&gt;Start&lt;/string&gt;
+	&lt;string name="get"&gt;Result&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnGet"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/get"
+		android:onClick="onclick"&gt;
+	&lt;/Button&gt;
+	&lt;ProgressBar
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"&gt;
+	&lt;/ProgressBar&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка Start будет начинать выполнение задачи, а кнопка Result – выводить результат. ProgressBar, который покажет, что приложение висит. TextView для вывода информации.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0881asynctaskresult;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  
+  MyTask mt;
+  TextView tvInfo;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      mt = new MyTask();
+      mt.execute();
+      break;
+    case R.id.btnGet:
+      showResult();
+      break;
+    default:
+      break;
+    }
+  }
+  
+  private void showResult() {
+    if (mt == null) return;
+    int result = -1;
+    try {
+      Log.d(LOG_TAG, "Try to get result");      
+      result = mt.get();
+      Log.d(LOG_TAG, "get returns " + result);
+      Toast.makeText(this, "get returns " + result, Toast.LENGTH_LONG).show();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    }
+  }
+
+  class MyTask extends AsyncTask&lt;Void, Void, Integer&gt; {
+    @Override
+    protected void onPreExecute() {
+      super.onPreExecute();
+      tvInfo.setText("Begin");
+      Log.d(LOG_TAG, "Begin");
+    }
+    
+    
+    @Override
+    protected Integer doInBackground(Void... params) {
+      try {
+        TimeUnit.SECONDS.sleep(5);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      return 100500;
+    }
+    
+    @Override
+    protected void onPostExecute(Integer result) {
+      super.onPostExecute(result);
+      tvInfo.setText("End. Result = " + result);
+      Log.d(LOG_TAG, "End. Result = " + result);
+      
+    }
+  }
+}</code></pre>
+<p>В <b>onclick </b>мы определяем, какая кнопка была нажата. Если Start, то создаем и запускаем задачу. Если Result, то вызываем метод showResult.</p>
+<p>В <b>showResult </b>мы пытаемся получить результат из текущей задачи с помощью метода get. Результат выводим в лог и на экран.</p>
+<p>В описании AsyncTask мы указали Void для первых двух типов данных и Integer для третьего. Этот третий Integer и есть тип (класс) объекта, который должен нам вернуться из AsyncTask. Обратите внимание, что этот тип указан как тип <b>возвращаемых</b> данных для метода <b>doInBackground </b>и как <b>входящий </b>для метода <b>onPostExecute</b>. Т.е. мы выполняем задачу в <b>doInBackground</b>, формируем <b>результат </b>типа Integer и <b>возвращаем </b>его как результат работы этого метода. И далее этот результат попадает и может быть использован в <b>onPostExecute</b>, который выполняется после завершения задачи. Мы выводим его в лог и на экран.</p>
+<p>В <b>doInBackground </b>мы ставим паузу в 5 секунд и возвращаем число 100500.</p>
+<p>Все сохраним и запустим приложение. Жмем <b>Start</b></p>
+<p><img src="images/lesson_87_0.png" alt="" width="640" height="454"></p>
+<p>и ждем 5 секунд, пока отработает задача. Появляется текст с результатом.</p>
+<p><img src="images/lesson_87_1.png" alt="" width="640" height="454"></p>
+<p>Теперь нажмем <b>Result </b></p>
+<p><img src="images/lesson_87_2.png" alt="" width="640" height="454"></p>
+<p>AsyncTask дал нам тот же самый результат, который пришел в onPostExecute. Все логично.</p>
+<p>Теперь попробуем вызвать метод get пока не завершилась задача. Для этого надо нажать <b>Start </b>и сразу же нажать <b>Result</b></p>
+<p>Жмем <b>Start</b>, и сразу за ним <b>Result</b></p>
+<p><img src="images/lesson_87_3.png" alt="" width="640" height="454"></p>
+<p>остановился <b>ProgressBar</b>, т.к. основной поток <b>блокирован </b>методом get. Метод get ждет завершения AsyncTask. Это продолжается пока не выполнится то, что мы написали в <b>doInBackground</b>. После этого метод get возвращает нам результат и освобождает поток.</p>
+<p><img src="images/lesson_87_4.png" alt="" width="640" height="454"></p>
+<p>Смотрим логи:</p>
+<p><em>13:06:27.224: D/myLogs(656): Begin<br> 13:06:27.479: D/myLogs(656): Try to get result<br> 13:06:32.316: D/myLogs(656): get returns 100500<br> 13:06:32.364: D/myLogs(656): End. Result</em><em> = 100500</em></p>
+<p>Видно, как началась задача (<b><i>Begin</i></b>). Почти сразу же нажали на Result и запустили метод get (<b><i>Try to get result</i></b>). А вот отработал (<b><i>get returns 100500</i></b>) метод get только спустя 5 секунд, т.е. пока не завершилась задача. Все это время он ждал и, тем самым, блокировал поток, в котором был запущен. Примерно в то же время отработал и onPostExecute (<b><i>End. Result = 100500</i></b>).</p>
+<p>Попробуем добавить таймаут. Перепишем метод <b>showResult</b>:</p>
+<pre><code class="java">  private void showResult() {
+    if (mt == null) return;
+    int result = -1;
+    try {
+      Log.d(LOG_TAG, "Try to get result");      
+      result = mt.get(1, TimeUnit.SECONDS);
+      Log.d(LOG_TAG, "get returns " + result);
+      Toast.makeText(this, "get returns " + result, Toast.LENGTH_LONG).show();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    } catch (TimeoutException e) {
+      Log.d(LOG_TAG, "get timeout, result = " + result);
+      e.printStackTrace();
+    }
+  }</code></pre>
+<p>Изменился метод get. Теперь он ждет одну секунду, и если не получает результат, то генерирует <b>TimeoutException</b>. Мы это исключение ловим и выводим в лог соответствующее сообщение.</p>
+<p>Сохраняем, запускаем. Жмем <b>Start </b>и сразу же <b>Result</b>. Приложение снова подвисает, но через секунду оживает. Смотрим лог:</p>
+<p><em>13:10:42.574: D/myLogs(724): Begin<br> 13:10:42.875: D/myLogs(724): Try to get result<br> 13:10:43.883: D/myLogs(724): get timeout, result = -1<br> 13:10:47.615: D/myLogs(724): End. Result</em><em> = 100500</em></p>
+<p>Видно, как началась задача (<b><i>Begin</i></b>). Почти сразу же нажали на Result и запустили метод get (<b><i>Try to get result</i></b>). Через секунду сработал TimeoutException, и видим, что get не вернул нам никакой результат (<b><i>get timeout, result = -1</i></b>).  Ну а через 5 секунд после начала успешно сработал onPostExecute (<b><i>End. Result = 100500</i></b>).</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

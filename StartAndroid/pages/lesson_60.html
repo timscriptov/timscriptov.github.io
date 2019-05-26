@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 60. Диалоги. AlertDialog: Title, Message, Icon, Buttons</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем AlertDialog<br> - настраиваем заголовок, сообщение, картинку и кнопки</p>
+<p>Начнем знакомство с <a href="http://developer.android.com/reference/android/app/AlertDialog.html" target="_blank">AlertDialog</a>. Этот <b>диалог </b>используется, если вы хотите сообщить о чем-то пользователю или попросить его сделать выбор типа Да/Нет/Отмена.</p>
+<p>Напишем приложение, которое при закрытии будет вызывать диалог о сохранении данных, аналогичный диалогу из программ MS Office . Если мы ответим Да, то данные сохранятся, если Нет – то не сохранятся, если Отмена – приложение не закроется.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0601_AlertDialogSimple<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogSimple<br><b>Package name</b>: ru.startandroid.develop.p0601alertdialogsimple<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>res/values/strings.xml</b> строки c текстами:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;AlertDialogSimple&lt;/string&gt;
+    &lt;string name="exit"&gt;Выход&lt;/string&gt;
+    &lt;string name="save_data"&gt;Сохранить данные?&lt;/string&gt;
+    &lt;string name="yes"&gt;Да&lt;/string&gt;
+    &lt;string name="no"&gt;Нет&lt;/string&gt;
+    &lt;string name="cancel"&gt;Отмена&lt;/string&gt;
+    &lt;string name="saved"&gt;Сохранено&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/btnExit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/exit"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0601alertdialogsimple;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+  
+  final int DIALOG_EXIT = 1;
+  
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+    }
+    
+    public void onclick(View v) {
+      // вызываем диалог
+      showDialog(DIALOG_EXIT);
+    }
+    
+    protected Dialog onCreateDialog(int id) {
+      if (id == DIALOG_EXIT) {
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        // заголовок
+        adb.setTitle(R.string.exit);
+        // сообщение
+        adb.setMessage(R.string.save_data);
+        // иконка
+        adb.setIcon(android.R.drawable.ic_dialog_info);
+        // кнопка положительного ответа
+        adb.setPositiveButton(R.string.yes, myClickListener);
+        // кнопка отрицательного ответа
+        adb.setNegativeButton(R.string.no, myClickListener);
+        // кнопка нейтрального ответа
+        adb.setNeutralButton(R.string.cancel, myClickListener);
+        // создаем диалог
+        return adb.create();
+      }
+      return super.onCreateDialog(id);
+    }
+    
+    OnClickListener myClickListener = new OnClickListener() {
+    public void onClick(DialogInterface dialog, int which) {
+      switch (which) {
+      // положительная кнопка
+      case Dialog.BUTTON_POSITIVE:
+        saveData();
+        finish();
+        break;
+      // негативная кнопка
+      case Dialog.BUTTON_NEGATIVE:
+        finish();
+        break;
+      // нейтральная кнопка  
+      case Dialog.BUTTON_NEUTRAL:
+        break;
+      }
+    }
+  };
+  
+  void saveData() {
+    Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show();
+  }
+}</code></pre>
+<p>В обработчике кнопки <b>onclick</b> вызываем диалог.</p>
+<p>В <b>onCreateDialog</b> мы создаем диалог. Для этого используется класс <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html" target="_blank">AlertDialog.Builder</a>. Мы указываем заголовок, текст сообщения, иконку и кнопки. Диалог может содержать максимум три кнопки ответа: положительная, отрицательная и нейтральная. Для каждой указываем текст и обработчик. Метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#create()" target="_blank">create</a> создает диалог и мы его возвращаем (return).</p>
+<p>Обработчик кнопок <b>myClickListener </b>реализует интерфейс <a href="http://developer.android.com/reference/android/content/DialogInterface.OnClickListener.html" target="_blank">DialogInterface.OnClickListener</a> и в нашем случае является общим для всех кнопок. В нем мы проверяем, какая кнопка была нажата:<br> если положительная (<a href="http://developer.android.com/reference/android/content/DialogInterface.html#BUTTON_POSITIVE" target="_blank">BUTTON_POSITIVE</a>), то сохраняем данные и закрываем приложение<br> если отрицательная (<a href="http://developer.android.com/reference/android/content/DialogInterface.html#BUTTON_NEGATIVE" target="_blank">BUTTON_NEGATIVE</a>), то закрываем приложение без сохранения<br> если нейтральная (<a href="http://developer.android.com/reference/android/content/DialogInterface.html#BUTTON_NEUTRAL" target="_blank">BUTTON_NEUTRAL</a>), то не делаем ничего</p>
+<p>В своем методе saveData выводим текст, что данные как-будто сохранены. Просто, чтобы убедиться, что метод выполняется.</p>
+<p>Все сохраним и запустим приложение. Нажмем кнопку Выход:</p>
+<p><img src="images/lesson_59_0.png" alt="" width="640"></p>
+<p>если жмем <b>Да</b>,</p>
+<p>то приложение закроется и метод<b> saveData будет выполнен</b>.</p>
+<p><img src="images/lesson_59_1.png" alt="" width="640" height="449"></p>
+<p>Если жмем <b>Отмена</b>, то диалог закроется и с приложением ничего не произойдет.<br>А если жмем <b>Нет</b>, то приложение закроется<b> без вызова</b> нашего метода <b>saveData</b>.</p>
+<p>Вот так несложно и недолго создать диалог для взаимодействия с пользователем. Использованные нами атрибуты диалога <b>не являются обязательными</b>. Вы можете, например, не указывать заголовок, или сделать только одну кнопку, а не три.</p>
+<p>Для указания заголовка, сообщения и текстов кнопок необязательно использовать переменные <b>R.string</b>.  Есть аналогичные реализации методов, которые принимают на вход просто текст.</p>
+<p>И еще пара советов.</p>
+<p>1) Чтобы диалог вызывался не только по кнопке выход, но и при нажатии на кнопку <b>Назад </b>в приложении, добавьте вызов диалога в реализацию метода <a href="http://developer.android.com/reference/android/app/Activity.html#onBackPressed()" target="_blank">onBackPressed</a></p>
+<pre><code class="java">public void onBackPressed() {
+  // вызываем диалог
+  showDialog(DIALOG_EXIT);
+}</code></pre>
+<p>2) А если хотите, чтобы вызванный диалог не закрывался по нажатию кнопки Назад, то используйте метод <a href="http://developer.android.com/reference/android/app/Dialog.html#setCancelable(boolean)" target="_blank">setCancelable</a>:</p>
+<pre><code class="java">adb.setCancelable(false);</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

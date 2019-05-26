@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 97. Service. Биндинг. ServiceConnection</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем биндинг для подключения к сервису</p>
+<p>В прошлых уроках мы общались с сервисом <b>асинхронно</b>. Т.е. мы отправляли запрос через startService, а ответ нам приходил когда-нибудь потом посредством PendingIntent или BroadcastReceiver.</p>
+<p>Но есть и <b>синхронный </b>способ взаимодействия с сервисом. Он достигается с помощью биндинга (binding, я также буду использовать слово «подключение»). Мы подключаемся к сервису и можем взаимодействовать с ним путем обычного вызова методов с передачей данных и получением результатов. В этом уроке передавать данные не будем. Пока что разберемся, как подключаться и отключаться.</p>
+<p>Как вы помните, для запуска и остановки сервиса мы использовали методы startService и stopService. Для биндинга используются методы <a href="http://developer.android.com/reference/android/content/Context.html#bindService(android.content.Intent, android.content.ServiceConnection, int)" target="_blank">bindService </a>и <a href="http://developer.android.com/reference/android/content/Context.html#unbindService(android.content.ServiceConnection)" target="_blank">unbindService</a>.</p>
+<p>Создадим два Application. В одном будет приложение, в другом сервис.</p>
+<p>Создадим первый проект:</p>
+<p><b>Project name</b>: P0971_ServiceBindClient<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceBindClient<br><b>Package name</b>: ru.startandroid.develop.p0971servicebindclient<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="stop"&gt;Stop&lt;/string&gt;
+&lt;string name="bind"&gt;Bind&lt;/string&gt;
+&lt;string name="unbind"&gt;Unbind&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnStop"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStop"
+		android:text="@string/stop"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnBind"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickBind"
+		android:text="@string/bind"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnUnBind"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickUnBind"
+		android:text="@string/unbind"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>4 кнопки: для запуска, остановки и биндинга сервиса</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0971servicebindclient;
+
+import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  boolean bound = false;
+  ServiceConnection sConn;
+  Intent intent;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    
+    intent = new Intent("ru.startandroid.develop.p0972servicebindserver.MyService");
+    
+    sConn = new ServiceConnection() {
+      public void onServiceConnected(ComponentName name, IBinder binder) {
+        Log.d(LOG_TAG, "MainActivity onServiceConnected");
+        bound = true;
+      }
+
+      public void onServiceDisconnected(ComponentName name) {
+        Log.d(LOG_TAG, "MainActivity onServiceDisconnected");
+        bound = false;
+      }
+    };
+  }
+
+  public void onClickStart(View v) {
+    startService(intent);
+  }
+
+  public void onClickStop(View v) {
+    stopService(intent);
+  }
+
+  public void onClickBind(View v) {
+    bindService(intent, sConn, BIND_AUTO_CREATE);
+  }
+
+  public void onClickUnBind(View v) {
+    if (!bound) return;
+    unbindService(sConn);
+    bound = false;
+  }
+
+  protected void onDestroy() {
+    super.onDestroy();
+    onClickUnBind(null);
+  }
+}</code></pre>
+<p>В <b>onCreate </b>мы создаем Intent, который позволит нам добраться до сервиса.</p>
+<p>Объект <a href="http://developer.android.com/reference/android/content/ServiceConnection.html" target="_blank">ServiceConnection </a>позволит нам определить, когда мы подключились к сервису и когда связь с сервисом потеряна (если сервис был убит системой при нехватке памяти). При подключении к сервису сработает метод <a href="http://developer.android.com/reference/android/content/ServiceConnection.html#onServiceConnected(android.content.ComponentName, android.os.IBinder)" target="_blank">onServiceConnected</a>. На вход он получает имя компонента-сервиса и объект Binder для взаимодействия с сервисом. В этом уроке мы этим Binder пока не пользуемся. При потере связи сработает метод <a href="http://developer.android.com/reference/android/content/ServiceConnection.html#onServiceDisconnected(android.content.ComponentName)" target="_blank">onServiceDisconnected</a>.</p>
+<p>Переменную bound мы используем для того, чтобы знать – подключены мы в данный момент к сервису или нет. Соответственно при подключении мы переводим ее в true, а при потере связи в false.</p>
+<p>Далее идут обработчики кнопок. В <b>onClickStart </b>мы стартуем сервис, в <b>onClickStop </b>– останавливаем.</p>
+<p>В <b>onClickBind </b>– соединяемся с сервисом, используя метод bindService. На вход передаем Intent, ServiceConnection и флаг BIND_AUTO_CREATE, означающий, что, если сервис, к которому мы пытаемся подключиться, не работает, то он будет запущен.</p>
+<p>В <b>onClickUnBind </b>с помощью bound проверяем, что соединение уже установлено. Далее отсоединяемся методом unbindService, на вход передавая ему ServiceConnection. И в bound пишем false, т.к. мы сами разорвали соединение. Метод onServiceDisconnected не сработает при явном отключении.</p>
+<p>Создадим второй проект, без Activity:</p>
+<p><b>Project name</b>: P0972_ServiceBindServer<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceBindServer<br><b>Package name</b>: ru.startandroid.develop.p0972servicebindserver</p>
+<p>Создаем сервис <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0972servicebindserver;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
+import android.util.Log;
+
+public class MyService extends Service {
+
+  final String LOG_TAG = "myLogs";
+
+  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "MyService onCreate");
+  }
+  
+  public IBinder onBind(Intent intent) {
+    Log.d(LOG_TAG, "MyService onBind");
+    return new Binder();
+  }
+
+  public void onRebind(Intent intent) {
+    super.onRebind(intent);
+    Log.d(LOG_TAG, "MyService onRebind");
+  }
+  
+  public boolean onUnbind(Intent intent) {
+    Log.d(LOG_TAG, "MyService onUnbind");
+    return super.onUnbind(intent);
+  }
+  
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "MyService onDestroy");
+  }
+}</code></pre>
+<p>Методы <b>onCreate </b>и <b>onDestroy </b>нам знакомы – они вызываются при создании и уничтожении сервиса. А <a href="http://developer.android.com/reference/android/app/Service.html#onBind(android.content.Intent)" target="_blank">onBind</a>, <a href="http://developer.android.com/reference/android/app/Service.html#onRebind(android.content.Intent)" target="_blank">onRebind </a>и <a href="http://developer.android.com/reference/android/app/Service.html#onUnbind(android.content.Intent)" target="_blank">onUnbind </a>используются при биндинге и мы далее будем смотреть как именно. Метод onStartCommand не используем.</p>
+<p>В методе <b>onBind </b>возвращаем пока объект-заглушку Binder. В этом уроке он не будет использован.</p>
+<p>Прописываем сервис в манифесте и настраиваем для него IntentFilter с Action = <i>ru.startandroid.develop.p0972servicebindserver.MyService</i>.</p>
+<p>Все сохраняем, инсталлим сервис и запускаем приложение.</p>
+<p><img src="images/lesson_96_0.png" alt="" width="640" height="454"></p>
+<p>На самом экране ничего происходить не будет. Все внимание на логи.</p>
+<p>Попробуем подключиться к неработающему сервису. Жмем <b>Bind</b>. В логах:</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>Сервис создался и сработал его метод <b>onBind</b>. Также сработал метод <b>onServiceConnected </b>в ServiceConnection, т.е. Activity теперь знает, что подключение к сервису установлено.</p>
+<p>Попробуем отключиться. Жмем <b>Unbind</b>.</p>
+<p><i>MyService onUnbind<br> MyService onDestroy</i></p>
+<p>Сработал метод <b>Unbind </b>в сервисе и сервис закрылся. Т.е. если мы биндингом запустили сервис, он будет жить, пока живет соединение. Как только мы отключаемся, сервис останавливается. onServiceDisconnected не сработал, т.к. мы сами отключились.</p>
+<p>Теперь попробуем соединиться с сервисом и убить его. Посмотрим, что станет с соединением. Жмем <b>Bind</b>.</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>Подключились.</p>
+<p>Теперь в процессах убиваем процесс сервиса</p>
+<p><img src="images/lesson_96_1.png" alt="" width="640" height="370"></p>
+<p>Смотрим лог:</p>
+<p><i>MainActivity onServiceDisconnected</i></p>
+<p>Сработал метод <b>onServiceDisconnected </b>объекта ServiceConnection. Тем самым Activity уведомлено, что соединение разорвано.</p>
+<p>Теперь немного подождем (у меня это заняло 5 секунд) и в логах появляются строки:</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>Сервис запустился и соединение восстановилось. Очень удобно.</p>
+<p>Жмем <b>Unbind </b>и отключаемся.</p>
+<p>Попробуем снова подключиться к незапущенному сервису, но уже без флага BIND_AUTO_CREATE. Перепишем <b>onClickBind </b>в <b>MainActivity.java</b>:</p>
+<pre><code class="java">  public void onClickBind(View v) {
+    bindService(intent, sConn, 0);
+  }</code></pre>
+<p>Вместо флага BIND_AUTO_CREATE мы написали 0.</p>
+<p>Сохраняем, запускаем. Жмем <b>Bind</b>. В логах ничего. Мы убрали флаг, сервис сам не создается при подключении.</p>
+<p>Давайте запустим его методом startService. Жмем <b>Start</b>. В логах:</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>Сервис создался и приложение подключилось к нему. Т.е. попыткой биндинга мы оставили некую «заявку» на подключение, и когда сервис был запущен методом startService, он эту заявку увидел и принял подключение.</p>
+<p>Жмем <b>UnBind</b>.</p>
+<p><i>MyService onUnbind</i></p>
+<p>Отключились от сервиса. Но сервис продолжает жить, потому что он был запущен не биндингом, а методом startService. А там уже свои правила закрытия сервиса. Это мы проходили в прошлых уроках.</p>
+<p>Жмем <b>Stop</b>.</p>
+<p><i>MyService onDestroy</i></p>
+<p>Сервис завершил работу.</p>
+<p>Попробуем запустить сервис методом <b>startService </b>и, пока он работает, несколько раз подключимся и отключимся. Жмем <b>Start</b>.</p>
+<p><i>MyService onCreate</i></p>
+<p>Сервис запущен.</p>
+<p>Подключаемся и отключаемся, т.е. жмем <b>Bind</b></p>
+<p><i>MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>а затем <b>Unbind</b>.</p>
+<p><i>MyService onUnbind</i></p>
+<p>Сработали методы <b>onBind </b>и <b>onUnbind </b>в сервисе, и <b>onServiceConnected </b>в ServiceConnection.</p>
+<p>Еще раз подключаемся и отключаемся - жмем <b>Bind</b>, а затем <b>Unbind</b></p>
+<p><i>MainActivity onServiceConnected</i></p>
+<p>При повторном подключении к сервису методы <b>onBind </b>и <b>onUnbind </b>не сработали. Только <b>onServiceConnected</b>.</p>
+<p>И далее, сколько бы мы не подключались, так и будет.</p>
+<p>Остановим сервис – нажмем <b>Stop</b>.</p>
+<p>Это поведение можно скорректировать. Для этого необходимо возвращать <b>true </b>в методе <b>onUnbind</b>. Сейчас мы там вызываем метод супер-класса, а он возвращает false.</p>
+<p>Перепишем метод <b>Unbind</b> в <b>MyService.java</b>:</p>
+<pre><code class="java">  public boolean onUnbind(Intent intent) {
+    Log.d(LOG_TAG, "MyService onUnbind");
+    return true;
+  }</code></pre>
+<p>Сохраним и инсталлим сервис. Жмем <b>Start</b>, а затем жмем поочередно <b>Bind</b> и <b>Unbind</b>, т.е. подключаемся и отключаемся. Смотрим логи:</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected<br> MyService onUnbind</i></p>
+<p>Сервис создан, подключились и отключились. Продолжаем подключаться и отключаться.</p>
+<p><br><i> MyService onRebind<br> MainActivity onServiceConnected<br> MyService onUnbind<br> MyService onRebind<br> MainActivity onServiceConnected<br> MyService onUnbind</i></p>
+<p>Последующие подключения и отключения сопровождаются вызовами методов <b>onRebind</b> и <b>onUnbind</b>. Таким образом, у нас есть возможность обработать в сервисе каждое повторное подключение/отключение.</p>
+<p>Вот примерно такой <b>Lifecycle </b>имеет <b>биндинг </b>сервиса. Разумеется, я рассмотрел не все возможные комбинации запуска методов startService, stopService, bindService и unbindService. Оставляю это вам, если есть интерес. Я рассмотрел только типичные случаи.</p>
+<p>Также я не рассматривал возможность одновременного подключения нескольких приложений или сервисов к одному сервису. А такая возможность существует. В этом случае, если сервис запущен биндингом, то он будет жить, пока не отключатся все подключившиеся.</p>
+<p>Насколько я понял по документацие, не рекомендуется оставлять незавершенные подключения к сервисам по окончании работы приложения. В примерах из документации подключение к сервису производится в методе onStart, а отключение - в onStop. Но, разумеется, если вам надо, чтобы подключение оставалось при временном уходе Activity в background, то используйте onCreate и onDestroy. Также есть четкая рекомендация от Google - не использовать для этих целей onResume и onPause.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

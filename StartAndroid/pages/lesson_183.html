@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 183. Notifications. Каналы</title>
+ <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В Android 4.1 (API 16) появились расширенные уведомления. Если потянуть вниз такое уведомление, то оно отобразит дополнительную информацию.</p>
+<p>Чтобы создать расширенное уведомление, необходимо добавить стиль к билдеру. Стилей существует несколько. Все они наследники абстрактного класса <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Style.html" target="_blank" rel="noopener noreferrer">NotificationCompat.Style</a>. Из названия стиля обычно понятно, для чего он может быть использован.</p>
+<p>Рассмотрим, например, стиль <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.BigTextStyle.html" target="_blank" rel="noopener noreferrer">BigTextStyle</a>, чтобы отобразить длинный текст.</p>
+<p><em>Далее я буду приводить только код билдера. А как из билдера получить и отобразить уведомление, вы можете посмотреть в предыдущих уроках.</em></p>
+<p>Код:</p>
+<pre><code class="java">String longText = "To have a notification appear in an expanded view, " +
+       "first create a NotificationCompat.Builder object " +
+       "with the normal view options you want. " +
+       "Next, call Builder.setStyle() with an " +
+       "expanded layout object as its argument.";
+
+NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .setStyle(new NotificationCompat.BigTextStyle().bigText(longText));
+</code></pre>
+<p>В билдере уведомления вызываем метод setStyle, в который нам необходимо передать стиль. Создаем стиль <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.BigTextStyle.html" target="_blank" rel="noopener noreferrer">BigTextStyle</a> и передаем ему длинный текст в метод bigText.</p>
+<p>Теперь при раскрытии уведомления будет отображаться длинный текст.</p>
+<p><img src="images/lesson183/lesson1.gif" alt="" width="640" height="454" border="0"></p>
+<p>Стиль <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.BigPictureStyle.html" target="_blank" rel="noopener noreferrer">BigPictureStyle</a> поможет отобразить большую картинку:</p>
+<pre><code class="java">BitmapFactory.Options options = new BitmapFactory.Options();
+Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.startandroid, options);
+
+NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .setStyle(new NotificationCompat.BigPictureStyle().bigPicture(bitmap));
+</code></pre>
+<p>Создаем bitmap и передаем его в BigPictureStyle.</p>
+<p>При раскрытии уведомление отобразит картинку</p>
+<p><img src="images/lesson183/lesson2.gif" alt="" width="640" height="454" border="0"></p>
+<p>Стиль <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.InboxStyle.html" target="_blank" rel="noopener noreferrer">InboxStyle</a> - разместит до 5 ваших строк в виде списка</p>
+<pre><code class="java">NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .setStyle(new NotificationCompat.InboxStyle()
+                       .addLine("Line 1")
+                       .addLine("Line 2")
+                       .addLine("Line 3"));
+</code></pre>
+<p>Методом addLine добавляем строки</p>
+<p>Результат:</p>
+<p><img src="images/lesson183/lesson3.webp" alt="" width="640" height="454" border="0"></p>
+<p>Стиль <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.MessagingStyle.html" target="_blank" rel="noopener noreferrer">MessagingStyle</a> удобен для отображения последних сообщений из чата:</p>
+<pre><code class="java">NotificationCompat.MessagingStyle messagingStyle = new NotificationCompat.MessagingStyle("You");
+messagingStyle.setConversationTitle("Android chat")
+       .addMessage("Всем привет!", System.currentTimeMillis(), "Ivan")
+       .addMessage("Кто перешел на новую студию, как оно?", System.currentTimeMillis(), "Ivan")
+       .addMessage("Я пока не переходил, жду отзывов", System.currentTimeMillis(), "Andrey")
+       .addMessage("Я перешел", System.currentTimeMillis(), null)
+       .addMessage("Было несколько проблем, но все решаемо", System.currentTimeMillis(), null)
+       .addMessage("Ок, спасибо!", System.currentTimeMillis(), "Ivan");
+
+NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .setStyle(messagingStyle);
+</code></pre>
+<p>В конструкторе MessagingStyle вам необходимо указать, под каким именем пользователь будет видеть свои сообщения. Обычно в чатах используют слово You (или Me).</p>
+<p>В <b>setConversationTitle</b> указывается название чата. Обычно это используется, когда в чате более двух собеседников.</p>
+<p>Далее, методом <b>addMessage</b> добавляются сообщения. Сообщение состоит из трех полей: текст, время, отправитель. Если отправитель - null, то это считается сообщением пользователя, и будет использовано имя, которое мы указывали в конструкторе MessagingStyle, т.е. You.</p>
+<p>Добавлять можно сколько угодно сообщений, но после того, как количество сообщений будет больше, чем MessagingStyle.MAXIMUM_RETAINED_MESSAGES, старые сообщения начнут удаляться. Это удобно и позволяет не заморачиваться проверками на количество.</p>
+<p>Отображаться сообщения будут в том же порядке, что вы их добавили.</p>
+<p>Выглядеть это будет так:</p>
+<p><img src="images/lesson183/lesson4.gif" alt="" width="640" height="454" border="0"></p>
+<p>Время сообщений не отображается. Насколько я понял, поверхностно посмотрев исходники, оно пока вообще нигде не используется. Может быть в будущих релизах это изменится.</p>
+<p>Метод addMessage также работает с объектом <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.MessagingStyle.Message.html" target="_blank" rel="noopener noreferrer">Message</a>. Этот объект содержит поля: текст, время и автор. Но кроме них есть метод <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.MessagingStyle.Message.html#setData(java.lang.String, android.net.Uri)" target="_blank" rel="noopener noreferrer">setData</a> для указания MIME-данных, например картинок.</p>
+<p>У некоторых стилей есть пара общих методов, которые могут быть полезны: setBigContentTitle и setSummaryText.</p>
+<p>Рассмотрим их на примере с InboxStyle:</p>
+<pre><code class="java">NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .setStyle(new NotificationCompat.InboxStyle()
+                       .addLine("Line 1")
+                       .addLine("Line 2")
+                       .addLine("Line 3")
+                       .setBigContentTitle("Extended title")
+                       .setSummaryText("+5 more"));
+</code></pre>
+<p>Код почти тот же, что мы рассматривали ранее. Добавлены два метода:</p>
+<p><b>setBigContentTitle</b> - позволяет указать заголовок уведомления, который будет показан при раскрытии уведомления</p>
+<p><b>setSummaryText</b> - текст будет отображен внизу расширенного уведомления</p>
+<p>Результат:</p>
+<p><img src="images/lesson183/lesson5.gif" alt="" width="640" height="454" border="0"></p>
+<p>При раскрытии уведомления меняется заголовок и в нижней части отображен summary текст.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

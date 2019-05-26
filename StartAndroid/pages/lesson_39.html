@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 39. onUpgrade. Обновляем БД в SQLite</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- меняем версию и обновляем структуру БД в onUpgrade</p>
+<p>С <b>развитием </b>приложения может возникнуть необходимость <b>изменения структуры БД</b>, которую оно использует. На одном из прошлых уроков я упоминал, что для этого используется метод <b>onUpgrade </b>класса <b>SQLiteOpenHelper</b>. Этот метод вызывается, если <b>существующая </b>версия БД <b>отличается </b>от той, к которой мы пытаемся <b>подключиться</b>. <b>Версию </b>мы обычно <b>указывали </b>при вызове <b>конструктора</b> супер-класса <b>SQLiteOpenHelper </b>в конструкторе DBHelper.</p>
+<p>Попробуем воспользоваться методом onUpgrade и посмотреть, как происходит переход на новую версию БД. Для этого напишем небольшое приложение, аналогичное одному из приложений с прошлых уроков – про сотрудников и должности.</p>
+<p><b>Первая </b>версия БД будет содержать только таблицу <b>people </b>с именем сотрудника и его должностью. Но такая таблица будет не совсем корректна. Если вдруг у нас изменится название должности, придется обновлять все соответствующие записи в people. Поэтому мы решаем изменить БД и организовать данные немного по-другому.</p>
+<p>Во <b>второй </b>версии добавим таблицу <b>position </b>с названием должности и зарплатой. И в таблице <b>people </b>вместо названия должности пропишем соответствующий <b>ID </b>из <b>position</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0391_SQLiteOnUpgradeDB<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SQLiteOnUpgradeDB<br><b>Package name</b>: ru.startandroid.develop.p0391sqliteonupgradedb<br><b>Create Activity</b>: MainActivity</p>
+<p>Экран снова не используем, будем выводить все в лог.</p>
+<p>Открываем <b>MainActivity.java</b> и кодим:</p>
+<pre><code class="java">package ru.startandroid.develop.p0391sqliteonupgradedb;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final String DB_NAME = "staff"; // имя БД
+  final int DB_VERSION = 1; // версия БД
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    DBHelper dbh = new DBHelper(this);
+    SQLiteDatabase db = dbh.getWritableDatabase();
+    Log.d(LOG_TAG, " --- Staff db v." + db.getVersion() + " --- ");
+    writeStaff(db);
+    dbh.close();
+  }
+
+  // запрос данных и вывод в лог
+  private void writeStaff(SQLiteDatabase db) {
+    Cursor c = db.rawQuery("select * from people", null);
+    logCursor(c, "Table people");
+    c.close();
+  }
+
+  // вывод в лог данных из курсора
+  void logCursor(Cursor c, String title) {
+    if (c != null) {
+      if (c.moveToFirst()) {
+        Log.d(LOG_TAG, title + ". " + c.getCount() + " rows");
+        StringBuilder sb = new StringBuilder();
+        do {
+          sb.setLength(0);
+          for (String cn : c.getColumnNames()) {
+            sb.append(cn + " = "
+                + c.getString(c.getColumnIndex(cn)) + "; ");
+          }
+          Log.d(LOG_TAG, sb.toString());
+        } while (c.moveToNext());
+      }
+    } else
+      Log.d(LOG_TAG, title + ". Cursor is null");
+  }
+
+  // класс для работы с БД
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      super(context, DB_NAME, null, DB_VERSION);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, " --- onCreate database --- ");
+
+      String[] people_name = { "Иван", "Марья", "Петр", "Антон", "Даша",
+          "Борис", "Костя", "Игорь" };
+      String[] people_positions = { "Программер", "Бухгалтер",
+          "Программер", "Программер", "Бухгалтер", "Директор",
+          "Программер", "Охранник" };
+
+      ContentValues cv = new ContentValues();
+
+      // создаем таблицу людей
+      db.execSQL("create table people ("
+          + "id integer primary key autoincrement,"
+          + "name text, position text);");
+
+      // заполняем ее
+      for (int i = 0; i &lt; people_name.length; i++) {
+        cv.clear();
+        cv.put("name", people_name[i]);
+        cv.put("position", people_positions[i]);
+        db.insert("people", null, cv);
+      }
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+}</code></pre>
+<p>Код несложен. Я сгруппировал операции по<b> выводу в лог данных</b> из Cursor – метод <b>logCursor</b>. Метод <b>writeStaff </b>– выбирает данные из таблицы people и вызывает метод для вывода данных в лог. В методе Activity <b>onCreate </b>мы создаем объект <b>DBHelper</b>, <b>подключаемся </b>к БД, выводим в лог <b>версию </b>БД, вызываем <b>writeStaff </b>и <b>отключаемся</b>.</p>
+<p>В <b>DBHelper </b>все как обычно. В конструкторе вызываем конструктор супер-класса. Обратите внимание, <b>DB_VERSION </b>= 1 – мы будем подключаться к базе версии 1. В методе <b>onCreate </b>создаем таблицу и заполняем ее.</p>
+<p>Все сохраним и запустим приложение. Смотрим лог:</p>
+<p><i>--- onCreate database --- <br> --- Staff db v.1 --- <br> Table people. 8 rows<br> id = 1; name = Иван; position = Программер; <br> id = 2; name = Марья; position = Бухгалтер; <br> id = 3; name = Петр; position = Программер; <br> id = 4; name = Антон; position = Программер; <br> id = 5; name = Даша; position = Бухгалтер; <br> id = 6; name = Борис; position = Директор; <br> id = 7; name = Костя; position = Программер; <br> id = 8; name = Игорь; position = Охранник;</i></p>
+<p>БД <b>создалась</b>, версия = <b>1 </b>и данные из таблицы вывелись в лог. Приложение работает, все ок. Но тут мы (внезапно!) понимаем, что при проектировании структуры БД была допущена ошибка. Записывать название должности в поле таблицы people – неправильно. К тому же у нас еще добавляются данные по зарплатам. Надо создать таблицу должностей - position, и использовать из нее id в таблице people. Тем самым структура нашей БД меняется и мы присваиваем ей версию – <b>2</b>.</p>
+<p>Но наше приложение уже установлено у пользователей. Оно уже создало БД версии 1, и в этой БД уже есть данные. Мы не можем просто удалить существующие таблицы и создать новые, т.к. возможно пользователь уже хранит там свои данные. Нам надо будет написать скрипты для обновления без потери данных.</p>
+<p>План обновления такой:</p>
+<p>- создаем и заполняем данными таблицу <b>position</b><br>- добавляем в таблицу <b>people </b>столбец – <b>posid </b>для хранения <b>id </b>из <b>position</b><br>- заполняем<b> people.posid</b> данными из <b>position </b>в зависимости от значения <b>people.position</b><br>- удаляем столбец <b>people.position</b></p>
+<p> </p>
+<p>Давайте менять <b>MainActivity.java</b>. Наше приложение теперь будет ориентировано на БД версии 2. Укажем это, изменив значение константы <b>DB_VERSION </b>на 2:</p>
+<pre><code class="java"> final int DB_VERSION = 2; // версия БД</code></pre>
+<p>Метод writeStaff перепишем таким образом:</p>
+<pre><code class="java">  private void writeStaff(SQLiteDatabase db) {
+      Cursor c = db.rawQuery("select * from people", null);
+      logCursor(c, "Table people");
+      c.close();
+      
+      c = db.rawQuery("select * from position", null);
+      logCursor(c, "Table position");
+      c.close();
+      
+      String sqlQuery = "select PL.name as Name, PS.name as Position, salary as Salary "
+        + "from people as PL "
+        + "inner join position as PS "
+        + "on PL.posid = PS.id ";
+      c = db.rawQuery(sqlQuery, null);
+      logCursor(c, "inner join");
+      c.close();
+    }</code></pre>
+<p>Будем выводить в лог данные из таблиц people, position и их объединения.</p>
+<p>Реализуем метод обновления - <b>onUpgrade </b>в <b>DBHelper</b>:</p>
+<pre><code class="java">    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+      Log.d(LOG_TAG, " --- onUpgrade database from " + oldVersion
+          + " to " + newVersion + " version --- ");
+
+      if (oldVersion == 1 &amp; newVersion == 2) {
+
+        ContentValues cv = new ContentValues();
+
+        // данные для таблицы должностей
+        int[] position_id = { 1, 2, 3, 4 };
+        String[] position_name = { "Директор", "Программер",
+            "Бухгалтер", "Охранник" };
+        int[] position_salary = { 15000, 13000, 10000, 8000 };
+
+        db.beginTransaction();
+        try {
+          // создаем таблицу должностей
+          db.execSQL("create table position ("
+              + "id integer primary key,"
+              + "name text, salary integer);");
+
+          // заполняем ее
+          for (int i = 0; i &lt; position_id.length; i++) {
+            cv.clear();
+            cv.put("id", position_id[i]);
+            cv.put("name", position_name[i]);
+            cv.put("salary", position_salary[i]);
+            db.insert("position", null, cv);
+          }
+
+          db.execSQL("alter table people add column posid integer;");
+
+          for (int i = 0; i &lt; position_id.length; i++) {
+            cv.clear();
+            cv.put("posid", position_id[i]);
+            db.update("people", cv, "position = ?",
+                new String[] { position_name[i] });
+          }
+
+          db.execSQL("create temporary table people_tmp ("
+              + "id integer, name text, position text, posid integer);");
+
+          db.execSQL("insert into people_tmp select id, name, position, posid from people;");
+          db.execSQL("drop table people;");
+
+          db.execSQL("create table people ("
+              + "id integer primary key autoincrement,"
+              + "name text, posid integer);");
+
+          db.execSQL("insert into people select id, name, posid from people_tmp;");
+          db.execSQL("drop table people_tmp;");
+
+          db.setTransactionSuccessful();
+        } finally {
+          db.endTransaction();
+        }
+      }
+    }</code></pre>
+<p>Все в соответствии с планом обновления, который я приводил выше. Есть пара нюансов.</p>
+<p>Во-первых, используем<b> БД-транзакцию</b>. Т.е. нам надо чтобы на БД накатились <b>все </b>наши обновления. А в случае <b>ошибки </b>в процессе обновления - <b>все изменения должны быть отменены</b> и БД должна остаться прежней. Тут транзакции очень выручают.</p>
+<p>Во-вторых, в SQLite <b>нельзя </b>просто так <b>удалить </b>столбец, приходится создавать временную таблицу, перекидывать туда данные, удалять оригинал, создавать его снова с нужной структурой, скидывать в него данные из временной таблицы и удалять временную таблицу. Подробнее об этом можно почитать тут - <a href="http://www.sqlite.org/faq.html#q11" target="_blank">How do I add or delete columns from an existing table in SQLite</a>.</p>
+<p>Наше приложение <b>обновилось</b>. И теперь, при запуске, оно попытается подключиться к БД версии <b>2</b>, но увидит, что существующая версия = <b>1 </b>и вызовет метод <b>onUpgrade</b>, дав нам возможность внести необходимые изменения в структуру БД. Но это произойдет в случае обновления приложения. А что будет если пользователь поставит наше новое приложение на свежий смартфон первый раз?</p>
+<p>В этом случае приложение также попытается подключиться к БД версии <b>2</b>. Но т.к. приложение только что установлено, то БД еще не существует. Приложение <b>создаст </b>БД и присвоит ей версию номер <b>2</b>, т.к. оно умеет работать именно с такой версией. При создании будет вызван метод <b>onCreate </b>в <b>DBHelper</b>. Значит, в нем мы должны прописать код, который будет создавать нам БД версии <b>2 </b>– т.е. обновленную таблицу <b>people </b>и новую таблицу <b>position</b>.</p>
+<p>Пишем <b>onCreate </b>в DBHelper:</p>
+<pre><code class="java">    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, " --- onCreate database --- ");
+
+      String[] people_name = { "Иван", "Марья", "Петр", "Антон", "Даша",
+          "Борис", "Костя", "Игорь" };
+      int[] people_posid = { 2, 3, 2, 2, 3, 1, 2, 4 };
+
+      // данные для таблицы должностей
+      int[] position_id = { 1, 2, 3, 4 };
+      String[] position_name = { "Директор", "Программер", "Бухгалтер",
+          "Охранник" };
+      int[] position_salary = { 15000, 13000, 10000, 8000 };
+
+      ContentValues cv = new ContentValues();
+
+      // создаем таблицу должностей
+      db.execSQL("create table position (" + "id integer primary key,"
+          + "name text, salary integer" + ");");
+
+      // заполняем ее
+      for (int i = 0; i &lt; position_id.length; i++) {
+        cv.clear();
+        cv.put("id", position_id[i]);
+        cv.put("name", position_name[i]);
+        cv.put("salary", position_salary[i]);
+        db.insert("position", null, cv);
+      }
+
+      // создаем таблицу людей
+      db.execSQL("create table people ("
+          + "id integer primary key autoincrement,"
+          + "name text, posid integer);");
+
+      // заполняем ее
+      for (int i = 0; i &lt; people_name.length; i++) {
+        cv.clear();
+        cv.put("name", people_name[i]);
+        cv.put("posid", people_posid[i]);
+        db.insert("people", null, cv);
+      }
+    }</code></pre>
+<p>Создание и заполнение данными двух таблиц. Все понятно.</p>
+<p>Теперь можно все сохранить и запустить приложение.</p>
+<p>Смотрим лог:</p>
+<p><i>--- onUpgrade database from 1 to 2 version --- <br> --- Staff db v.2 --- <br> Table people. 8 rows<br> id = 1; name = Иван; posid = 2; <br> id = 2; name = Марья; posid = 3; <br> id = 3; name = Петр; posid = 2; <br> id = 4; name = Антон; posid = 2; <br> id = 5; name = Даша; posid = 3; <br> id = 6; name = Борис; posid = 1; <br> id = 7; name = Костя; posid = 2; <br> id = 8; name = Игорь; posid = 4; <br> Table position. 4 rows<br> id = 1; name = Директор; salary = 15000; <br> id = 2; name = Программер; salary = 13000; <br> id = 3; name = Бухгалтер; salary = 10000; <br> id = 4; name = Охранник; salary = 8000; <br> inner join. 8 rows<br> Name = Иван; Position = Программер; Salary = 13000; <br> Name = Марья; Position = Бухгалтер; Salary = 10000; <br> Name = Петр; Position = Программер; Salary = 13000; <br> Name = Антон; Position = Программер; Salary = 13000; <br> Name = Даша; Position = Бухгалтер; Salary = 10000; <br> Name = Борис; Position = Директор; Salary = 15000; <br> Name = Костя; Position = Программер; Salary = 13000; <br> Name = Игорь; Position = Охранник; Salary = 8000;</i></p>
+<p>Видим, что вызывался <b>onUpgrade </b>и <b>обновил </b>нам БД с версии<b> 1</b> на <b>2</b>. Далее выводим все данные, чтобы убедиться, что обновление прошло корректно.</p>
+<p>Можно также убедиться, что новый onCreate в DBHelper корректно отработает. Для этого надо удалить файл БД и запустить приложение. Приложение не найдет БД и создаст ее сразу в новом формате и с версией 2.</p>
+<p>Сценарий выдуманный, есть к чему придраться и о чем поспорить, но смысл не в этом. Смысл в том, что мы увидели, как происходит <b>обновление </b>БД, если приложение запросило новую версию. Поначалу, возможно, покажется запутанным этот механизм создания и обновления. Но сложного реально ничего нет. С опытом придет полное понимание.</p>
+<p>Еще хочу отметить, что у объекта Cursor есть метод close(), который освобождает занимаемые им ресурсы. Не забывайте про него. </p>
+<p>Думаю, теперь можно смело сказать, что работу с <b>SQLite</b> в Android мы изучили достаточно основательно. И в дальнейших уроках сможем свободно использовать эти знания.</p>
+<p>Полный код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0391sqliteonupgradedb;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final String DB_NAME = "staff"; // имя БД
+  final int DB_VERSION = 2; // версия БД
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    DBHelper dbh = new DBHelper(this);
+    SQLiteDatabase db = dbh.getWritableDatabase();
+    Log.d(LOG_TAG, " --- Staff db v." + db.getVersion() + " --- ");
+    writeStaff(db);
+    dbh.close();
+  }
+
+  // запрос данных и вывод в лог
+  private void writeStaff(SQLiteDatabase db) {
+    Cursor c = db.rawQuery("select * from people", null);
+    logCursor(c, "Table people");
+    c.close();
+
+    c = db.rawQuery("select * from position", null);
+    logCursor(c, "Table position");
+    c.close();
+
+    String sqlQuery = "select PL.name as Name, PS.name as Position, salary as Salary "
+        + "from people as PL "
+        + "inner join position as PS "
+        + "on PL.posid = PS.id ";
+    c = db.rawQuery(sqlQuery, null);
+    logCursor(c, "inner join");
+    c.close();
+  }
+
+  // вывод в лог данных из курсора
+  void logCursor(Cursor c, String title) {
+    if (c != null) {
+      if (c.moveToFirst()) {
+        Log.d(LOG_TAG, title + ". " + c.getCount() + " rows");
+        StringBuilder sb = new StringBuilder();
+        do {
+          sb.setLength(0);
+          for (String cn : c.getColumnNames()) {
+            sb.append(cn + " = "
+                + c.getString(c.getColumnIndex(cn)) + "; ");
+          }
+          Log.d(LOG_TAG, sb.toString());
+        } while (c.moveToNext());
+      }
+    } else
+      Log.d(LOG_TAG, title + ". Cursor is null");
+  }
+
+  // класс для работы с БД
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      super(context, DB_NAME, null, DB_VERSION);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, " --- onCreate database --- ");
+
+      String[] people_name = { "Иван", "Марья", "Петр", "Антон", "Даша",
+          "Борис", "Костя", "Игорь" };
+      int[] people_posid = { 2, 3, 2, 2, 3, 1, 2, 4 };
+
+      // данные для таблицы должностей
+      int[] position_id = { 1, 2, 3, 4 };
+      String[] position_name = { "Директор", "Программер", "Бухгалтер",
+          "Охранник" };
+      int[] position_salary = { 15000, 13000, 10000, 8000 };
+
+      ContentValues cv = new ContentValues();
+
+      // создаем таблицу должностей
+      db.execSQL("create table position (" + "id integer primary key,"
+          + "name text, salary integer" + ");");
+
+      // заполняем ее
+      for (int i = 0; i &lt; position_id.length; i++) {
+        cv.clear();
+        cv.put("id", position_id[i]);
+        cv.put("name", position_name[i]);
+        cv.put("salary", position_salary[i]);
+        db.insert("position", null, cv);
+      }
+
+      // создаем таблицу людей
+      db.execSQL("create table people ("
+          + "id integer primary key autoincrement,"
+          + "name text, posid integer);");
+
+      // заполняем ее
+      for (int i = 0; i &lt; people_name.length; i++) {
+        cv.clear();
+        cv.put("name", people_name[i]);
+        cv.put("posid", people_posid[i]);
+        db.insert("people", null, cv);
+      }
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+      Log.d(LOG_TAG, " --- onUpgrade database from " + oldVersion
+          + " to " + newVersion + " version --- ");
+
+      if (oldVersion == 1 &amp; newVersion == 2) {
+
+        ContentValues cv = new ContentValues();
+
+        // данные для таблицы должностей
+        int[] position_id = { 1, 2, 3, 4 };
+        String[] position_name = { "Директор", "Программер",
+            "Бухгалтер", "Охранник" };
+        int[] position_salary = { 15000, 13000, 10000, 8000 };
+
+        db.beginTransaction();
+        try {
+          // создаем таблицу должностей
+          db.execSQL("create table position ("
+              + "id integer primary key,"
+              + "name text, salary integer);");
+
+          // заполняем ее
+          for (int i = 0; i &lt; position_id.length; i++) {
+            cv.clear();
+            cv.put("id", position_id[i]);
+            cv.put("name", position_name[i]);
+            cv.put("salary", position_salary[i]);
+            db.insert("position", null, cv);
+          }
+
+          db.execSQL("alter table people add column posid integer;");
+
+          for (int i = 0; i &lt; position_id.length; i++) {
+            cv.clear();
+            cv.put("posid", position_id[i]);
+            db.update("people", cv, "position = ?",
+                new String[] { position_name[i] });
+          }
+
+          db.execSQL("create temporary table people_tmp ("
+              + "id integer, name text, position text, posid integer);");
+
+          db.execSQL("insert into people_tmp select id, name, position, posid from people;");
+          db.execSQL("drop table people;");
+
+          db.execSQL("create table people ("
+              + "id integer primary key autoincrement,"
+              + "name text, posid integer);");
+
+          db.execSQL("insert into people select id, name, posid from people_tmp;");
+          db.execSQL("drop table people_tmp;");
+
+          db.setTransactionSuccessful();
+        } finally {
+          db.endTransaction();
+        }
+      }
+    }
+
+  }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

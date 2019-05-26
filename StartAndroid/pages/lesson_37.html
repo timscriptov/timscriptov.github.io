@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 37. Запросы из связанных таблиц. INNER JOIN в SQLite. Метод rawQuery.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- читаем данные из связанных таблиц<br>- используем rawQuery</p>
+<p>Мы достаточно подробно разобрали метод <b>query</b>. Но не рассмотрели, как с его помощью выполнять запросы для <b>связанных таблиц</b>. Создадим простое приложение, которое будет делать запрос из двух таблиц и выводить результат в лог. Таблицы будут <b>people </b>и <b>position</b>. В первую (people) запишем список <b>людей</b>, во вторую (position) – список <b>должностей</b>. И для каждого <b>человека </b>в <b>people </b>будет прописан <b>id должности </b>из <b>position</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name:</b> P0371_SQLiteInnerJoin<br><b>Build Target:</b> Android 4.0<br><b>Application name:</b> SQLiteInnerJoin<br><b>Package name:</b> ru.startandroid.develop.p0371sqliteinnerjoin<br><b>Create Activity:</b> MainActivity</p>
+<p>Экран вообще использовать не будем, поэтому <b>main.xml</b> даже не трогаем. Открываем <b>MainActivity.java</b> и пишем код:</p>
+<pre><code class="java">package ru.startandroid.develop.p0371sqliteinnerjoin;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  // данные для таблицы должностей
+  int[] position_id = { 1, 2, 3, 4 };
+  String[] position_name = { "Директор", "Программер", "Бухгалтер", "Охранник" };
+  int[] position_salary = { 15000, 13000, 10000, 8000 };
+
+  // данные для таблицы людей
+  String[] people_name = { "Иван", "Марья", "Петр", "Антон", "Даша", "Борис", "Костя", "Игорь" };
+  int[] people_posid = { 2, 3, 2, 2, 3, 1, 2, 4 };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // Подключаемся к БД
+    DBHelper dbh = new DBHelper(this);
+    SQLiteDatabase db = dbh.getWritableDatabase();
+
+    // Описание курсора
+    Cursor c;
+
+    // выводим в лог данные по должностям
+    Log.d(LOG_TAG, "--- Table position ---");
+    c = db.query("position", null, null, null, null, null, null);
+    logCursor(c);
+    c.close();
+    Log.d(LOG_TAG, "--- ---");
+
+    // выводим в лог данные по людям
+    Log.d(LOG_TAG, "--- Table people ---");
+    c = db.query("people", null, null, null, null, null, null);
+    logCursor(c);
+    c.close();
+    Log.d(LOG_TAG, "--- ---");
+
+    // выводим результат объединения
+    // используем rawQuery
+    Log.d(LOG_TAG, "--- INNER JOIN with rawQuery---");
+    String sqlQuery = "select PL.name as Name, PS.name as Position, salary as Salary "
+        + "from people as PL "
+        + "inner join position as PS "
+        + "on PL.posid = PS.id " 
+        + "where salary &gt; ?";
+    c = db.rawQuery(sqlQuery, new String[] {"12000"});
+    logCursor(c);
+    c.close();
+    Log.d(LOG_TAG, "--- ---");
+
+    // выводим результат объединения
+    // используем query
+    Log.d(LOG_TAG, "--- INNER JOIN with query---");
+    String table = "people as PL inner join position as PS on PL.posid = PS.id";
+    String columns[] = { "PL.name as Name", "PS.name as Position", "salary as Salary" };
+    String selection = "salary &lt; ?";
+    String[] selectionArgs = {"12000"};
+    c = db.query(table, columns, selection, selectionArgs, null, null, null);
+    logCursor(c);
+    c.close();
+    Log.d(LOG_TAG, "--- ---");
+    
+    // закрываем БД
+    dbh.close();
+  }
+
+  // вывод в лог данных из курсора
+  void logCursor(Cursor c) {
+    if (c != null) {
+      if (c.moveToFirst()) {
+        String str;
+        do {
+          str = "";
+          for (String cn : c.getColumnNames()) {
+            str = str.concat(cn + " = " + c.getString(c.getColumnIndex(cn)) + "; ");
+          }
+          Log.d(LOG_TAG, str);
+        } while (c.moveToNext());
+      }
+    } else
+      Log.d(LOG_TAG, "Cursor is null");
+  }
+
+  // класс для работы с БД
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      super(context, "myDB", null, 1);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, "--- onCreate database ---");
+
+      ContentValues cv = new ContentValues();
+
+      // создаем таблицу должностей
+      db.execSQL("create table position (" 
+          + "id integer primary key,"
+          + "name text," + "salary integer" 
+          + ");");
+
+      // заполняем ее
+      for (int i = 0; i &lt; position_id.length; i++) {
+        cv.clear();
+        cv.put("id", position_id[i]);
+        cv.put("name", position_name[i]);
+        cv.put("salary", position_salary[i]);
+        db.insert("position", null, cv);
+      }
+
+      // создаем таблицу людей
+      db.execSQL("create table people ("
+          + "id integer primary key autoincrement," 
+          + "name text,"
+          + "posid integer" 
+          + ");");
+
+      // заполняем ее
+      for (int i = 0; i &lt; people_name.length; i++) {
+        cv.clear();
+        cv.put("name", people_name[i]);
+        cv.put("posid", people_posid[i]);
+        db.insert("people", null, cv);
+      }
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+
+}</code></pre>
+<p>Разбираем код. Сначала идут несколько <b>массивов </b>с <b>данными </b>для таблиц. Обратите внимание, для <b>должностей </b>мы будем указывать <b>id </b>при заполнении таблиц. Это сделано для того, чтобы мы знали эти номера и могли их использовать в таблице <b>людей </b>для указания id должности.</p>
+<p>В методе Activity <b>onCreate </b>мы создаем объект для <b>управления </b>БД и <b>подключаемся </b>к БД. Далее используя знакомый нам <b>query </b>выводим в лог данные из таблиц <b>position </b>и <b>people</b>.</p>
+<p>Для вывода объединения таблиц используем <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#rawQuery(java.lang.String, java.lang.String[])" target="_blank">rawQuery</a>. Это несложный метод, который принимает на вход <b>SQL-запрос</b> и список <b>аргументов </b>для условия WHERE (если необходимо). Мы сформировали запрос на объединение двух таблиц и вывода <b>имени</b>, <b>должности </b>и <b>зарплаты </b>человека. Условие выборки: <b>ЗП </b>должна быть <b>больше 12000</b>. Мы использовали аргументы для формирования условия.</p>
+<p>Далее снова выводим объединение таблиц, но используем обычный <b>query</b>. В <b>table </b>записываем все таблицы, их алиасы и условие <b>JOIN</b>. В <b>columns </b>– все нужные поля с использованием алиасов. Ну и в <b>selection</b> и <b>selectionArgs </b>пишем условие выборки – <b>ЗП меньше 12000</b>.</p>
+<p>Наш метод <b>logCursor</b> получает на вход <b>Cursor </b>и выводит в лог все <b>содержимое</b>. Тут все знакомо с прошлых уроков.</p>
+<p>В классе <b>DBHelper </b>кодим <b>создание</b> таблиц и, на этот раз, здесь же их <b>наполнение </b>данными.</p>
+<p>Все сохраним и запустим. Смотрим лог:</p>
+<p><i>--- onCreate database ---<br>--- Table position ---<br>id = 1; name = Директор; salary = 15000;<br>id = 2; name = Программер; salary = 13000;<br>id = 3; name = Бухгалтер; salary = 10000;<br>id = 4; name = Охранник; salary = 8000;<br>--- ---<br>--- Table people ---<br>id = 1; name = Иван; posid = 2;<br>id = 2; name = Марья; posid = 3;<br>id = 3; name = Петр; posid = 2;<br>id = 4; name = Антон; posid = 2;<br>id = 5; name = Даша; posid = 3;<br>id = 6; name = Борис; posid = 1;<br>id = 7; name = Костя; posid = 2;<br>id = 8; name = Игорь; posid = 4;<br>--- ---</i></p>
+<p>Вывели данные по таблицам раздельно.</p>
+<p><i>--- INNER JOIN with rawQuery---<br>Name = Иван; Position = Программер; Salary = 13000;<br>Name = Петр; Position = Программер; Salary = 13000;<br>Name = Антон; Position = Программер; Salary = 13000;<br>Name = Борис; Position = Директор; Salary = 15000;<br>Name = Костя; Position = Программер; Salary = 13000;<br>--- ---</i></p>
+<p>Вывели данные из rawQuery. ЗП &gt; 12000</p>
+<p><i>--- INNER JOIN with query---<br>Name = Марья; Position = Бухгалтер; Salary = 10000;<br>Name = Даша; Position = Бухгалтер; Salary = 10000;<br>Name = Игорь; Position = Охранник; Salary = 8000;<br>--- ---</i></p>
+<p>Вывели данные из query. ЗП &lt; 12000</p>
+<p>Как видите, запросы из связанных таблиц в <b>SQLite </b>– не проблема и ничем не отличается от обычных БД. </p>
+<p>Что использовать <b>rawQuery </b>или <b>query </b>– решать вам и зависит от ситуации. Хотя, навскидку я не могу придумать преимущества одного над другим в той или иной ситуации. Но наверно они есть.</p>
+<p>Данные по ЗП и должностям являются выдуманными, любое совпадение – случайно. И, разумеется, ничего против бухгалтеров и охранников я не имею ))</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

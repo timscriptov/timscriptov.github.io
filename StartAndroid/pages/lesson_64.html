@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 64. Диалоги. AlertDialog. Список с множественным выбором</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- формируем список с множественным выбором в диалоге</p>
+<p>Урок будет аналогичен прошлому. Мы будем формировать в диалоге список с множественным выбором и определять какие элементы были выбраны (чекнуты). На этот раз мы сможем работать только с массивом и курсором. Дать диалогу адаптер не получится, нет соответствующего метода. Это особенности реализации.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0641_AlertDialogItemsMulti<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogItemsMulti<br><b>Package name</b>: ru.startandroid.develop.p0641alertdialogitemsmulti<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;AlertDialogItemsMulti&lt;/string&gt;
+    &lt;string name="items"&gt;Items&lt;/string&gt;
+    &lt;string name="cursor"&gt;Cursor&lt;/string&gt;
+    &lt;string name="ok"&gt;OK&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/btnItems"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/items"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnCursor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/cursor"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>DB.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0641alertdialogitemsmulti;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DB {
+  
+  private static final String DB_NAME = "mydb";
+  private static final int DB_VERSION = 1;
+  private static final String DB_TABLE = "mytab";
+  
+  public static final String COLUMN_ID = "_id";
+  public static final String COLUMN_CHK = "checked";
+  public static final String COLUMN_TXT = "txt";
+  
+  private static final String DB_CREATE = 
+    "create table " + DB_TABLE + "(" +
+      COLUMN_ID + " integer primary key, " +
+      COLUMN_CHK + " integer, " +
+      COLUMN_TXT + " text" +
+    ");";
+  
+  private final Context mCtx;
+  
+  
+  private DBHelper mDBHelper;
+  private SQLiteDatabase mDB;
+  
+  public DB(Context ctx) {
+    mCtx = ctx;
+  }
+  
+  // открыть подключение
+  public void open() {
+    mDBHelper = new DBHelper(mCtx, DB_NAME, null, DB_VERSION);
+    mDB = mDBHelper.getWritableDatabase();
+  }
+  
+  // закрыть подключение
+  public void close() {
+    if (mDBHelper!=null) mDBHelper.close();
+  }
+  
+  // получить все данные из таблицы DB_TABLE
+  public Cursor getAllData() {
+    return mDB.query(DB_TABLE, null, null, null, null, null, null);
+  }
+  
+  //изменить запись в DB_TABLE
+  public void changeRec(int pos, boolean isChecked) {
+      ContentValues cv = new ContentValues();
+      cv.put(COLUMN_CHK, (isChecked) ? 1 : 0);
+      mDB.update(DB_TABLE, cv, COLUMN_ID + " = " + (pos + 1), null);
+  }
+  
+  // класс по созданию и управлению БД
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context, String name, CursorFactory factory,
+        int version) {
+      super(context, name, factory, version);
+    }
+
+    // создаем и заполняем БД
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt; 5; i++) {
+      cv.put(COLUMN_ID, i);
+      cv.put(COLUMN_TXT, "sometext " + i);
+      cv.put(COLUMN_CHK, 0);
+      db.insert(DB_TABLE, null, cv);
+      }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+<p>Мы в таблице создаем числовое поле <b>checked</b>. По этому полю список диалога будет определять выделен элемент (значение = 1) или нет (0). Метод <b>changeRec </b>берет на вход позицию элемента в списке и boolean-значение, выделен элемент или нет, и меняет соответствующую запись в таблице.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0641alertdialogitemsmulti;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.DialogInterface.OnMultiChoiceClickListener;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.util.Log;
+import android.util.SparseBooleanArray;
+import android.view.View;
+import android.widget.CursorAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  
+  final int DIALOG_ITEMS = 1;
+  final int DIALOG_CURSOR = 3;
+  DB db;
+  Cursor cursor;
+
+  String data[] = { "one", "two", "three", "four" };
+  boolean chkd[] = { false, true, true, false };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // открываем подключение к БД
+    db = new DB(this);
+    db.open();
+    cursor = db.getAllData();
+    startManagingCursor(cursor);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnItems:
+      showDialog(DIALOG_ITEMS);
+      break;
+    case R.id.btnCursor:
+      showDialog(DIALOG_CURSOR);
+      break;
+    default:
+      break;
+    }
+  }
+
+  protected Dialog onCreateDialog(int id) {
+    AlertDialog.Builder adb = new AlertDialog.Builder(this);
+    switch (id) {
+    // массив
+    case DIALOG_ITEMS:
+      adb.setTitle(R.string.items);
+      adb.setMultiChoiceItems(data, chkd, myItemsMultiClickListener);
+      break;
+    // курсор
+    case DIALOG_CURSOR:
+      adb.setTitle(R.string.cursor);
+      adb.setMultiChoiceItems(cursor, DB.COLUMN_CHK, DB.COLUMN_TXT, myCursorMultiClickListener);
+      break;
+    }
+    adb.setPositiveButton(R.string.ok, myBtnClickListener);
+    return adb.create();
+  }
+
+  // обработчик для списка массива
+  OnMultiChoiceClickListener myItemsMultiClickListener = new OnMultiChoiceClickListener() {
+    @Override
+    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+      Log.d(LOG_TAG, "which = " + which + ", isChecked = " + isChecked);
+    }
+  };  
+  
+  // обработчик для списка курсора
+  OnMultiChoiceClickListener myCursorMultiClickListener = new OnMultiChoiceClickListener() {
+    @Override
+    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+      ListView lv = ((AlertDialog) dialog).getListView();
+      Log.d(LOG_TAG, "which = " + which + ", isChecked = " + isChecked);
+      db.changeRec(which, isChecked);
+      cursor.requery();
+    }
+  };
+  
+  // обработчик нажатия на кнопку
+  OnClickListener myBtnClickListener = new OnClickListener() {
+    public void onClick(DialogInterface dialog, int which) {
+        SparseBooleanArray sbArray = ((AlertDialog)dialog).getListView().getCheckedItemPositions();
+        for (int i = 0; i &lt; sbArray.size(); i++) {
+          int key = sbArray.keyAt(i);
+          if (sbArray.get(key))
+            Log.d("qwe", "checked: " + key);
+        }    
+    }
+  };
+
+  protected void onDestroy() {
+    super.onDestroy();
+    db.close();
+  }
+
+}</code></pre>
+<p>Разбираем код. Кроме массива строк <b>data</b>, нам нужен массив boolean[] <b>chkd</b>, который укажет диалогу, какие элементы списка надо будет сразу сделать выделенными. Будем выделять второй и третий.</p>
+<p>В <b>onCreate</b> подключаемся к базе.</p>
+<p><b>onclick</b> – в зависимости от нажатой кнопки вызываем соответствующий диалог.</p>
+<p><b>onCreateDialog</b> – создаем вызываемый диалог, используя AlertDialog.Builder. Диалог может построить список, используя один из следующих объектов:</p>
+<p>1) <b>Массив </b>строк. Используется метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setMultiChoiceItems(java.lang.CharSequence[], boolean[], android.content.DialogInterface.OnMultiChoiceClickListener)" target="_blank">setMultiChoiceItems</a>. На вход подается массив строк, boolean-массив, определяющий выделенные элементов, и обработчик нажатия.</p>
+<p>2) <b>Курсор </b>БД. Вызываем метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setMultiChoiceItems(android.database.Cursor, java.lang.String, java.lang.String, android.content.DialogInterface.OnMultiChoiceClickListener)" target="_blank">setMultiChoiceItems</a>. Передаем туда курсор, имя поля выделения (данные о выделении элементов списка), имя поля с текстом (текст, который будет отображен в списке) и обработчик нажатия.</p>
+<p>Кроме списка указываем только заголовок. В конце добавим кнопку ОК, создаем и возвращаем Dialog.</p>
+<p>Для обоих способов создания используется методы с одинаковым названием setMultiChoiceItems, но с разными аргументами на вход.</p>
+<p><b>myItemsMultiClickListener</b> – обработчик нажатий на список, построенный из массива. Выводит в лог какой элемент был нажат и стал он выделенным или не выделенным. Реализует интерфейс <a href="http://developer.android.com/reference/android/content/DialogInterface.OnMultiChoiceClickListener.html" target="_blank">OnMultiChoiceClickListener</a>.</p>
+<p><b>myCursorMultiClickListener </b>- обработчик нажатий на список, построенный из курсора. Выводит в лог какой элемент был нажат и стал он выделенным или не выделенным. Также он соответствующим образом меняет данные в БД и обновляет курсор списка диалога. Т.к. если какой-то элемент выделили, мы должны в обработчике сбегать в БД, обновить соответствующую запись (поле checked) и обновить курсор. Ради интереса закомментируйте код этого обработчика – вы увидите, что галки в списке просто не ставятся.</p>
+<p><b>myBtnClickListener </b>– обработчик нажатия на кнопку. Получает из списка информацию о выделенных элементах и выводит ее в лог.</p>
+<p>В <b>onDestroy </b>закрываем подключение к БД.</p>
+<p>Все сохраним и запустим. Открываем диалог Items.</p>
+<p><img src="images/lesson_63_0.png" alt="" width="640"></p>
+<p>Видим, что галки проставились так, как мы указывали в массиве chkd. Если понажимать на пункты списка, лог показывает, какие изменения происходят.</p>
+<p><em>which = 1, isChecked = false<br> which = 0, isChecked = true<br> which = 3, isChecked = true </em></p>
+<p>Если есть необходимость, можно добавить в обработчик код, который обновлял бы массив chkd в соответствии с нажатиями. Индекс элемента и значение у нас есть.</p>
+<p>Откроем диалог Cursor. Здесь ничего не выделено, т.к. в поле checked мы поместили нули.</p>
+<p><img src="images/lesson_63_1.png" alt="" width="640" height="449"></p>
+<p>Проставим галки,</p>
+<p><img src="images/lesson_63_2.png" alt="" width="640" height="449"></p>
+<p>лог это отобразит</p>
+<p><em>which = 1, isChecked = true<br> which = 3, isChecked = true</em></p>
+<p>Это работает только потому, что мы вручную обновляем БД и курсор. Повторюсь, попробуйте закоментить код обработчика myCursorMultiClickListener и элементы перестанут выделяться.</p>
+<p>Я не стал реализовывать метод <b>onPrepareDialog</b>. В случае Items, там все просто, аналогично прошлому уроку используйте такой код:</p>
+<p><i>((AlertDialog)dialog).getListView().setItemChecked(2, <b>true</b>);</i></p>
+<p>В этом примере: 2 – это позиция элемента списка, а true - означает, что галка должна стоять. Если хотите снять галку, передавайте false.</p>
+<p>В случае с курсором код будет аналогичен коду из обработчика <b>myCursorMultiClickListener</b>. Меняете запись в БД методом <b>db.changeRec</b>, обновляете курсор и передаете его адаптеру.</p>
+<p>Нетривиальная такая получилась штука, не знаю пригодится кому или нет, но раз уж взялся за диалоги - решил расписать и это.</p>
+<p>Также наверно имеет смысл сказать, что у методов setItems, setSingleChoiceItems, setMultiChoiceItems есть также реализация, использующая не напрямую массив, а ID массива строк из файла ресурсов.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

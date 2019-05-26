@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="">
+	<title>Урок 163. Графика. Drawable. Bitmap, Layer List, State List.</title>
+		<link href="../css/bootstrap.css" rel="stylesheet">
+		<link href="../css/article_style.css" rel="stylesheet">
+		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+		<div class="page__inner">
+			<div class="main main_width-limit">
+				<div class="content">
+
+					<html>
+      
+		<body><p>В этом уроке:</p>
+<p>- изучаем drawable теги: &lt;bitmap&gt;, &lt;layer-list&gt;, &lt;selector&gt;</p>
+<p>Продолжаем разбирать типы Drawable, которые можно описывать с помощью XML-разметки. Проектов в этом уроке создавать не будем. Я просто буду в своем проекте создавать XML-файлы в папке drawable и ставить их фоном для View. А в тексте урока приведу код и скрины. Иногда буду вешать дополнительно серый фон, чтобы был виден реальный размер View.</p>
+<p>Чтобы программно добраться до Drawable, который вы для View повесили как фон, надо просто вызвать метод <a href="http://developer.android.com/reference/android/view/View.html#getBackground()" target="_blank" rel="noopener noreferrer">getBackground</a>.</p>
+<h3>Bitmap</h3>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Bitmap" target="_blank" rel="noopener noreferrer">&lt;bitmap&gt;</a> позволяет получить Drawable обертку для Bitmap. У тега есть несколько атрибутов.</p>
+<p>В атрибуте <b>src</b> указываем нужный нам файл-изображение.</p>
+<p>Атрибут <b>gravity</b> указывает, как bitmap будет располагаться внутри Drawable. Можно использовать несколько значений, разделенных знаком | . Значения тут стандартные, и некоторые из них мы часто используем при работе с layout. Рассмотрим пример.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;bitmap
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:gravity="top|left"
+	android:src="@drawable/ic_launcher"&gt;
+&lt;/bitmap&gt;</code></pre>
+<p>Значение атрибута gravity сдвигает изображение влево-вверх</p>
+<p><img src="images/lesson163/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Далее ставим следующие значение атрибута gravity:</p>
+<p><b><i>center</i></b> - центр</p>
+<p><img src="images/lesson163/lesson2.png" alt="" width="640" height="385"/></p>
+<p><i><b>fill_horizontal</b></i> - растянуть по горизонтали</p>
+<p><img src="images/lesson163/lesson3.png" alt="" width="640" height="385"/></p>
+<p><i><b>fill</b></i> <i>- </i>растянуть (используется по умолчанию)</p>
+<p><img src="images/lesson163/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Насколько я понял, значения clip_vertical и clip_horizontal идентичны значениям fill_vertical и fill_horizontal в случае когда Bitmap по размеру больше, чем предоставляемое ему пространство. Т.е. clip_vertical сожмет его по вертикали, так чтобы он влез. А clip_horizontal - по горизонтали.</p>
+<p>Атрибут <b>tileMode</b> - это режим «плитки». Позволяет замостить вашим изображением все доступное пространство. По умолчанию он имеет значение disabled.</p>
+<p>Для примера я создам такой bitmap.</p>
+<p><img src="images/lesson163/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Четыре разных цвета, внутренние границы - сплошные, внешние - пунктиром.</p>
+<p>Пример кода:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;bitmap
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:src="@drawable/tilemode"
+	android:tileMode="repeat"&gt;
+&lt;/bitmap&gt;</code></pre>
+<p>Если tileMode = <i><b>repeat</b></i>, то Bitmap будет размножен и займет все доступное пространство</p>
+<p><img src="images/lesson163/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Далее меняем значение атрибута tileMode.</p>
+<p><i><b>mirror</b></i> – Bitmap также будет размножен, но при этом он будет чередоваться со своим отражением</p>
+<p><img src="images/lesson163/lesson7.png" alt="" width="640" height="385"/></p>
+<p><i><b>clamp</b></i> – растягивает края картинки на все свободное пространство</p>
+<p><img src="images/lesson163/lesson8.png" alt="" width="640" height="385"/></p>
+<p>Прочие атрибуты тега &lt;bitmap&gt;:</p>
+<p><b>antialias</b> – сглаживание линий</p>
+<p><b>dither</b> – преобразование цветов, если текущей палитры недостаточно для отображения</p>
+<p><b>filter</b> – фильтр при сжатии или растягивании (пример результата использования есть в Уроке 158)</p>
+<p><b>mipMap</b> – использование mip-текстурирования. Про него можно почитать в <a href="https://ru.wikipedia.org/wiki/MIP-%D1%82%D0%B5%D0%BA%D1%81%D1%82%D1%83%D1%80%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5" target="_blank" rel="noopener noreferrer">википедии</a>. Используйте этот режим, если планируете в процессе отображения уменьшать bitmap более чем в два раза. </p>
+<p>Мы рассмотрели XML-описание, но вы всегда можете создать этот объект и программно. Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/BitmapDrawable.html" target="_blank" rel="noopener noreferrer">BitmapDrawable</a>.</p>
+<h3>Layer List</h3>
+<p>Мы можем описать Drawable, который будет состоять из нескольких Drawable-слоев. Для этого используется тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#LayerList" target="_blank" rel="noopener noreferrer">&lt;layer-list&gt;</a>, а внутри него теги &lt;item&gt;.</p>
+<p>Пример:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;layer-list
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+			android:left="5dp"&gt;
+		&lt;bitmap
+				android:gravity="left|top"
+				android:src="@drawable/ic_launcher"&gt;
+		&lt;/bitmap&gt;
+	&lt;/item&gt;
+	&lt;item&gt;
+		&lt;bitmap
+				android:gravity="center"
+				android:src="@drawable/ic_launcher"&gt;
+		&lt;/bitmap&gt;
+	&lt;/item&gt;
+	&lt;item
+			android:id="@+id/someDrawable"
+			android:bottom="20dp"
+			android:top="20dp"&gt;
+		&lt;shape
+				android:shape="rectangle"&gt;
+			&lt;stroke
+					android:width="1dp"
+					android:color="#000000"&gt;
+			&lt;/stroke&gt;
+		&lt;/shape&gt;
+	&lt;/item&gt;
+	&lt;item
+			android:right="5dp"&gt;
+		&lt;bitmap
+				android:gravity="right|bottom"
+				android:src="@drawable/ic_launcher"&gt;
+		&lt;/bitmap&gt;
+	&lt;/item&gt;
+&lt;/layer-list&gt;</code></pre>
+<p>У нас 4 слоя. Три bitmap со стандартной иконкой и одна фигура. Атрибуты <b>left</b>, <b>top</b>, <b>right</b>, <b>bottom </b>позволяют указывать отступы. А в атрибуте <b>id </b>можно указать id этого Drawable-слоя.</p>
+<p><img src="images/lesson163/lesson9.png" alt="" width="640" height="385"/></p>
+<p>Обратите внимание, что важен порядок тегов item. Каждый последующий слой рисуется поверх предыдущего. Например, на получившемся изображении видно, что прямоугольник проходит "над" верхней иконкой, но "под" нижней.</p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html" target="_blank" rel="noopener noreferrer">LayerDrawable</a>.</p>
+<p>Мы можем в коде получать доступ к отдельным Drawable внутри LayerDrawable. Для этого сначала получаем LayerDrawable.</p>
+<pre><code class="java">LayerDrawable layerDrawable = (LayerDrawable) view.getBackground();</code></pre>
+<p>А затем вызываем метод <a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html#findDrawableByLayerId(int)" target="_blank" rel="noopener noreferrer">findDrawableByLayerId(int id)</a> и указываем id, который вы указывали в атрибуте id тега item. На выходе получим Drawable.</p>
+<p>Также у LayerDrawable есть еще несколько интересных методов</p>
+<p><a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html#getDrawable(int)" target="_blank" rel="noopener noreferrer">getDrawable(int index)</a> - возвращает Drawable по индексу, а не по id</p>
+<p><a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html#getId(int)" target="_blank" rel="noopener noreferrer">getId(int index)</a> - возвращает id по индексу</p>
+<p><a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html#getNumberOfLayers()" target="_blank" rel="noopener noreferrer">getNumberOfLayers()</a> - возвращает кол-во Drawable-слоев</p>
+<p><a href="http://developer.android.com/reference/android/graphics/drawable/LayerDrawable.html#setDrawableByLayerId(int, android.graphics.drawable.Drawable)" target="_blank" rel="noopener noreferrer">setDrawableByLayerId(int id, Drawable drawable)</a> - заменяет Drawable по id слоя (протестить)</p>
+<h3>State List</h3>
+<p>Тег <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#StateList" target="_blank" rel="noopener noreferrer">&lt;selector&gt;</a> позволяет отображать Drawable в зависимости от состояния View. Возможные состояние View можно посмотреть в <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#StateList" target="_blank" rel="noopener noreferrer">документацие</a>. Рассмотрим пример с двумя из них: checked и pressed. На экране будет ToogleButton. Эта кнопка переходит в состояние checked и обратно, если на нее нажимать. А во время нажатия, пока палец касается экрана, кнопка находится в состоянии pressed.</p>
+<p>State List позволит нам использовать три разных Drawable для отображения кнопки в трех состояниях: обычное, checked, pressed. Для этого создадим три файла в папке drawable.</p>
+<p><b>button.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="@android:color/darker_gray"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p>Прямоугольник темно-серого цвета. Этот Drawable будем отображать в обычном состоянии кнопки.</p>
+<p><b>button_pressed.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="@android:color/holo_blue_dark"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p>Прямоугольник темно-синего цвета. Этот Drawable будем отображать в нажатом состоянии кнопки.</p>
+<p><b>button_checked.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:shape="rectangle"&gt;
+	&lt;solid
+		android:color="@android:color/holo_blue_bright"&gt;
+	&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p>Прямоугольник светло-синего цвета. Этот Drawable будем отображать когда кнопка находится в состоянии checked.</p>
+<p>И еще один файл, <b>button_selector.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;selector
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:drawable="@drawable/button_pressed"
+		android:state_pressed="true"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:drawable="@drawable/button_checked"
+		android:state_checked="true"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:drawable="@drawable/button"&gt;
+	&lt;/item&gt;
+&lt;/selector&gt;</code></pre>
+<p>Этот последний Drawable является селектором. В нем мы используем теги item, в которых указываем для какого состояния какой Drawable использовать</p>
+<p>В первом item мы указали state_pressed=true, а значит этот item будет выбран системой когда кнопка будет в состоянии pressed. И экране мы увидим Drawable из этого item, т.е. toogle_button_pressed.</p>
+<p>В втором item мы указали state_checked=true, а значит этот item будет выбран системой когда кнопка будет в состоянии checked. И экране мы увидим toogle_button_checked.</p>
+<p>В третьем item мы не указали никакого состояния, этот item будет выбран при обычном состоянии кнопки. И экране мы увидим toogle_button.</p>
+<p>Учтите, что здесь важен порядок расположения item внутри selector. Т.е. система идет по ним по порядку и выбирает первый подходящий. Если вы третий item, который без явного указания состояния, поставите первым, то система всегда будет останавливаться на нем.</p>
+<p>Состояния можно комбинировать, т.е. в одном item вы можете указать несколько разных состояний.</p>
+<p>Ставим этот Drawable, как фон для ToogleButton:</p>
+<pre><code class="xml">&lt;ToggleButton
+	android:id="@+id/toggleButton1"
+	android:layout_width="100dp"
+	android:layout_height="100dp"
+	android:background="@drawable/button_selector"
+	android:textSize="28sp"&gt;
+&lt;/ToggleButton&gt;</code></pre>
+<p>В результате, сначала видим обычное состояние</p>
+<p><img src="images/lesson163/lesson10.png" alt="" width="640" height="385"/></p>
+<p>Нажимаем и держим, т.е. состояние pressed</p>
+<p><img src="images/lesson163/lesson11.png" alt="" width="640" height="385"/></p>
+<p>Отпускаем – включился checked</p>
+<p><img src="images/lesson163/lesson12.png" alt="" width="640" height="385"/></p>
+<p>Еще раз нажмем-отпустим - выключится checked и будет снова обычное состояние. Для каждого состояния отображается свой Drawable.</p>
+<p>Java-реализация – класс <a href="http://developer.android.com/reference/android/graphics/drawable/StateListDrawable.html" target="_blank" rel="noopener noreferrer">StateListDrawable</a>.</p>
+<p>У View, кстати, есть методы, которые позволяют программно управлять состоянием. Это, например: <a href="http://developer.android.com/reference/android/view/View.html#setPressed(boolean)" target="_blank" rel="noopener noreferrer">setPressed</a> и <a href="http://developer.android.com/reference/android/view/View.html#setSelected(boolean)" target="_blank" rel="noopener noreferrer">setSelected</a>.</p>
+						</body>
+					</html>
+
+				</div>
+			</div>
+		</div>
+
+		<script src="../js/highlight.pack.js"></script>
+		<script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

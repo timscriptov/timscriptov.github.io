@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 116. Поведение Activity в Task. Intent-флаги, launchMode, affinity</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- меняем поведение Activity в Task</p>
+<p> </p>
+<p>Когда я в Уроке 25 говорил про Task, то решил, что рановато будет рассказывать про возможности изменения поведения Activity. Да и в документацие можно найти такие слова: "The way Android manages tasks and the back stack (…) works great for most applications and you shouldn't have to worry about how your activities are associated with tasks or how they exist in the back stack". Т.е. дефолтное поведение вполне подходит для большинства случаев и нам не надо о нем задумываться. Но вполне может встретиться ситуация, когда надо будет на это поведение влиять. Поговорим о том, какими средствами можно это делать. За основу возьмем статью <a href="http://developer.android.com/guide/components/tasks-and-back-stack.html#ManagingTasks" target="_blank">"Tasks and Back Stack"</a> из документации.</p>
+<p>Про механизм заполнения Task я не рассказываю, все есть в Уроке 25. Давайте только определимся с формулировками. Таск – это Task. Корень таска или корневое Activity таска – это первое Activity, помещенное в таск. Топ таска или верхнее Activity в таске – это последнее Activity, добавленное в таск.</p>
+<p> </p>
+<p>Для показательных примеров по теме нам понадобятся два приложения. </p>
+<p>Первое состоит из 4 Activity: A,B,C,D. Они последовательно будут вызывать друг друга: A -&gt; B -&gt; C -&gt; D.  И D будет вызывать само себя: D -&gt; D. <br>Второе приложение – это только одно Activity, оно будет вызывать C из первого приложения.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1161_MngTasks1<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: MngTasks1<br><b>Package name</b>: ru.startandroid.develop.p1161mngtasks1<br><b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="info"&gt;Info&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Layout-файл<b> main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".MainActivity"&gt;
+	&lt;Button
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onInfoClick"
+		android:text="@string/info"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Две кнопки. Вызов Activity и вывод информации в лог.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1161mngtasks1;
+
+import java.util.List;
+
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public abstract class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+  List&lt;ActivityManager.RunningTaskInfo&gt; list;
+  ActivityManager am;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    setTitle(getResources().getString(R.string.app_name) + " : " + getLocalClassName());
+    am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+  }
+  
+  public void onInfoClick(View v) {
+    list = am.getRunningTasks(10);
+    for (RunningTaskInfo task : list) {
+      if (task.baseActivity.flattenToShortString().startsWith("ru.startandroid.develop.p116")){
+      Log.d(LOG_TAG, "------------------");
+      Log.d(LOG_TAG, "Count: " + task.numActivities);
+      Log.d(LOG_TAG, "Root: " + task.baseActivity.flattenToShortString());
+      Log.d(LOG_TAG, "Top: " + task.topActivity.flattenToShortString());
+      }
+    }
+  }
+  
+  abstract public void onClick(View v);
+}</code></pre>
+<p>В onCreate мы в заголовок помещаем название приложения и имя класса Activity, чтобы на экране видеть какое Activity какого приложения сейчас активно.</p>
+<p>В onInfoClick используем <a href="http://developer.android.com/reference/android/app/ActivityManager.html" target="_blank">ActivityManager</a>. Метод <a href="http://developer.android.com/reference/android/app/ActivityManager.html#getRunningTasks(int)" target="_blank">getRunningTasks</a> вернет нам список текущих работающих тасков. Последние активные таски будут в начале списка. На всякий случай будем получать первые 10. Среди них точно окажутся два наших. Далее мы получаем информацию о таске: кол-во Activity (<a href="http://developer.android.com/reference/android/app/ActivityManager.RunningTaskInfo.html#numActivities" target="_blank">numActivities</a>), корневое Activity (<a href="http://developer.android.com/reference/android/app/ActivityManager.RunningTaskInfo.html#baseActivity" target="_blank">baseActivity</a>), верхнее Activity (<a href="http://developer.android.com/reference/android/app/ActivityManager.RunningTaskInfo.html#topActivity" target="_blank">topActivity</a>). И отсеиваем свои таски по имени пакета корневого Activity.</p>
+<p>Этот класс будет предком для 4-х следующих. Он содержит абстрактный метод onClick, который нам надо будет реализовать в наследниках. Этот метод будет вызываться по нажатию на кнопку Start.</p>
+<p> </p>
+<p>Создаем 4 Activity.</p>
+<p> </p>
+<p><b>ActivityA.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1161mngtasks1;
+
+import android.content.Intent;
+import android.view.View;
+
+public class ActivityA extends MainActivity {
+  public void onClick(View v) {
+    startActivity(new Intent(this, ActivityB.class));
+  }
+}</code></pre>
+<p> </p>
+<p><b>ActivityB.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1161mngtasks1;
+
+import android.content.Intent;
+import android.view.View;
+
+public class ActivityB extends MainActivity {
+  public void onClick(View v) {
+    startActivity(new Intent(this, ActivityC.class));
+  }
+}</code></pre>
+<p> </p>
+<p><b>ActivityC.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1161mngtasks1;
+
+import android.content.Intent;
+import android.view.View;
+
+public class ActivityC extends MainActivity {
+  public void onClick(View v) {
+    startActivity(new Intent(this, ActivityD.class));
+  }
+}</code></pre>
+<p> </p>
+<p><b>ActivityD.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1161mngtasks1;
+
+import android.content.Intent;
+import android.view.View;
+
+public class ActivityD extends MainActivity {
+  public void onClick(View v) {
+    startActivity(new Intent(this, ActivityD.class));
+  }
+}</code></pre>
+<p> </p>
+<p>Все Activity наследуют MainActivity. А, значит, будут выводить в заголовок инфу о себе, а по нажатию на кнопку Info – показывать в логе текущую инфу по таскам.</p>
+<p>Ну а метод onClick – это вызов следующего Activity. ActivityD будет вызывать себя же.</p>
+<p> </p>
+<p>Прописываем в манифесте новые Activity. ActivityA назначим стартовым вместо MainActivity. ActivityC содержит фильтр с action = <i>mngtasks1_activity_c</i>. MainActivity удаляем из манифеста.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_0.png" alt="" width="356" height="262"></p>
+<p>И добавьте права на получение данных о тасках: <a href="http://developer.android.com/reference/android/Manifest.permission.html#GET_TASKS" target="_blank">android.permission.GET_TASKS</a>.</p>
+<p> </p>
+<p>Первое приложение готово. Создаем второе. Оно полностью аналогичное, только Activity будет одно.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1162_MngTasks2<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: MngTasks2<br><b>Package name</b>: ru.startandroid.develop.p1162mngtasks2<br><b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="info"&gt;Info&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".MainActivity"&gt;
+	&lt;Button
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onInfoClick"
+		android:text="@string/info"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1162mngtasks2;
+
+import java.util.List;
+
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  List&lt;ActivityManager.RunningTaskInfo&gt; list;
+  ActivityManager am;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    setTitle(getResources().getString(R.string.app_name) + " : " + getLocalClassName());
+    am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+  }
+
+  public void onClick(View v) {
+    startActivity(new Intent("mngtasks1_activity_c"));
+  }
+
+
+  public void onInfoClick(View v) {
+    list = am.getRunningTasks(10);
+    for (RunningTaskInfo task : list) {
+      if (task.baseActivity.flattenToShortString().startsWith("ru.startandroid.develop.p116")) {
+        Log.d(LOG_TAG, "------------------");
+        Log.d(LOG_TAG, "Count: " + task.numActivities);
+        Log.d(LOG_TAG, "Root: " + task.baseActivity.flattenToShortString());
+        Log.d(LOG_TAG, "Top: " + task.topActivity.flattenToShortString());
+      }
+    }
+  }
+
+}</code></pre>
+<p>В <b>onClick</b> идет вызов ActivityC из первого приложения.</p>
+<p>В манифесте не забудьте про android.permission.GET_TASKS.</p>
+<p> </p>
+<p>Все сохраним и запустим первое приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_1.png" alt="" width="320" height="480"></p>
+<p>В заголовке видим имя приложения и Activity. Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityA</i></p>
+<p>В таске первого приложения одно Activity, корневое - ActivityA, верхнее - ActivityA.</p>
+<p> </p>
+<p>Давайте нажмем <b>Start</b> три раза, чтобы пройти B,C и оказаться в D</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_2.png" alt="" width="320" height="480"></p>
+<p>Жмем <b>Info</b>:</p>
+<p><i>Count: 4</i></p>
+<p><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>Теперь в таске 4 Activity, корневое - A, верхнее – D. Между ними B и C.</p>
+<p> </p>
+<p>Запустим второе приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_3.png" alt="" width="320" height="480"></p>
+<p>Жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i><em>------------------<br></em></i><i><em>Count: 4<br></em></i><i><em>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></em></i><i><em>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</em></i></p>
+<p>В таске второго приложения одно Activity, корневое - MainActivity, верхнее - MainActivity. Таск первого не менялся.</p>
+<p> </p>
+<p>Нажмем два раза <b>Start</b>: откроется C, затем D.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_4.png" alt="" width="320" height="480"></p>
+<p>Они оба легли в таск второго приложения. Жмем <b>Info</b>:</p>
+<p><i>Count: 3<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD<br></i><i>------------------<br></i><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>В таске второго приложения 3 Activity, корневое - MainActivity, верхнее - D.</p>
+<p>Таск первого приложения не поменялся. Экземпляры ActivityC и AtivityD созданы в двух разных тасках.</p>
+<p> </p>
+<p>Это стандартное поведение Activity в тасках. Используя эти два приложения, мы сейчас будем тестировать нестандартное поведение.</p>
+<p> </p>
+<p>Для удобства запуска создадим ярлыки приложений на рабочем столе.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_5.png" alt="" width="320" height="480"></p>
+<p> </p>
+<p>Очистим таски. Для этого надо вызвать приложение из списка последних вызываемых или через ярлык и нажимать Назад, пока все его Activity не закроются. Проделаем это для наших обоих приложений. Это желательно проделывать перед каждым примером.</p>
+<p> </p>
+<p>Начнем с <a href="http://developer.android.com/guide/topics/manifest/activity-element.html#lmode" target="_blank">launchMode</a>. Это атрибут Activity. Может принимать значения: <b>standard</b>, <b>singleTop</b>, <b>singleTask</b>, <b>singleInstance</b>.</p>
+<p> </p>
+<h3>standard</h3>
+<p>standard – это дефолтное поведение, тут все ясно, его мы только что посмотрели.</p>
+<p> </p>
+<h3>singleTop</h3>
+<p>Если мы вызываем Activity, и оно уже находится в топе текущего Task-а, то новый экземпляр этого Activity создан не будет. Мы попадем в старый и получим там вызов метода <a href="http://developer.android.com/reference/android/app/Activity.html#onNewIntent(android.content.Intent)" target="_blank">onNewIntent</a>.</p>
+<p>Откроем первое приложение, нажмем три раза <b>Start</b>, чтобы оказаться в D. На этот момент содержимое таска: A-B-C-D.</p>
+<p>Теперь в D снова нажмем <b>Start</b>. Открылся еще один экземпляр D. Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 5<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>В верх таска добавилось еще одно D. Т.е. содержимое таска сейчас таково: A-B-C-D-D. ActivityD продублировалось. И если мы продолжим жать <b>Start</b>, так и будут создаваться новые экземпляры D. Открываем манифест и меняем у D свойство launchMode на <b>singleTop</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_6.png" alt="" width="640" height="265"></p>
+<p>Сохраняем, запускаем первое приложение. Жмем три раза <b>Start</b>, попадаем в D. Жмем еще раз <b>Start</b>, сразу визуально видно, что новое Activity не открывалось. Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>Система определяет, что наверху таска уже расположено ActivityD, которое мы хотим открыть, и оставляет нам его вместо создания новых экземпляров. Все последующие нажатия <b>Start</b> будут давать тот же результат. Т.к. новое ActivityD не создается, то и его метод onCreate не вызывается. В этом случае будет вызываться метод onNewIntent.</p>
+<p> </p>
+<p> </p>
+<p>Прервемся на теорию, надо прояснить один момент.  Activity имеет атрибут affinity. По умолчанию он равен пакету (package) приложения. У таска тоже есть атрибут affinity и при создании таска в этот атрибут помещается значение из affinity корневого Activity.</p>
+<p>Т.е. когда мы запускаем первое приложение, то у созданного под него таска affinity = ru.startandroid.develop.p1161mngtasks1. Когда запускаем второе, новый созданный таск имеет affinity = ru.startandroid.develop.p1162mngtasks2.</p>
+<p>Таким образом, для Activity можно принять такое понятие, как «свой» таск - когда affinity таска и Activity совпадают. Дальше в уроке мы еще поработаем с этим атрибутом. А пока нам надо просто понимать что такое «свой» таск.</p>
+<p> </p>
+<h3>singleTask</h3>
+<p>Вместо создания в текущем таске экземпляра вызываемого Activity будет выполнен поиск по другим таскам, и если будет найден «свой» таск, то Activity будет создано именно в нем. Если оно уже существует в своем таске, то оно и отобразится, а все Activity выше его в таске будут закрыты. Если же свой таск не найдется, то он будет создан и Activity станет там корневым. Посмотрим на примерах.</p>
+<p>Проверим, как поведет себя ActivityC при вызове из второго приложения, если оно уже открыто в первом.</p>
+<p>Давайте для ActivityC поменяем в манифесте свойство launchMode на singleTask. Сохраняем, запускаем первое приложение.</p>
+<p> Жмем <b>Start</b>, пока не окажемся в D. Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>Все как обычно, С было создано в своем таске.</p>
+<p> </p>
+<p>Теперь используем второе приложение. Напомню, что там из MainActivity как раз идет вызов ActivityC первого приложения. Как мы видели в начале урока, при стандартном поведении ActivityC просто добавляется в таск второго приложения. Посмотрим, что получится сейчас. Сворачиваем (кнопка Домой) первое приложение, запускаем второе.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_7.png" alt="" width="325" height="480"></p>
+<p>Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 1</i></p>
+<p><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>------------------<br></i><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>В таске второго приложения только MainActivity. В таске первого A-B-C-D.</p>
+<p> </p>
+<p>Жмем <b>Start</b> во втором приложении, открывается ActivityC:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_8.png" alt="" width="325" height="480"></p>
+<p>Жмем <b>Info</b> и смотрим лог:</p>
+<p><i>Count: 3</i></p>
+<p><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>------------------<br></i><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity</i></p>
+<p>Поведение значительно отличается от стандартного. Вместо того, чтобы создать экземпляр ActivityC в таске второго приложения, система нашла его в его родном таске первого приложения, и открыла, при этом закрыв все Activity, находящиеся выше его в таске (ActivityD в нашем случае).</p>
+<p>Очистим таски кнопкой Назад.</p>
+<p> </p>
+<p>Посмотрим, что будет, если ActivityC пока не запущено в своем таске. Запускаем первое приложение, ничего не жмем в нем, остаемся в ActivityA. Сворачиваем первое, запускаем второе приложение и жмем <b>Start</b>. Жмем <b>Info</b>, смотрим лог:</p>
+<p><i>Count: 2</i></p>
+<p><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>------------------<br></i><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity</i></p>
+<p>ActivityC нашло свой таск и создалось в нем.</p>
+<p> </p>
+<p>А что будет, если свой таск пока не создан? Очищаем таски кнопкой Назад. Запускаем второе приложение, жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity</i></p>
+<p>Таска первого приложения нет. Только таск второго.</p>
+<p> </p>
+<p>Жмем <b>Start</b>, жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>------------------<br></i><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity</i></p>
+<p>Свой таск для ActivityC cоздался.</p>
+<p> </p>
+<h3>singleInstance</h3>
+<p>singleInstance – Activity всегда одно в своем таске. Т.е. если вызывать ActivityC, то будет создан новый отдельный таск под него. И неважно - из ActivityB (таск первого приложения) или из MainActivity (таск второго) пришел вызов. Если же из ActivityC дальше вызвать ActivityD, то D поищет свой таск (например, с ранее открытыми A и B) и создастся в нем, а если не найдет то создаст новый.</p>
+<p>Если есть желание, попробуйте применить этот режим для ActivityC и потестить самостоятельно.</p>
+<p> </p>
+<p>После всех тестов не забудьте очистить в манифесте свойство launchMode для ActivityС и ActivityD, чтобы корректно работали дальнейшие примеры. И очистите таски.</p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p>Флаги применяются к Intent с помощью метода <a href="http://developer.android.com/reference/android/content/Intent.html#addFlags(int)" target="_blank">addFlags</a>. Эти флаги повлияют на поведение вызываемого Activity.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_NEW_TASK</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_NEW_TASK" target="_blank">FLAG_ACTIVITY_NEW_TASK</a> - в документацие пишут, что этот флаг аналогичен значению singleTask в launchMode. У меня почему-то не совсем так. Activity находит свой таск, но не ищет в этом таске себя, а просто создает новое Activity сверху.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_SINGLE_TOP</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_SINGLE_TOP" target="_blank">FLAG_ACTIVITY_SINGLE_TOP</a> – аналогичен значению singleTop для launchMode.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_CLEAR_TOP</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_CLEAR_TOP" target="_blank">FLAG_ACTIVITY_CLEAR_TOP</a> – ищет в таске создаваемое Activity. Если находит, то открывает, а все, что выше – закрывает. Можно сказать, что этот флаг в комбинации с FLAG_ACTIVITY_NEW_TASK является аналогом singleTask в launchMode.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET" target="_blank">FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET</a> –  помечает вызванное Activity. При следующем вызове таска из Home, это Activity и все вышерасположенные будут закрыты. В качестве примера можно привести почтовую программу. Вы открываете письмо, щелкаете на вложение и переходите в некую программу просмотра вложения. Затем сворачиваете приложение. Когда вы в следующий раз запустите почту, вы увидите верхнее Activity таска, т.е. просмотр вложения. А если вызывать просмотр вложения с вышеуказанным флагом, то при следующем запуске почты просмотр вложения будет закрыт и вы увидите письмо.</p>
+<p> </p>
+<p>Рассмотрим на примере.  В MainActivity второго приложения перепишем метод <b>onClick</b>:</p>
+<pre><code class="java">  public void onClick(View v) {
+    startActivity(new Intent("mngtasks1_activity_c")
+        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET));
+  }</code></pre>
+<p>Будем вызывать ActivityC с этим флагом. Сохраняем, запускаем второе приложение. Жмем <b>Start</b>, открывается ActivityC, жмем еще раз <b>Start</b>, открывается ActivityD. Таск сейчас такой: Main-C-D.</p>
+<p>Свернем приложение, нажав Home. Далее запускаем его с рабочего стола. Система находит таск и открывает его. На экране MainActivity второго приложения. Т.к. ActivityC было запущено с вышеуказанным флагом, оно и все вышестоящие Activity были закрыты при запуске приложения. В таске теперь только MainActivity.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_NO_HISTORY</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_NO_HISTORY" target="_blank">FLAG_ACTIVITY_NO_HISTORY</a> – Activity не будет сохранено в таске. Например, мы вызываем B с таким флагом из A. Далее из B вызываем C. Теперь жмем Назад и попадаем сразу в A, т.к. B не сохранилось в таске.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_REORDER_TO_FRONT</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_REORDER_TO_FRONT" target="_blank">FLAG_ACTIVITY_REORDER_TO_FRONT</a> – если Activity уже есть в таске оно переместится в топ. Например, есть таск A-B-C-D. Если D вызывает B с таким флагом, то таск станет таким A-C-D-B.</p>
+<p> </p>
+<p>Пара флагов, появившихся с API Level 11. Используются совместно с FLAG_ACTIVITY_NEW_TASK.</p>
+<h3>FLAG_ACTIVITY_CLEAR_TASK</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_CLEAR_TASK" target="_blank">FLAG_ACTIVITY_CLEAR_TASK</a> – таск для вызываемого Activity будет очищен, а вызываемое Activity станет в нем корневым. Сделаем пример.</p>
+<p>В MainActivity второго приложения перепишем метод onClick:</p>
+<pre><code class="java">  public void onClick(View v) {
+    startActivity(new Intent("mngtasks1_activity_c").addFlags(
+        Intent.FLAG_ACTIVITY_CLEAR_TASK).addFlags(
+        Intent.FLAG_ACTIVITY_NEW_TASK));
+  }</code></pre>
+<p>Очистим таски. Запускаем первое приложение, жмем три раза <b>Start</b>, получаем A-B-C-D. Запускаем второе приложение, жмем <b>Start</b>, открывается ActivityC. Жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>------------------<br></i><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity</i></p>
+<p>Таск первого приложения полностью очистился, в нем теперь только ActivityC.</p>
+<p> </p>
+<h3>FLAG_ACTIVITY_TASK_ON_HOME</h3>
+<p><a href="http://developer.android.com/reference/android/content/Intent.html#FLAG_ACTIVITY_TASK_ON_HOME" target="_blank">FLAG_ACTIVITY_TASK_ON_HOME</a> – таск для вызываемого Activity будет располагаться сразу после Home. Если из этого нового таска выходить кнопкой Назад, то попадешь не в предыдущий таск, а в Home. Сделаем пример.</p>
+<p>В MainActivity второго приложения перепишем метод onClick:</p>
+<pre><code class="java">  public void onClick(View v) {
+    startActivity(new Intent("mngtasks1_activity_c").addFlags(
+        Intent.FLAG_ACTIVITY_TASK_ON_HOME).addFlags(
+        Intent.FLAG_ACTIVITY_NEW_TASK));
+  }</code></pre>
+<p>Очистим таски. Запускаем второе приложение. Жмем Start. Открывается таск первого приложения, ActivityC. В нормальном режиме, если нажать сейчас Назад, то мы бы вернулись в таск второго приложения, в MainActivity. Но мы использовали флаг, поэтому нажимаем Назад и попадаем в Home.</p>
+<p> </p>
+<h3>taskAffinity</h3>
+<p>Вернемся к атрибуту affinity. Его точное название  – <a href="http://developer.android.com/guide/topics/manifest/activity-element.html#aff" target="_blank">taskAffinity</a>. Как я уже рассказал выше, этот атрибут используется для определения своего таска для Activity. По умолчанию для каждого Activity этот атрибут равен пакету приложения. Таск же принимает значение affinity от корневого Activity.</p>
+<p>Чтобы лучше понять принцип, давайте реализуем пример. У нас есть первое приложение, которое при запуске использует таск с affinity = ru.startandroid.develop.p1161mngtasks1. Второе приложение использует таск с affinity = ru.startandroid.develop.p1162mngtasks2.</p>
+<p>Если мы из второго приложения вызовем ActivityC с флагом FLAG_ACTIVITY_NEW_TASK, то ActivityC будет искать свой таск с affinity = ru.startandroid.develop.p1161mngtasks1. Найдет таск первого приложения и запустится там, либо, если такого таска пока нет, то само создаст такой таск.</p>
+<p>Попробуем для ActivityC прописать какой-нибудь левый affinity, например: ru.startandroid.develop.p1163testaffinity. В этом случае таск первого приложения ему не подойдет, и он точно создаст свой таск. Давайте проверим. Пропишите affinity для ActivityC</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_9.png" alt="" width="640" height="191"></p>
+<p>Сохраняем и запускаем первое приложение, формируем таск A-B-C-D. Свернем первое приложение, запустим второе. Жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity|<br></i><i>------------------<br></i><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p> </p>
+<p>Жмем <b>Start</b> во втором приложении, открылось ActivityC. Жмем <b>Info</b>:</p>
+<p><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC<br></i><i>------------------<br></i><i>Count: 1<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>------------------<br></i><i>Count: 4<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p>К сожалению, я не знаю, как вытащить значение affinity для таска или его корневого Activity. Но четко видно, что для ActivityC не подошел таск первого приложения (из-за разных affinity), и оно выделилось в отдельный таск.</p>
+<p>Очистите атрибут affinity для ActivityC и очистите таски.</p>
+<p> </p>
+<h3>allowTaskReparenting</h3>
+<p>У Activity есть атрибут <a href="http://developer.android.com/guide/topics/manifest/activity-element.html#reparent" target="_blank">allowTaskReparenting</a>.Он позволяет перекидывать Activity из фоновых в активные таски.</p>
+<p> </p>
+<p>Сделаем пример.</p>
+<p>Установим этот параметр для ActivityD</p>
+<p><img style="border: 1px solid black;" src="images/lesson_115_10.png" alt="" width="497" height="228"></p>
+<p> </p>
+<p>Во втором приложении перепишем onClick:</p>
+<pre><code class="java">  public void onClick(View v) {
+    startActivity(new Intent("mngtasks1_activity_c"));
+  }</code></pre>
+<p>Все сохраняем, запускаем второе приложение. Жмем Start, получаем ActivityC, жмем Start получаем ActivityD.</p>
+<p>Жмем Info:</p>
+<p><i>Count: 3<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD</i></p>
+<p> </p>
+<p>Таск Main-C-D. Сворачиваем этот таск. Запускаем первое приложение (из Eclipse ,т.к. были изменения) и видим сразу ActivityD. Жмем Info:</p>
+<p><i>Count: 2<br></i><i>Root: ru.startandroid.develop.p1161mngtasks1/.ActivityA<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityD<br></i><i>------------------<br></i><i>Count: 2<br></i><i>Root: ru.startandroid.develop.p1162mngtasks2/.MainActivity<br></i><i>Top: ru.startandroid.develop.p1161mngtasks1/.ActivityC</i></p>
+<p>ActivityD, для которого мы указали атрибут allowTaskReparenting, перешло из фонового таска второго приложения в запущенный свой таск (первого приложения).</p>
+<p> </p>
+<p>Если пользователь долгое время не использует свернутый таск, то система его чистит, за исключением корневого Activity. Система ведет себя так исходя из предположения, что, если пользователь долго не возвращался к выполняемой задаче, то эта задача ему более не интересна.</p>
+<p>Мы можем повлиять на это поведение системы. Существуют атрибуты для Activity:</p>
+<p><a href="http://developer.android.com/guide/topics/manifest/activity-element.html#always" target="_blank">alwaysRetainTaskState</a> – если установлено в true для Activity, которое является корневым в таске, то этот таск сохранит свои Activity даже спустя долгое время</p>
+<p><a href="http://developer.android.com/guide/topics/manifest/activity-element.html#clear" target="_blank">clearTaskOnLaunch</a> – если установлено в true для Activity, которое является корневым в таске, то при каждом запуске таск очищается. Причем, именно при запуске, а не при выборе таска из списка последних.</p>
+<p><a href="http://developer.android.com/guide/topics/manifest/activity-element.html#finish" target="_blank">finishOnTaskLaunch</a> – аналогичен clearTaskOnLaunch, но действует для конкретного Activity. Например, включим этот атрибут для ActivityC. Запустим первое приложение и сформируем таск A-B-C-D. Свернем его и запустим снова первое приложение, получим таск A-B-D. ActivityC при новом запуске закрылось.</p>
+<p> </p>
+<p>Большой получился материал. Сразу все это в голове, конечно, не уложится. Но, думаю, вполне пригодится как справка или памятка, когда понадобится задать нестандартное поведение для своего приложения.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

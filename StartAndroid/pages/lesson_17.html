@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 17. Создание View-компонент в рабочем приложении</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- добавляем компоненты на экран прямо из приложения</p>
+<p>На прошлом уроке мы создавали компоненты в методе Activity.onCreate, т.е. при создании приложения. На этом уроке будем создавать уже в работающем приложении. Создавать будем Button-ы, т.к. они наглядней всего отображаются. Будем указывать текст, который будет отображен на кнопке и выравнивание: слева, по центру или справа. Также предусмотрим возможность удаления созданных элементов.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0171_DynamicLayout2<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: DynamicLayout2<br><b>Package name</b>: ru.startandroid.develop.dynamiclayout2<br><b>Create Activity</b>: MainActivity</p>
+<p>Создадим экран, который поможет нам создавать View-компоненты. Открываем <b>main.xml</b> и пишем там следующее:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"&gt;
+    &lt;RadioGroup
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:id="@+id/rgGravity"&gt;
+        &lt;RadioButton
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:checked="true"
+            android:text="Left"
+            android:id="@+id/rbLeft"&gt;
+        &lt;/RadioButton&gt;
+        &lt;RadioButton
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="Center"
+            android:id="@+id/rbCenter"&gt;
+        &lt;/RadioButton&gt;
+        &lt;RadioButton
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="Right"
+            android:id="@+id/rbRight"&gt;
+        &lt;/RadioButton&gt;
+    &lt;/RadioGroup&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_height="wrap_content"&gt;
+        &lt;EditText
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/etName"
+            android:fadeScrollbars="true"&gt;
+        &lt;/EditText&gt;
+        &lt;Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Create"
+            android:id="@+id/btnCreate"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"
+            android:id="@+id/btnClear"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/llMain"
+        android:orientation="vertical"&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Рассмотрим подробно экран.</p>
+<p><b>rgGravity </b>– это RadioGroup, с тремя RadioButton (<b>rbLeft</b>, <b>rbCenter</b>, <b>rbRight</b>). Этот компонент мы используем для выбора выравнивания создаваемого компонента<br><b>etName </b>– текстовое поле, здесь будем указывать текст, который будет отображаться на созданном компоненте<br><b>btnCreate </b>– кнопка, запускающая процесс создания.<br><b>btnClear </b>– кнопка, стирающая все, что создали<br><b>llMain </b>– вертикальный LinearLayout, в котором будут создаваться компоненты</p>
+<p><img style="border: 1px solid black;" src="images/lesson_16_0.png" alt="" width="699" height="524" border="0"></p>
+<p><b>MainActivity.java</b>. Начнем с того, что опишем и найдем все необходимые нам компоненты. Кстати, у нас есть пара кнопок, которые мы будем использовать, значит им нужен обработчик. В качестве <b>обработчика </b>назначим <b>Activity </b>(т.е. необходимо дописать: implements OnClickListener) и создадим пустой пока метод обработки <b>onClick</b>:</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener{
+
+  LinearLayout llMain;
+  RadioGroup rgGravity;
+  EditText etName;
+  Button btnCreate;
+  Button btnClear;
+
+int wrapContent = LinearLayout.LayoutParams.WRAP_CONTENT;
+
+  
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    
+    llMain = (LinearLayout) findViewById(R.id.llMain);
+    rgGravity = (RadioGroup) findViewById(R.id.rgGravity);
+    etName = (EditText) findViewById(R.id.etName);
+
+    btnCreate = (Button) findViewById(R.id.btnCreate);
+    btnCreate.setOnClickListener(this);
+
+    btnClear = (Button) findViewById(R.id.btnClear);
+    btnClear.setOnClickListener(this);
+  }
+
+
+  @Override
+  public void onClick(View v) {
+    // TODO Auto-generated method stub
+    
+  }
+}</code></pre>
+<p>Я также создал переменную <b>wrapContent </b>и буду хранить в ней значение LinearLayout.LayoutParams.WRAP_CONTENT. Делаю это только для снижения громоздкости кода.</p>
+<p>Теперь опишем процесс создания Button-компонента заполнив метод onClick:</p>
+<pre><code class="java">  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnCreate:
+      // Создание LayoutParams c шириной и высотой по содержимому
+      LinearLayout.LayoutParams lParams = new LinearLayout.LayoutParams(
+          wrapContent, wrapContent);
+      // переменная для хранения значения выравнивания
+      // по умолчанию пусть будет LEFT
+      int btnGravity = Gravity.LEFT;
+      // определяем, какой RadioButton "чекнут" и 
+      // соответственно заполняем btnGravity 
+      switch (rgGravity.getCheckedRadioButtonId()) {
+      case R.id.rbLeft:
+        btnGravity = Gravity.LEFT;
+        break;
+      case R.id.rbCenter:
+        btnGravity = Gravity.CENTER_HORIZONTAL;
+        break;
+      case R.id.rbRight:
+        btnGravity = Gravity.RIGHT;
+        break;
+      }
+      // переносим полученное значение выравнивания в LayoutParams
+      lParams.gravity = btnGravity;
+
+      // создаем Button, пишем текст и добавляем в LinearLayout
+      Button btnNew = new Button(this);
+      btnNew.setText(etName.getText().toString());
+      llMain.addView(btnNew, lParams);
+
+      break;
+    }
+  }</code></pre>
+<p>Разберем написанное. Для начала мы проверяем, что была нажата кнопка <b>btnCreate </b>– т.е. кнопка создания. Затем создаем <b>LayoutParams </b>с высотой и шириной по содержанию. Здесь я использовал переменную, про которую писал выше – wrapContent. Иначе получилось бы довольно громоздко.</p>
+<p>Далее создаем переменную <b>btnGravity</b>, в которую по умолчанию запишем значение выравнивания LEFT. Для определения, какой RadioButton выделен в данный момент, используем метод <b>getCheckedRadioButtonId </b>– он для RadioGroup возвращает ID «чекнутого» RadioButton-а. Мы его сравниваем с нашими тремя ID и заносим соответствующее значение в переменную btnGravity. Скидываем это значение в gravity у LayoutParams.</p>
+<p>Далее создаем кнопку и присваиваем ей текст из <b>etName</b>. Обратите внимание, что недостаточно написать getText, т.к. это не даст текста. Необходимо еще вызвать метод toString. Ну и в конце добавляем созданный Button в наш LinearLayout.</p>
+<p>Сохраним все и запустим приложение. Добавим несколько кнопок.</p>
+<p><img src="images/lesson_16_1.png" alt="" width="640" height="454" border="0"></p>
+<p>Кнопки должны появляться с указанным выравниванием и текстом.</p>
+<p>Когда вводите текст, снизу появляется клавиатура и закрывает обзор. Чтобы она исчезла, надо нажать кнопку Back (Назад) на эмуляторе или ESC на обычной клавиатуре. Если клавиатура появляется японская с иероглифами, вызовите контекстное меню для поля ввода (долгое нажатие левой кнопкой мыши), нажмите Input method и выберите из списка Android Keyboard.</p>
+<p>Осталось нереализованной кнопка <b>Clear</b>, которая призвана удалять все созданное. Для этого нам необходимо дополнить метод <b>onClick</b>, добавим в <span class="java4">switch </span><span class="java8">(</span><span class="java10">v.getId</span><span class="java8">())</span> еще один case:</p>
+<pre><code class="java">    case R.id.btnClear:
+      llMain.removeAllViews();
+      Toast.makeText(this, "Удалено", Toast.LENGTH_SHORT).show();
+      break;</code></pre>
+<p>Метод <b>removeAllViews </b>удаляет все дочерние View-компоненты с нашего LinearLayout. С помощью <b>Toast </b>выводим на экран <b>сообщение </b>об успехе. Сохраним, запустим и проверим. Добавляем несколько кнопок, жмем кнопку <b>Clear </b>и наблюдаем результат:</p>
+<p><img src="images/lesson_16_2.png" alt="" width="640" height="454" border="0"></p>
+<p>В итоге у нас получилось очень даже динамическое приложение, которое умеет менять само себя.</p>
+<p>На форуме задают вопрос: как потом получить доступ к этим созданным компонентам. Тут есть пара простых вариантов.</p>
+<p>1) При создании вы можете сами присваивать компонентам ID.  Это делается методом <a href="http://developer.android.com/reference/android/view/View.html#setId(int)" target="_blank">setId</a><span style="line-height: 1.3em;">. И потом по этим ID просто вызываете findViewById.</span></p>
+<p>2) Вы можете сохранять созданные компоненты в свой массив или список. Либо можете воспользоваться методом <a href="http://developer.android.com/reference/android/view/ViewGroup.html#getChildAt(int)" target="_blank">getChildAt</a>. Вызов этого метода для llMain позволит получить его дочерние компоненты по индексу. Получить кол-во дочерних элементов позволит метод <a href="http://developer.android.com/reference/android/view/ViewGroup.html#getChildCount()" target="_blank">getChildCount</a>.</p>
+<p><span style="line-height: 1.3em;"> </span></p>
+<p>Полный код урока:</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener {
+
+  LinearLayout llMain;
+  RadioGroup rgGravity;
+  EditText etName;
+  Button btnCreate;
+  Button btnClear;
+
+  int wrapContent = LinearLayout.LayoutParams.WRAP_CONTENT;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    llMain = (LinearLayout) findViewById(R.id.llMain);
+    rgGravity = (RadioGroup) findViewById(R.id.rgGravity);
+    etName = (EditText) findViewById(R.id.etName);
+
+    btnCreate = (Button) findViewById(R.id.btnCreate);
+    btnCreate.setOnClickListener(this);
+
+    btnClear = (Button) findViewById(R.id.btnClear);
+    btnClear.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnCreate:
+      // Создание LayoutParams c шириной и высотой по содержимому
+      LinearLayout.LayoutParams lParams = new LinearLayout.LayoutParams(
+          wrapContent, wrapContent);
+      // переменная для хранения значения выравнивания
+      // по умолчанию пусть будет LEFT
+      int btnGravity = Gravity.LEFT;
+      // определяем, какой RadioButton "чекнут" и
+      // соответственно заполняем btnGravity
+      switch (rgGravity.getCheckedRadioButtonId()) {
+      case R.id.rbLeft:
+        btnGravity = Gravity.LEFT;
+        break;
+      case R.id.rbCenter:
+        btnGravity = Gravity.CENTER_HORIZONTAL;
+        break;
+      case R.id.rbRight:
+        btnGravity = Gravity.RIGHT;
+        break;
+      }
+      // переносим полученное значение выравнивания в LayoutParams
+      lParams.gravity = btnGravity;
+
+      // создаем Button, пишем текст и добавляем в LinearLayout
+      Button btnNew = new Button(this);
+      btnNew.setText(etName.getText().toString());
+      llMain.addView(btnNew, lParams);
+
+      break;
+
+    case R.id.btnClear:
+      llMain.removeAllViews();
+      Toast.makeText(this, "Удалено", Toast.LENGTH_SHORT).show();
+      break;
+
+    }
+  }
+
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 83. Handler. Отложенные сообщения, удаление из очереди, Handler.Callback</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- посылаем отложенные сообщения<br> - удаляем сообщения из очереди<br> - используем Handler.Callback для обработки сообщений</p>
+<p>В прошлых уроках мы отправляли сообщения в очередь, а система сразу же доставала их и перенаправляла в Handler на обработку. Но мы можем настроить сообщение так, чтобы система отправило его на обработку не сразу, а с <b>задержкой</b>. Для этого используются методы <a href="http://developer.android.com/reference/android/os/Handler.html#sendEmptyMessageDelayed(int, long)" target="_blank">sendEmptyMessageDelayed</a> (если используете только what) и <a href="http://developer.android.com/reference/android/os/Handler.html#sendMessageDelayed(android.os.Message, long)" target="_blank">sendMessageDelayed </a>(полное сообщение). В них мы можем указать паузу в миллисекундах. Система выждет эту паузу и только потом отправит сообщение в Handler.</p>
+<p>Если вдруг поместили такое отложенное сообщение в очередь, а потом решили, что оно не должно уйти на обработку, то его можно из очереди удалить. Для этого используется метод <a href="http://developer.android.com/reference/android/os/Handler.html#removeMessages(int)" target="_blank">removeMessages</a>.</p>
+<p>В прошлых уроках мы создавали свой Handler, и в его методе handleMessage кодили свой алгоритм обработки сообщений. Кроме этого способа Handler также может использовать для обработки сообщений объект, реализующий интерфейс <a href="http://developer.android.com/reference/android/os/Handler.Callback.html" target="_blank">Handler.Callback</a>. У интерфейса всего один метод <a href="http://developer.android.com/reference/android/os/Handler.Callback.html#handleMessage(android.os.Message)" target="_blank">handleMessage </a>– в нем и прописываем всю логику обработки сообщений. Я пока не встречал практической пользы от этой штуки, но все же разберемся, как ее можно использовать. Может когда и пригодится.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0831_HandlerMessageManage<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: HandlerMessageManage<br><b>Package name</b>: ru.startandroid.develop.p0831handlermessagemanage<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b> и <b>main.xml</b> не трогаем, они нам не нужны. Будем работать с логами. </p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0831handlermessagemanage;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  Handler h;
+
+  Handler.Callback hc = new Handler.Callback() {
+    public boolean handleMessage(Message msg) {
+      Log.d(LOG_TAG, "what = " + msg.what);
+      return false;
+    }
+  };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    h = new Handler(hc);
+    sendMessages();
+  }
+
+  void sendMessages() {
+    Log.d(LOG_TAG, "send messages");
+    h.sendEmptyMessageDelayed(1, 1000);
+    h.sendEmptyMessageDelayed(2, 2000);
+    h.sendEmptyMessageDelayed(3, 3000);
+  }
+}</code></pre>
+<p>Мы создаем объект <b>hc </b>типа Handler.Callback. У него есть метод handleMessage, в котором мы будем обрабатывать сообщения. В нашем случае просто читаем атрибут <b>what </b>и выводим значение в лог.</p>
+<p>В <b>onCreate </b>создаем handler, используя конструктор <a href="http://developer.android.com/reference/android/os/Handler.html#Handler(android.os.Handler.Callback)" target="_blank">Handler (Handler.Callback callback)</a>. На вход передаем созданный ранее hc. И теперь Handler будет обрабатывать сообщения не сам, а перепоручит это объекту hc. Далее мы выполняем метод <b>sendMessages </b>, который кладет три сообщения в очередь сообщений. Для этого используется метод <b>sendEmptyMessageDelayed</b>. Это аналог знакомого нам метода sendEmptyMessage с прошлого урока. Он тоже заполняет в сообщении только атрибут <b>what</b>, но при этом он позволяет указать задержку в обработке сообщения. Т.е. сообщение будет извлечено из очереди и отправлено на обработку через указанное количество миллисекунд.</p>
+<p>Итак, мы помещаем три сообщения:</p>
+<p>1) what = 1, обработка через 1000 мс.<br> 2) what = 2, обработка через 2000 мс.<br> 3) what = 3, обработка через 3000 мс.</p>
+<p>Замечу, что отсчет задержки начинается после помещения в очередь, а не после обработки предыдущего сообщения. Т.е. эти сообщения по отношению друг к другу сработают с интервалом в одну секунду.</p>
+<p>Все сохраним и запустим приложение. В логе одна за другой будут появляться записи:</p>
+<p><i>10:21:07.759: D/myLogs(332): send messages<br> 10:21:08.786: D/myLogs(332): what = 1<br> 10:21:09.765: D/myLogs(332): what = 2<br> 10:21:10.776: D/myLogs(332): what = 3</i></p>
+<p>Обратите внимание на время этих записей. Первое срабатывает через 1000 мс после помещения в очередь (<b><em>send</em></b> <b><em>messages</em></b>), второе - через две секунды, третье – через три.</p>
+<p>Теперь попробуем удалить  сообщение из очереди. Перепишем метод <b>sendMessages</b>:</p>
+<pre><code class="java">  void sendMessages() {
+    h.sendEmptyMessageDelayed(1, 1000);
+    h.sendEmptyMessageDelayed(2, 2000);
+    h.sendEmptyMessageDelayed(3, 3000);
+    h.removeMessages(2);
+  }</code></pre>
+<p>Используем метод removeMessages, в котором указываем значение атрибута <b>what</b>. Этот метод находит в очереди сообщение с атрибутом what, равным 2, и удаляет его из очереди.</p>
+<p>Все сохраняем, запускаем приложение. Смотрим лог:</p>
+<p><i>10:24:49.916: D/myLogs(434): send messages<br> 10:24:50.927: D/myLogs(434): what = 1<br> 10:24:52.948: D/myLogs(434): what = 3</i></p>
+<p>Как видим, сообщение с what = 2 не сработало.</p>
+<p>А если будет несколько сообщений с одинаковым значением what? Система удалит первое попавшееся или все?</p>
+<p>Проверим. Перепишем <b>sendMessages</b>:</p>
+<pre><code class="java">  void sendMessages() {
+    Log.d(LOG_TAG, "send messages");
+    h.sendEmptyMessageDelayed(1, 1000);
+    h.sendEmptyMessageDelayed(2, 2000);
+    h.sendEmptyMessageDelayed(3, 3000);
+    h.sendEmptyMessageDelayed(2, 4000);
+    h.sendEmptyMessageDelayed(5, 5000);
+    h.sendEmptyMessageDelayed(2, 6000);
+    h.sendEmptyMessageDelayed(7, 7000);
+    h.removeMessages(2);
+  }</code></pre>
+<p>Будем помещать в очередь кучу сообщений. Из них несколько с what = 2. Проверим, какие удалит система.</p>
+<p>Запускаем приложение и смотрим лог:</p>
+<p><i>10:29:23.297: D/myLogs(467): send messages<br>10:29:24.372: D/myLogs(467): what = 1<br>10:29:26.307: D/myLogs(467): what = 3<br>10:29:28.364: D/myLogs(467): what = 5<br>10:29:30.332: D/myLogs(467): what = 7</i></p>
+<p>Все сообщения с what = 2 были удалены. Не забывайте это. А то захотите удалить одно последнее сообщение, а система найдет все подходящие, ожидающие обработки, и снесет их.</p>
+<p>У метода removeMessages есть еще <a href="http://developer.android.com/reference/android/os/Handler.html#removeMessages(int, java.lang.Object)" target="_blank">реализация</a> с использованием obj. Тут все так же, только система ищет для удаления из очереди сообщения с указанными атрибутами <b>what</b> и <b>obj</b>.</p>
+<p>Если хотите запланировать полноценное сообщение, а не просто what, то используйте метод sendMessageDelayed – на вход даете сообщение и указываете задержку обработки.</p>
+<p>Есть еще методы <a href="http://developer.android.com/reference/android/os/Handler.html#sendEmptyMessageAtTime(int, long)" target="_blank">sendEmptyMessageAtTime </a>и <a href="http://developer.android.com/reference/android/os/Handler.html#sendMessageAtTime(android.os.Message, long)" target="_blank">sendMessageAtTime</a>. Они тоже позволяют указать задержку обработки. Но эта задержка будет отсчитана от времени последнего старта системы, а не от времени помещения в очередь. Если сообщение окажется просроченным на момент помещения в очередь, оно выполняется сразу.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

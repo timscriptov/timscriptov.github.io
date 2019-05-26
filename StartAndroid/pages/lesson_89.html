@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 89. AsyncTask. Cancel – отменяем задачу в процессе выполнения</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- отменяем задачу в процессе выполнения</p>
+<p>Иногда возникает необходимость отменить уже выполняющуюся задачу. Для этого в AsyncTask есть метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#cancel(boolean)" target="_blank">cancel</a>. Он на вход принимает boolean-параметр, который указывает, может ли система прервать выполнение потока.</p>
+<p>Но вообще, рекомендуется не ждать, пока система завершит поток, а действовать самим. В doInBackground мы должны периодически вызывать метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#isCancelled()" target="_blank">isCancelled</a>. Как только мы выполним метод cancel для AsyncTask, isCancelled будет возвращать true. А это значит, что мы должны завершить метод doInBackground.</p>
+<p>Т.е. метод <b>cancel </b>– это мы <b>ставим метку</b>, что задачу надо отменить. Метод <b>isCancelled </b>– мы же сами эту <b>метку читаем </b>и предпринимаем действия, для завершения работы задачи.</p>
+<p>Метод <b>cancel </b>возвращает boolean. Мы получим <b>false</b>, если задача уже <b>завершена </b>или <b>отменена</b>.</p>
+<p>Рассмотрим на примере.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0891_AsyncTaskCancel<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AsyncTaskCancel<br><b>Package name</b>: ru.startandroid.develop.p0891asynctaskcancel<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;AsyncTaskCancel&lt;/string&gt;
+	&lt;string name="start"&gt;Start&lt;/string&gt;
+	&lt;string name="cancel"&gt;Cancel&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnCancel"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/cancel"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопки старта и отмены задачи, и TextView для вывода текста.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0891asynctaskcancel;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  MyTask mt;
+  TextView tvInfo;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      mt = new MyTask();
+      mt.execute();
+      break;
+    case R.id.btnCancel:
+      cancelTask();
+      break;
+    default:
+      break;
+    }
+  }
+
+  private void cancelTask() {
+    if (mt == null) return;
+    Log.d(LOG_TAG, "cancel result: " + mt.cancel(false));
+  }
+
+  class MyTask extends AsyncTask&lt;Void, Void, Void&gt; {
+    @Override
+    protected void onPreExecute() {
+      super.onPreExecute();
+      tvInfo.setText("Begin");
+      Log.d(LOG_TAG, "Begin");
+    }
+
+    @Override
+    protected Void doInBackground(Void... params) {
+      try {
+        for (int i = 0; i &lt; 5; i++) {
+          TimeUnit.SECONDS.sleep(1);
+          Log.d(LOG_TAG, "isCancelled: " + isCancelled());
+        }
+      } catch (InterruptedException e) {
+        Log.d(LOG_TAG, "Interrupted");
+        e.printStackTrace();
+      }
+      return null;
+    }
+
+    @Override
+    protected void onPostExecute(Void result) {
+      super.onPostExecute(result);
+      tvInfo.setText("End");
+      Log.d(LOG_TAG, "End");
+    }
+    
+    @Override
+    protected void onCancelled() {
+      super.onCancelled();
+      tvInfo.setText("Cancel");
+      Log.d(LOG_TAG, "Cancel");
+
+    }
+  }
+}</code></pre>
+<p>По нажатию кнопки <b>Cancel </b>выполняется метод cancelTask, в котором выполняем cancel (с параметром false) для AsyncTask.</p>
+<p>В <b>doInBackground </b>в цикле гоняем паузы и выводим в лог результат метода isCancelled.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#onCancelled()" target="_blank">onCancelled </a>вызывается системой вместо onPostExecute, если задача была отменена.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_88_0.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Start</b>, а через пару секунд жмем <b>Cancel</b>.</p>
+<p><img src="images/lesson_88_1.png" alt="" width="640" height="454"></p>
+<p>Смотрим логи:</p>
+<p><i>08:17:51.956: D/myLogs(487): Begin<br>08:17:52.993: D/myLogs(487): isCancelled: false<br>08:17:53.998: D/myLogs(487): isCancelled: false<br>08:17:54.543: D/myLogs(487): cancel result: true<br>08:17:54.552: D/myLogs(487): Cancel<br>08:17:55.042: D/myLogs(487): isCancelled: true<br>08:17:56.061: D/myLogs(487): isCancelled: true<br>08:17:57.111: D/myLogs(487): isCancelled: true</i></p>
+<p>Мы видим, что в первых двух циклах задачи метод isCancelled возвращал false. Затем мы нажали Cancel (<i><b>cancel result: true</b></i>). Сразу же сработал метод onCancelled (<i><b>Cancel</b></i>). А метод doInBackground продолжил свою работу и докрутил цикл до конца. Но при этом метод onPostExecute, который обычно вызывается в конце задачи, не был вызван вообще, потому что мы отменили задачу (методом cancel).</p>
+<p>Т.е. мы хоть cancel и выполнили, но задача продолжила работать. Завершать задачу надо нам самим. Для этого мы читаем <b>isCancelled</b> и, если он <b>true</b>, то <b>завершаем</b> метод doInBackground. Т.е. в нашем случае надо переписать метод doInBackground:</p>
+<pre><code class="java">    protected Void doInBackground(Void... params) {
+      try {
+        for (int i = 0; i &lt; 5; i++) {
+          TimeUnit.SECONDS.sleep(1);
+          if (isCancelled()) return null;
+          Log.d(LOG_TAG, "isCancelled: " + isCancelled());
+        }
+      } catch (InterruptedException e) {
+        Log.d(LOG_TAG, "Interrupted");
+        e.printStackTrace();
+      }
+      return null;
+    }</code></pre>
+<p>Мы просто добавили проверку <b>isCancelled</b>. Если он возвращает true, то выходим (return). Разумеется, в более сложных задачах может потребоваться более продуманная логика выхода.</p>
+<p>Теперь если мы нажмем <b>Cancel</b> в процессе выполнения задачи, doInBackground остановит свою работу, как только сможет:</p>
+<p><i>08:40:12.439: D/myLogs(440): Begin<br>08:40:13.498: D/myLogs(440): isCancelled: false<br>08:40:14.558: D/myLogs(440): isCancelled: false<br>08:40:15.118: D/myLogs(440): cancel result: true<br>08:40:15.138: D/myLogs(440): Cancel</i></p>
+<p>Удалите или закомментируйте только что добавленную строку:</p>
+<pre><code class="java">if (isCancelled()) return null;</code></pre>
+<p>в методе doInBackground. Нам сейчас будет не нужна явная проверка отмены задачи. Мы проверим, что сделает метод cancel, если передать в него true.</p>
+<p>Перепишем cancelTask():</p>
+<pre><code class="java">  private void cancelTask() {
+    if (mt == null) return;
+    Log.d(LOG_TAG, "cancel result: " + mt.cancel(true));
+  }</code></pre>
+<p>В метод cancel передаем true. Т.е. он попытается сам остановить поток.</p>
+<p>Сохраняем, запускаем приложение. Жмем <b>Start</b>, а через пару секунд жмем <b>Cancel</b>. Смотрим логи:</p>
+<p><i>08:58:35.949: D/myLogs(545): Begin<br>08:58:37.023: D/myLogs(545): isCancelled: false<br>08:58:38.052: D/myLogs(545): isCancelled: false<br>08:58:38.688: D/myLogs(545): cancel result: true<br>08:58:38.698: D/myLogs(545): Interrupted<br>08:58:38.710: D/myLogs(545): Cancel</i></p>
+<p>Мы видим, что метод doInBackground завершил работу, т.к. метод sleep сгенерировал InterruptedException (<i><b>Interrupted</b></i>). Т.е. когда используем sleep, остановка работы потока работает. Но не факт, что сработает в других случаях. Поэтому повторюсь: не надейтесь особо на cancel(true), а используйте проверку <b>isCancelled</b> или метод <b>onCancelled</b> для завершения своей задачи. Либо проверьте и убедитесь, что cancel(true) работает в ваших условиях.</p>
+<p>Ну и для теста попробуйте нажать Cancel, когда задача уже завершена или отменена. В этом случае метод cancel вернет false.</p>
+<p>Я тестировал это все на версии Android 4.0.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

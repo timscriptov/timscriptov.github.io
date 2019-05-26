@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	  
+	<title>Урок 127. Медиа. SoundPool</title>
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- работаем с SoundPool</p>
+ 
+<p> </p>
+<p>На прошлом уроке мы рассмотрели MediaPlayer, который подходит для проигрывания продолжительных треков. <a href="http://developer.android.com/reference/android/media/SoundPool.html" target="_blank" rel="noopener noreferrer">SoundPool</a> же подходит для случая, когда вам необходимо многократное воспроизведение небольших файлов. Самый простой пример – игры. Когда есть короткий звук какого-либо действия (прыжка, выстрела и т.п.) и этот звук достаточно часто необходимо воспроизводить. SoundPool один раз загружает этот звук в память и оттуда его воспроизводит, что, конечно, неплохо в плане производительности.</p>
+<p>Класс SoundPool несложен. Позволяет загрузить звук в память, проиграть его, ставить паузу, регулировать громкость (левый и правый каналы), менять скорость воспроизведения, ограничивать кол-во одновременно воспроизводимых звуков, использовать приоритеты.</p>
+<p>Напишем простое приложение, в котором рассмотрим все эти возможности.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1271_SoundPool<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: SoundPool<br/> <b>Package name</b>: ru.startandroid.develop.p1271soundpool<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="play"&gt;Play&lt;/string&gt;</code></pre>
+<p> </p>
+<p>layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".MainActivity"&gt;
+	&lt;Button
+		android:id="@+id/btnPlay"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentTop="true"
+		android:onClick="onClick"
+		android:text="@string/play"&gt;
+	&lt;/Button&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Только кнопка для запуска воспроизведения.</p>
+<p> </p>
+<p>Для тестов нам понадобится пара звуков. Я буду использовать <a href="http://yadi.sk/d/3KpXK2qD55QCh">explosion.ogg</a> (взрыв) и <a href="http://yadi.sk/d/-_UUl8L555QCN">shot.ogg</a> (выстрел). Поместим <b>explosion.ogg</b> в папку <b>assets</b>, а <b>shot.ogg</b> в папку <b>res/raw</b>.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1271soundpool;
+
+import java.io.IOException;
+
+
+import android.app.Activity;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.media.SoundPool.OnLoadCompleteListener;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity implements OnLoadCompleteListener {
+  
+  final String LOG_TAG = "myLogs";
+  final int MAX_STREAMS = 5;
+  
+  SoundPool sp;
+  int soundIdShot;
+  int soundIdExplosion;
+
+  
+  int streamIDShot;
+  int streamIDExplosion;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    sp = new SoundPool(MAX_STREAMS, AudioManager.STREAM_MUSIC, 0);
+    sp.setOnLoadCompleteListener(this);
+
+    soundIdShot = sp.load(this, R.raw.shot, 1);
+    Log.d(LOG_TAG, "soundIdShot = " + soundIdShot);
+    
+    try {
+      soundIdExplosion = sp.load(getAssets().openFd("explosion.ogg"), 1);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    Log.d(LOG_TAG, "soundIdExplosion = " + soundIdExplosion);
+    
+  }
+  
+  public void onClick(View view) {
+    sp.play(soundIdShot, 1, 1, 0, 0, 1);
+    sp.play(soundIdExplosion, 1, 1, 0, 0, 1);
+  }
+
+  @Override
+  public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+    Log.d(LOG_TAG, "onLoadComplete, sampleId = " + sampleId + ", status = " + status);
+  }
+  
+}</code></pre>
+<p>Смотрим <b>onCreate</b>.</p>
+<p>Сначала создаем <a href="http://developer.android.com/reference/android/media/SoundPool.html#SoundPool(int, int, int)" target="_blank" rel="noopener noreferrer">SoundPool</a>. На вход ему передаем: <br/> - максимальное кол-во одновременно воспроизводимых файлов<br/> - аудио-поток, который будет использоваться<br/> - некий параметр качества, который пока что игнорируется системой. Рекомендуется передавать туда 0</p>
+<p>Методом <a href="http://developer.android.com/reference/android/media/SoundPool.html#setOnLoadCompleteListener(android.media.SoundPool.OnLoadCompleteListener)" target="_blank" rel="noopener noreferrer">setOnLoadCompleteListener</a> мы устанавливаем слушателя загрузки. Загрузка аудио-файлов происходит асинхронно, и по ее окончании срабатывает метод <a href="http://developer.android.com/reference/android/media/SoundPool.OnLoadCompleteListener.html#onLoadComplete(android.media.SoundPool, int, int)" target="_blank" rel="noopener noreferrer">onLoadComplete</a> этого слушателя.</p>
+<p>Далее загружаем файлы. Для этого используются различные варианты метода <a href="http://developer.android.com/reference/android/media/SoundPool.html#load(android.content.Context, int, int)" target="_blank" rel="noopener noreferrer">load</a>. Чтобы загрузить файл из raw, необходимо указать Context, ID raw-файла и приоритет. Приоритет пока что также игнорируется системой, рекомендуется передавать туда 1.</p>
+<p>Чтобы загрузить файл из assets используем другую реализацию метода <a href="http://developer.android.com/reference/android/media/SoundPool.html#load(android.content.res.AssetFileDescriptor, int)" target="_blank" rel="noopener noreferrer">load</a>, которая на вход требует <a href="http://developer.android.com/reference/android/content/res/AssetFileDescriptor.html" target="_blank" rel="noopener noreferrer">AssetFileDescriptor</a> и приоритет. AssetFileDescriptor можно получить, используя метод <a href="http://developer.android.com/reference/android/content/res/AssetManager.html#openFd(java.lang.String)" target="_blank" rel="noopener noreferrer">openFd</a> класса <a href="http://developer.android.com/reference/android/content/res/AssetManager.html" target="_blank" rel="noopener noreferrer">AssetManager</a>, указав имя файла. Приоритет снова никакой роли не играет, передаем 1.</p>
+<p>У метода load есть несколько реализаций, я специально показал две разных для наглядности. В <a href="http://developer.android.com/reference/android/media/SoundPool.html" target="_blank" rel="noopener noreferrer">документацие</a> вы можете найти ту, которая вам более подходит.</p>
+<p>Метод load возвращает нам ID загруженного файла. Используя этот ID, мы будем проигрывать файл.</p>
+<p> </p>
+<p>В методе <b>onClick</b> запускаем воспроизведение файлов. Для этого используется метод <a href="http://developer.android.com/reference/android/media/SoundPool.html#play(int, float, float, int, int, float)" target="_blank" rel="noopener noreferrer">play</a>. На вход он требует ряд параметров:<br/> - ID файла. Тот самый, который мы получили от метода load.<br/> - громкость левого канала (от 0.0 до 1.0)<br/> - громкость правого канала (от 0.0 до 1.0)<br/> - приоритет. Этот приоритет уже не декоративный, а вполне себе используемый. Далее увидим, где он нужен.<br/> - количество повторов. Т.е. файл будет воспроизведен один раз точно + то количество раз, которое вы здесь укажете<br/> - скорость воспроизведения. Можно задать от половины нормальной скорости до двойной (0.5 - 2).</p>
+<p>Метод play возвращает ID потока, используемого для проигрывания файла. Этот ID можно использовать для дальнейшего изменения настроек в процессе проигрывания файла, а также для паузы.</p>
+<p> </p>
+<p>Метод <b>onLoadComplete</b> слушателя <a href="http://developer.android.com/reference/android/media/SoundPool.OnLoadCompleteListener.html" target="_blank" rel="noopener noreferrer">OnLoadCompleteListener</a> выполняется, когда SoundPool загружает файл. На вход вы получаете сам SoundPool, ID файла (тот же, что и load возвращал) и статус (0, если успешно)</p>
+<p> </p>
+<p>Все сохраним и запустим приложение.</p>
+<p>В логах видим:</p>
+<p><i>08:38:12.726: D/myLogs(333): soundIdShot = 1<br/> 08:38:12.726: D/myLogs(333): soundIdExplosion = 2<br/> 08:38:12.855: D/myLogs(333): onLoadComplete, sampleId = 1, status = 0<br/> 08:38:12.976: D/myLogs(333): onLoadComplete, sampleId = 2, status = 0</i></p>
+<p>Видно, что загрузка звуков заняла определенное время. Жмем <b>Play</b> и слышим, как приложение играет оба звука одновременно.</p>
+<p> </p>
+<h3>Параметры метода play</h3>
+<p>Давайте поменяем громкость. Перепишем <b>onClick</b>:</p>
+<pre><code class="java">  public void onClick(View view) {
+    sp.play(soundIdShot, 0.1f, 1, 0, 0, 1);
+    sp.play(soundIdExplosion, 1, 0.1f, 0, 0, 1);
+  }</code></pre>
+<p>Теперь один звук более слышен слева, а другой справа.</p>
+<p> </p>
+<p>Поменяем кол-во повторов:</p>
+<pre><code class="java">  public void onClick(View view) {
+    sp.play(soundIdShot, 1, 1, 0, 5, 1);
+    sp.play(soundIdExplosion, 1, 1, 0, 2, 1);
+  }</code></pre>
+<p>Теперь звук выстрела воспроизведен 6 раз (1 + 5 повторов), а звук взрыва – 3 раза (1 + 2 повтора).</p>
+<p> </p>
+<p>Поменяем скорость:</p>
+<pre><code class="java">  public void onClick(View view) {
+    sp.play(soundIdShot, 1, 1, 0, 0, 0.5f);
+    sp.play(soundIdExplosion, 1, 1, 0, 0, 2);
+  }</code></pre>
+<p>Звук выстрела стал в два раза медленнее, а звук взрыва – в два раза быстрее.</p>
+<p> </p>
+<h3>Приоритет</h3>
+<p>Теперь давайте разберемся с приоритетом и кол-вом одновременно проигрываемых звуков. Документация гласит:</p>
+<p>"<i>Priority runs low to high, i.e. higher numbers are higher priority. Priority is used when a call to play() would cause the number of active streams to exceed the value established by the maxStreams parameter when the SoundPool was created. In this case, the stream allocator will stop the lowest priority stream. If there are multiple streams with the same low priority, it will choose the oldest stream to stop. In the case where the priority of the new stream is lower than all the active streams, the new sound will not play and the play() function will return a streamID of zero.</i>"</p>
+<p>Т.е. приоритет используется, когда кол-во звуков, которое необходимо воспроизводить в данный момент, превышает максимально допустимое кол-во (мы его указывали при создании SoundPool, константа MAX_STREAMS). В этом случае звуки с низким приоритетом будут остановлены. Если есть несколько звуков с одинаково низким приоритетом, то останавливаются более старые. Если максимальное количество звуков уже достигнуто, и вы пытаетесь воспроизвести звук с низким приоритетом, то он не будет проигран, а метод play вернет 0 вместо ID потока.</p>
+<p>Давайте проведем тесты и понаблюдаем все это в действии.</p>
+<p>Звука у нас всего два. Поэтому, чтобы добиться конфликта, давайте для нашего SoundPool поставим кол-во одновременно воспроизводимых звуков равное одному:</p>
+<pre><code class="java">final int MAX_STREAMS = 1;</code></pre>
+<p> </p>
+<p><b>onClick</b> перепишем так:</p>
+<pre><code class="java">  public void onClick(View view) {
+    streamIDShot = sp.play(soundIdShot, 1, 1, 0, 10, 1);
+    Log.d(LOG_TAG, "streamIDShot = " + streamIDShot);
+    try {
+      TimeUnit.SECONDS.sleep(2);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    streamIDExplosion = sp.play(soundIdExplosion, 1, 1, 0, 0, 1);
+    Log.d(LOG_TAG, "streamIDExplosion = " + streamIDExplosion);
+  }</code></pre>
+<p>Я, конечно, понимаю, что ставить паузу в основном потоке это <i>#непофэншуюивообщенекомильфо</i>, но в данном уроке я считаю это допустимым, чтобы не городить лишний код. Так что не обращайте на это внимание )</p>
+<p>Мы начнем проигрывать звук выстрела 11 раз, а спустя пару секунд запустим звук взрыва. Выстрелы к тому моменту еще не успеют отзвучать, поэтому поглядим, как поведет себя система в данной ситуации. Напоминаю, что у нас сейчас установлен лимит на кол-во звуков = 1.</p>
+<p>Заодно будем выводить в лог ID потоков, которые возвращает нам метод play.</p>
+<p> </p>
+<p>Все сохраняем, запускаем, жмем <b>Play</b>. Я слышу 4 выстрела, потом взрыв. Т.е. при попытке воспроизвести взрыв система видит, что надо одновременно играть два звука: уже звучащий - выстрел и новый - взрыв. А лимит позволяет в один момент времени играть только один звук. Приоритеты у звуков одинаковые. Следовательно, система останавливает более старый звук, в нашем случае это выстрелы.</p>
+<p>В логах видим</p>
+<p><em>09:24:35.035: D/myLogs(754): streamIDShot = 1<br/> 09:24:37.092: D/myLogs(754): streamIDExplosion = 2</em></p>
+<p>Разница в две секунды. ID потоков получены по обоим звукам.</p>
+<p> </p>
+<p>Попробуем выставить для выстрелов приоритет более высокий, чем у взрыва.</p>
+<pre><code class="java">  public void onClick(View view) {
+    streamIDShot = sp.play(soundIdShot, 1, 1, 1, 10, 1);
+    Log.d(LOG_TAG, "streamIDShot = " + streamIDShot);
+    try {
+      TimeUnit.SECONDS.sleep(2);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    streamIDExplosion = sp.play(soundIdExplosion, 1, 1, 0, 0, 1);
+    Log.d(LOG_TAG, "streamIDExplosion = " + streamIDExplosion);
+  }</code></pre>
+<p>Нарисуем у выстрела приоритет = 1, а у взрыва остался 0.</p>
+<p> </p>
+<p>Сохраняем, запускаем, жмем <b>Play</b>.</p>
+<p>Прога воспроизводит все выстрелы. Звук взрыва вообще не воспроизводится. Как и в прошлый раз у системы был выбор, но в этот раз она отменила взрыв и продолжила играть выстрелы, т.к. приоритеты выстрелов выше.</p>
+<p>Смотрим логи:</p>
+<p><i>09:28:32.906: D/myLogs(788): streamIDShot = 1<br/>09:28:34.934: D/myLogs(788): streamIDExplosion = 0</i></p>
+<p>Видим, что для взрыва метод play вернул 0 вместо ID потока. Это значит, что звук не воспроизводился.</p>
+<p> </p>
+<h3>Пауза</h3>
+<p>Давайте посмотрим на возможности паузы. Мы можем приостановить какие-то определенные звуки, а можем все сразу.</p>
+<p>Увеличим снова лимит звуков:</p>
+<pre><code class="java">final int MAX_STREAMS = 5;</code></pre>
+<p> </p>
+<p>Перепишем <b>onClick</b>:</p>
+<pre><code class="java">  public void onClick(View view) {
+    streamIDShot = sp.play(soundIdShot, 1, 1, 0, 9, 1);
+    streamIDExplosion = sp.play(soundIdExplosion, 1, 1, 0, 5, 1);
+
+    try {
+      TimeUnit.SECONDS.sleep(2);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    sp.pause(streamIDShot);
+
+    try {
+      TimeUnit.SECONDS.sleep(3);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    sp.resume(streamIDShot);
+  }</code></pre>
+<p>Мы запускаем проигрывание 10 выстрелов и 6 взрывов. Через 2 секунды приостанавливаем выстрелы, а еще через 3 секунды возобновляем. Для этого используются методы <a href="http://developer.android.com/reference/android/media/SoundPool.html#pause(int)" target="_blank" rel="noopener noreferrer">pause</a> и <a href="http://developer.android.com/reference/android/media/SoundPool.html#resume(int)" target="_blank" rel="noopener noreferrer">resume</a>, на вход которым даем ID потока из play.</p>
+<p> </p>
+<p>Сохраняем, запускаем, жмем <b>Play</b>. Слышим выстрелы и взрывы. Затем выстрелы стихают, остаются только взрывы. Затем выстрелы снова возобновляются и все стихает. Counter-terrorist win )</p>
+<p> </p>
+<p>Попробуем приостановить все звуки.</p>
+<pre><code class="java">  public void onClick(View view) {
+    streamIDShot = sp.play(soundIdShot, 1, 1, 0, 9, 1);
+    streamIDExplosion = sp.play(soundIdExplosion, 1, 1, 0, 4, 1);
+
+    try {
+      TimeUnit.SECONDS.sleep(2);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    sp.autoPause();
+
+    try {
+      TimeUnit.SECONDS.sleep(3);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    sp.autoResume();
+  }</code></pre>
+<p>Для этого используем методы <a href="http://developer.android.com/reference/android/media/SoundPool.html#autoPause()" target="_blank" rel="noopener noreferrer">autoPause</a> и <a href="http://developer.android.com/reference/android/media/SoundPool.html#autoResume()" target="_blank" rel="noopener noreferrer">autoResume</a>. При проигрывании у нас будет пауза в три секунды, потом все возобновится.</p>
+<p> </p>
+<h3>Меняем уже играющий звук</h3>
+<p>Пока звук воспроизводится, вы можете повлиять на его характеристики, которые были заданы в методе play:</p>
+<p>громкость  - <a href="http://developer.android.com/reference/android/media/SoundPool.html#setVolume(int, float, float)" target="_blank" rel="noopener noreferrer">setVolume</a><br/> приоритет – <a href="http://developer.android.com/reference/android/media/SoundPool.html#setPriority(int, int)" target="_blank" rel="noopener noreferrer">setPriority</a><br/> повторы - <a href="http://developer.android.com/reference/android/media/SoundPool.html#setLoop(int, int)" target="_blank" rel="noopener noreferrer">setLoop</a><br/> скорость - <a href="http://developer.android.com/reference/android/media/SoundPool.html#setRate(int, float)" target="_blank" rel="noopener noreferrer">setRate</a></p>
+<p>На вход методам идет ID потока (который вернул play) и необходимое вам значение параметра.</p>
+<p> </p>
+<p>Например, поработаем с громкостью:</p>
+<pre><code class="java">  public void onClick(View view) {
+    streamIDShot = sp.play(soundIdShot, 1, 0, 0, 9, 1);
+    streamIDExplosion = sp.play(soundIdExplosion, 0, 1, 0, 4, 1);
+
+    try {
+      TimeUnit.SECONDS.sleep(2);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    sp.setVolume(streamIDShot, 0, 1);
+    sp.setVolume(streamIDExplosion, 1, 0);
+  }</code></pre>
+<p> Выстрелы начнут играть в одном канале, взрывы  - в другом. А через две секунды они поменяются каналами.</p>
+<p> </p>
+<h3>Выгрузка</h3>
+<p>Осталось упомянуть про еще два метода.</p>
+<p><a href="http://developer.android.com/reference/android/media/SoundPool.html#unload(int)" target="_blank" rel="noopener noreferrer">unload</a> – выгрузит указанный звук из памяти. На вход требует ID звука, который возвращал метод load.</p>
+<p><a href="http://developer.android.com/reference/android/media/SoundPool.html#release()" target="_blank" rel="noopener noreferrer">release</a> – освобождает все ресурсы SoundPool, более он не сможет быть используемым и ссылку на него необходимо об-null-ить.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

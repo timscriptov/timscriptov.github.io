@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 26. Intent Filter - практика</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- вызываем Activity, используя неявный вызов и Intent Filter</p>
+<p>Последние уроки получились перегруженными теорией. Эту теорию необходимо понять, чтобы не было проблем с практикой. Эти темы являются основой – Task, Lifecycle, Intent. Если что-либо осталось непонятно, то вы всегда можете снова открыть и перечитать материал. А далее мы будем реализовывать примеры, которые будут эту теорию подтверждать и все станет понятнее.</p>
+<p>На прошлых уроках мы научились <b>вызывать Activity </b>с помощью <b>Intent </b>и явного указания <b>класса</b>. Также мы знаем, что есть и другой способ вызова Activity – <b>неявный</b>. Он основан на том, что Activity вызывается не по имени, а по функционалу. Т.е. мы хотим выполнить определенные действия, создаем и настраиваем соответствующий <b>Intent </b>и отправляем его <b>искать </b>те Activity, которые могли бы справиться с нашей задачей.</p>
+<p>Давайте посмотрим, как это реализуется на практике. Мы создадим приложение, которое будет отображать нам текущее время или дату. Сделаем мы это с помощью трех Activity:<br>- первое будет содержать две кнопки: Show time и Show date<br>- второе будет отображать время<br>- третье будет отображать дату</p>
+<p>Нажатие на кнопку Show time будет вызывать второе Activity, а нажатие на кнопку Show date – третье Activity. Но <b>реализуем </b>мы это не через прямое указание классов Activity в Intent, а через<b> Intent Filter</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0261_IntentFilter<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: IntentFilter<br><b>Package name</b>: ru.startandroid.develop.p0261intentfilter<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем<b> main.xml</b> и рисуем две кнопки:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnTime"
+        android:text="Show time"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnDate"
+        android:text="Show date"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Пишем реализацию <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0261intentfilter;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class MainActivity extends Activity implements OnClickListener {
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        Button btnTime = (Button) findViewById(R.id.btnTime);
+        Button btnDate = (Button) findViewById(R.id.btnDate);
+        
+        btnTime.setOnClickListener(this);
+        btnDate.setOnClickListener(this);
+    }
+
+  @Override
+  public void onClick(View v) {
+    Intent intent;
+
+    switch(v.getId()) {
+    case R.id.btnTime:
+      intent = new Intent("ru.startandroid.intent.action.showtime");
+      startActivity(intent);
+      break;
+    case R.id.btnDate:
+      intent = new Intent("ru.startandroid.intent.action.showdate");
+      startActivity(intent);
+      break;
+    }
+  }
+}</code></pre>
+<p>В коде мы определили кнопки и присвоили им <b>Activity </b>как <b>обработчик </b>нажатий. В методе <b>onCilck </b>мы определяем какая кнопка была нажата и <b>создаем Intent</b>.</p>
+<p>Для создания Intent используем конструктор: <a href="http://developer.android.com/reference/android/content/Intent.html#Intent(java.lang.String)" target="_blank">Intent (String action)</a>. Т.е. мы при создании заполняем атрибут объекта Intent, который называется <b>action</b>. Это обычная строковая константа. Action обычно указывает <b>действие</b>, которое мы хотим произвести. Например, есть следующие системные action-константы: <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_VIEW" target="_blank">ACTION_VIEW</a> - просмотр, <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_EDIT" target="_blank">ACTION_EDIT</a> – редактирование, <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_PICK" target="_blank">ACTION_PICK</a> – выбор из списка, <a href="http://developer.android.com/reference/android/content/Intent.html#ACTION_DIAL" target="_blank">ACTION_DIAL</a> – сделать звонок.</p>
+<p>Если действие производится с чем-либо, то в пару к <b>action </b>идет еще один Intent-атрибут – <b>data</b>. В нем мы можем указать какой-либо объект: пользователь в адресной книге, координаты на карте, номер телефона и т.п. Т.е. <b>action </b>указывает <b>что делать</b>, а <b>data </b>– <b>с чем делать</b>.</p>
+<p>Про <b>data </b>мы еще поговорим на следующих уроках, а пока будем использовать только <b>action</b>. Выше я уже перечислил некоторые системные action-константы, но мы можем использовать и свой action.</p>
+<p>Как вы видите из кода, я придумал и использую такие action:<br><i>ru.startandroid.intent.action.showtime</i><br><i>ru.startandroid.intent.action.showdate</i></p>
+<p>Первый будет означать, что я хочу вызвать Activity, которое мне покажет текущее время. Второй – Activity с датой.</p>
+<p>Здесь надо четко понимать следующее: <b>action </b>– это просто <b>текст</b>. И я мог с таким же успехом придумать action <i>abcdefg123456</i>. Но текст <i>showtime</i> – отражает то, что я хочу сделать, он нагляднее и понятнее. А префикс <i>ru.startandroid.intent.action</i> я использую, чтобы не было коллизий. В системе может быть приложение, которое уже использует action <i>showtime</i> - я не хочу с ним пересекаться. Поэтому мой action – это <i>ru.startandroid.intent.action.showtime</i>.</p>
+<p>Итак, мы создали <b>Intent </b>с <b>action </b>и запустили его в систему искать Activity. Чтобы Activity подошла, надо чтобы ее <b>Intent Filter </b>содержал атрибут <b>action </b>с тем же <b>значением</b>, что и <b>action </b>в <b>Intent</b>. Значит нам осталось создать две <b>Activity</b>, настроить их<b> Intent Filter</b> и реализовать отображение времени и даты.</p>
+<p>Activity создается как обычно - создаем класс <b>ActivityTime </b>с суперклассом <b>android.app.Activity</b> и прописываем его в манифесте как Activity. После того, как прописали в манифесте, надо будет там же создать Intent Filter. Для этого выделяем <b>ActivityTime</b>, жмем <b>Add</b>, выбираем<b> Intent Filter</b> и жмем <b>ОК</b>.</p>
+<p><img src="images/lesson_25_0.png" alt="" width="800" height="482"></p>
+<p>Далее в Intent Filter аналогично создаем <b>Action </b>и в поле <b>Name </b>прописываем <i>ru.startandroid.intent.action.showtime</i></p>
+<p><img src="images/lesson_25_1.png" alt="" width="700" height="165"></p>
+<p>Также в <b>Intent Filter</b> надо создать <b>Category </b>и в поле <b>name </b>выбрать из списка <i>android.intent.category.DEFAULT</i>. Пока не будем разбираться детально зачем она нужна. Но без этого вызов <b>startActivity(Intent)</b> не найдет Activity.</p>
+<p><img src="images/lesson_25_2.png" alt="" width="798" height="167"></p>
+<p>Создадим layout для нового Activity, назовем его <b>time.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/tvTime"
+        android:text="TextView"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:textSize="30sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Пишем код в <b>ActivityTime.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0261intentfilter;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class ActivityTime extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.time);
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+    String time = sdf.format(new Date(System.currentTimeMillis()));
+    
+    TextView tvTime = (TextView) findViewById(R.id.tvTime);
+    tvTime.setText(time);
+  }
+}</code></pre>
+<p>Тут все просто - вычисляем текущее время и показываем его в TextView.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_25_3.png" alt="" width="640" height="454"></p>
+<p>Жмем кнопку Show time:</p>
+<p><img src="images/lesson_25_4.png" alt="" width="640" height="454"></p>
+<p>отобразилось время. Т.е. <b>Intent </b>с <b>action </b>= <i>ru.startandroid.intent.action.showtime</i> нашел и отобразил <b>Activity</b>, у которого <b>action </b>также равен <i>ru.startandroid.intent.action.showtime</i> в <b>Intent Filter</b>.</p>
+<p>Вернемся назад (кнопка <b>Back</b>) и нажмем теперь кнопку <b>Show date</b>. Приложение выдаст ошибку, т.к. оно не смогло найти Activity, которое соответствовало бы Intent с <b>action </b>= <i>ru.startandroid.intent.action.showdate</i> (мы создали только для showtime).</p>
+<p>Давайте создадим такое Activity, назовем его <b>ActivityDate</b>. Действия все те же самые, что и при создании ActivityTime:<br>- создание класса<br>- создание Activity в манифесте и создание для него Intent Filter (c action = <i>ru.startandroid.intent.action.showdate</i> и category = <i>android.intent.category.DEFAULT</i>)</p>
+<p><img src="images/lesson_25_5.png" alt="" width="414" height="464"></p>
+<p>Layout-файл назовем <b>date.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/tvDate"
+        android:text="TextView"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:textSize="30sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Код <b>ActivityDate.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0261intentfilter;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class ActivityDate extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.date);
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+    String date = sdf.format(new Date(System.currentTimeMillis()));
+    
+    TextView tvDate = (TextView) findViewById(R.id.tvDate);
+    tvDate.setText(date);
+  }
+}</code></pre>
+<p>Все сохраняем, запускаем приложение, жмем <b>Show date</b> и видим дату. Это значит, что <b>Intent </b>с <b>action</b> = <i>ru.startandroid.intent.action.showdate</i> нашел и отобразил <b>ActivityDate </b>подходящее ему по <b>Intent Filter</b>.</p>
+<p>Чтобы закрепить тему, проделаем еще кое-то. Если помните, в <a href="http://startandroid.ru/uroki/vse-uroki-spiskom/59-urok-22-intent-intent-filter-context-teorija.html" target="_blank">уроке №22</a>, где я рассказывал про Intent Filter, я говорил, что <b>один Intent</b> может найти <b>несколько </b>подходящих <b>Activity</b>. В этом случае пользователю предоставляется <b>выбор</b>, какое Activity использовать. Давайте сами спровоцируем такой случай. Мы сделаем еще одно Activity, которое будет реагировать на Intent с action = <em>ru.startandroid.intent.action.showdate</em>. И будет отображать текущую дату аналогично ActivityDate. Но формат отображения даты будет немного другой.</p>
+<p>Давайте создадим такое Activity, назовем его <b>ActivityDateEx</b>. Действия все те же самые, что и при создании ActivityDate:<br>- создание класса<br>- создание Activity в манифесте и создание для него Intent Filter (с action = <i>ru.startandroid.intent.action.showdate</i> и category = <i>android.intent.category.DEFAULT</i>)</p>
+<p>Новый layout-файл создавать не будем, используем уже существующий <b>date.xml</b>. В принципе, все три Activity у нас могли использовать один layout, т.к. они совершенно одинаковы – один TextView.</p>
+<p>Код <b>ActivityDateEx.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0261intentfilter;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class ActivityDateEx extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.date);
+    
+    SimpleDateFormat sdf = new SimpleDateFormat("EEE, MMM d, yyyy");
+    String date = sdf.format(new Date(System.currentTimeMillis()));
+    
+    TextView tvDate = (TextView) findViewById(R.id.tvDate);
+    tvDate.setText(date);
+  }
+}</code></pre>
+<p>Как видим, отличие от ActivityDate только в формате даты.</p>
+<p>Сохраним все и запустим. Жмем Show date и видим такой выбор:</p>
+<p><img src="images/lesson_25_6.png" alt="" width="640" height="454"></p>
+<p><b>Intent </b>нашел <b>два Activity</b>, но показал для каждого из них название родительского приложения и package. В нашем случае – оба Activity из нашего приложения, поэтому текст одинаков и не разберешь, какое из них какое. Давайте пофиксим это, прописав нормальные имена.</p>
+<p>Нажмите Back, чтобы закрыть диалог выбора. Идем в <b>манифест </b>и для <b>Activity </b>пропишем <b>label</b>:</p>
+<p><img src="images/lesson_25_7.png" alt="" width="800" height="456"></p>
+<p><i>Date basic</i> для <b>ActivityDate</b><br><i>Date extended</i> для <b>ActivityDateEx</b></p>
+<p>Сохраняем и запускаем. Жмем Show date и видим такой выбор:</p>
+<p><img src="images/lesson_25_8.png" alt=""></p>
+<p>Так значительно лучше. Жмем Date extended и видим дату в расширенном формате на ActivityDateEx.</p>
+<p>Итак, мы создавали и посылали <b>Intent</b> с <b>action</b>. Этот <b>Intent </b>находил <b>Activity </b>с подходящим <b>Intent Filter </b>и отображал его. Если находил <b>несколько </b>– давал <b>выбор</b>. Примеры отлично показывают механизм.</p>
+<p>Если запутались, чего и где создавать, привожу скрин проекта и содержимое манифеста.</p>
+<p><img src="images/lesson_25_9.png" alt="" width="304" height="405"></p>
+<p>Содержимое манифеста (вкладка AndroidManifest.xml):</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android" package="ru.startandroid.develop.p0261intentfilter" android:versionCode="1" android:versionName="1.0"&gt;
+    &lt;uses-sdk android:minSdkVersion="10"&gt;&lt;/uses-sdk&gt;
+    &lt;application android:icon="@drawable/icon" android:label="@string/app_name"&gt;
+        &lt;activity android:name=".MainActivity" android:label="@string/app_name"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN"&gt;&lt;/action&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER"&gt;&lt;/category&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+        &lt;activity android:name="ActivityTime"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="ru.startandroid.intent.action.showtime"&gt;&lt;/action&gt;
+                &lt;category android:name="android.intent.category.DEFAULT"&gt;&lt;/category&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+        &lt;activity android:name="ActivityDate" android:label="Date basic"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="ru.startandroid.intent.action.showdate"&gt;&lt;/action&gt;
+                &lt;category android:name="android.intent.category.DEFAULT"&gt;&lt;/category&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+        &lt;activity android:name="ActivityDateEx" android:label="Date extended"&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="ru.startandroid.intent.action.showdate"&gt;&lt;/action&gt;
+                &lt;category android:name="android.intent.category.DEFAULT"&gt;&lt;/category&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

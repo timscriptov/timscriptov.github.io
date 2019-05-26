@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 107. Android 3. ActionBar. Размещение элементов</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- размещаем элементы в ActionBar</p>
+<p>Еще одно нововведение третьего Андроида – <a href="http://developer.android.com/guide/topics/ui/actionbar.html" target="_blank">Action Bar</a>. Это панель в верхней части приложения.</p>
+<p>В этом уроке попробуем размещать там свои элементы с иконками и посмотрим, как с ними взаимодействовать. Тут нам все уже будет знакомо, т.к. используется механизм, который раньше строил меню.  Т.е. мы в методе <a href="http://developer.android.com/reference/android/app/Activity.html#onCreateOptionsMenu(android.view.Menu)" target="_blank">onCreateOptionsMenu</a> получаем на вход объект Menu и (программно или с помощью XML) наполняем его элементами.</p>
+<p>Для элементов будем указывать id, текст, иконку и режим показа.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1071_ActionBarItems<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: ActionBarItems<br><b>Package name</b>: ru.startandroid.develop.p1071actionbaritems<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="item1"&gt;Item1&lt;/string&gt;
+&lt;string name="item2"&gt;Item2&lt;/string&gt;
+&lt;string name="item3"&gt;Item3&lt;/string&gt;
+&lt;string name="item4"&gt;Item4&lt;/string&gt;</code></pre>
+<p>В файл res\menu\<b>main.xml</b> напишем следующий текст:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:id="@+id/item1"
+		android:showAsAction="always"
+		android:title="@string/item1"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item2"
+		android:icon="@android:drawable/ic_menu_call"
+		android:showAsAction="ifRoom"
+		android:title="@string/item2"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item3"
+	android:icon="@android:drawableandroidandroidandroidandroiddrawableandroidandroidandroidandroid/ic_menu_info_details"
+		android:showAsAction="ifRoom|withText"
+		android:title="@string/item3"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item4"
+		android:icon="@android:drawable/ic_menu_view"
+		android:showAsAction="never"
+		android:title="@string/item4"&gt;
+	&lt;/item&gt;
+&lt;/menu&gt;</code></pre>
+<p>С <b>id</b>, <b>title</b> и <b>icon</b>, думаю все понятно – это идентификатор, текст и иконка элемента. Иконки системные, выбранные случайно.</p>
+<p>Нам тут больше интересен атрибут <b>showAsAction</b>, это режим показа элемента. Он может принимать значения:</p>
+<p><b>never </b>– не показывать элемент</p>
+<p><b>ifRoom </b>– показывать, если есть место</p>
+<p><b>always </b>– всегда показывать</p>
+<p>К этим значениям может быть добавлено еще одно – <b>withText</b>. Актуально для элементов с указанной иконкой. В этом случае для элемента будет показана не только иконка, но и текст из <b>title</b>. </p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1071actionbaritems;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.Menu;
+
+public class MainActivity extends Activity {
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+
+}</code></pre>
+<p>Думаю, комментарии тут особо не нужны. Все знакомое. Заполненный нами ранее xml-файл используется для создания элементов Menu. </p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p>Отобразился <b>item1 </b>и <b>item2</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_0.png" alt="" width="384" height="640"></p>
+<p>Для <b>item1 </b>мы не указывали иконку, поэтому видим только текст. А в <b>showAsAction </b>мы указали <b>always</b>, т.е. система будет пытаться отобразить элемент, даже если не хватает места на ActionBar.</p>
+<p>Для <b>item2 </b>мы указали иконку ic_menu_call, ее и видим в ActionBar. В <b>showAsAction </b>мы указали <b>ifRoom</b>, т.е. отображать, если есть свободное место. Место есть – элемент виден.</p>
+<p>Жмем на эмуляторе menu и видим два оставшихся элемента. Они не отобразились в ActionBar и теперь доступны только так.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_1.png" alt="" width="384" height="640"></p>
+<p><b>item3 </b>не отобразился, т.к. ему не хватило места. Мы для него указывали <b>showAsAction </b>= <b>ifRoom</b>, т.е. отображать, если есть где. Для <b>item2</b> место нашлось, а вот <b>item3</b> не влез.</p>
+<p><b>item4 </b>не отобразился, т.к. мы указали <b>showAsAction </b>= <b>never</b>.</p>
+<p>Давайте увеличим место в ActionBar и посмотрим, что изменится. Для этого просто повернем экран в горизонтальную ориентацию – CTRL+F12.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_2.png" alt="" width="640" height="384"></p>
+<p>Для <b>item1 </b>и <b>item2 </b>ничего не изменилось. А вот для <b>item3 </b>теперь появилось местечко, и он вылез. Если для <b>item2 </b>отображена только иконка, то для <b>item3 </b>мы видим и текст. Это сказывается <b>withText </b>в атрибуте <b>showAsAction</b>.</p>
+<p><b>item4 </b>не виден несмотря на то, что есть куча места свободного. Причина - <b>never </b>в атрибуте <b>showAsAction</b>. Чтоб добраться до него, жмем menu.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_3.png" alt="" width="640" height="384"></p>
+<h3>overflow menu</h3>
+<p>Если запустить это же приложение на планшете, то увидим чуть другой интерфейс ActionBar:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_4.png" alt="" width="640" height="400"></p>
+<p>Справа появляется кнопка, нажатие на которую аналогично нажатию на menu. Судя по всему, эта кнопка видна только на тех устройствах, на которых нет кнопки menu.</p>
+<h3>Как узнать текст элемента, если видна только иконка</h3>
+<p>Если для элемента показана только иконка, то долгим нажатием на нее можно добиться показа текста. Попробуем на item2:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_5.png" alt="" width="384" height="640"></p>
+<p>На AVD с 4.1 это работает. На планшете с 3.2 – почему-то нет.</p>
+<h3>Как отключить ActionBar</h3>
+<p>Для этого в коде можно прописать:</p>
+<pre><code class="java">getActionBar().hide();</code></pre>
+<p>Либо выбрать для <b>Activity</b> тему, содержащую текст <i>NoActionBar</i>.</p>
+<p><img src="images/lesson_106_6.png" alt="" width="381" height="532"></p>
+<h3>Где обрабатывать нажатия на элементы</h3>
+<p>Там же, где и при работе с меню – метод <a href="http://developer.android.com/reference/android/app/Activity.html#onOptionsItemSelected(android.view.MenuItem)" target="_blank">onOptionsItemSelected</a>. Все аналогично.</p>
+<h3>О кнопке Home</h3>
+<p>В левой части ActionBar находится кнопка <b>Home</b>. По умолчанию для нее используется иконка приложения или Activity. Мы можем поставить сюда свою иконку, не трогая текущие. Для этого используется атрибут android:logo у Activity или Application.</p>
+<p>В третьем Андроиде кнопка Home кликабельна по умолчанию. В четвертом же ее надо явно задействовать методом <a href="http://developer.android.com/reference/android/app/ActionBar.html#setHomeButtonEnabled(boolean)" target="_blank">setHomeButtonEnabled</a>.</p>
+<p>Поймать нажатие кнопки <b>Home </b>можно также в onOptionsItemSelected. Она имеет id = <b>android.R.id.home</b>.</p>
+<p>Насколько я понял по документацие, назначение этой кнопки – перейти в коренное Activity программы, т.е. действительно кнопка «Домой». Также документация говорит об еще одной логической возможности использования – как кнопка «Вверх». Т.е. не в корневое Activity, а на один логический уровень вверх. Например, из чтения письма переходим к списку писем. А для того, чтобы пользователь знал, что он попадет не Домой, а Вверх предлагается вешать на кнопку стрелочку методом <a href="http://developer.android.com/reference/android/app/ActionBar.html#setDisplayHomeAsUpEnabled(boolean)" target="_blank">setDisplayHomeAsUpEnabled</a>.</p>
+<p>В итоге выглядит это примерно так</p>
+<p><img style="border: 1px solid black;" src="images/lesson_106_7.png" alt="" width="384" height="640"></p>
+<p>На кнопке появилась стрелка.</p>
+<p>Надо понимать, что эта стрелка – это просто изображение для пользователя, чтобы он знал, какое поведение ожидать от нажатия. А писать весь процесс перехода Вверх надо самим. Как впрочем и процесс перехода Домой.</p>
+<p>Напоследок еще несколько полезных методов для ActionBar:</p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.html#setTitle(java.lang.CharSequence)" target="_blank">setTitle</a> – установить свой заголовок </p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.html#setSubtitle(java.lang.CharSequence)" target="_blank">setSubtitle</a> - установить свой подзаголовок </p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.html#setDisplayShowTitleEnabled(boolean)" target="_blank">setDisplayShowTitleEnabled </a>– скрыть/показать заголовок и подзаголовок</p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.html#setDisplayShowHomeEnabled(boolean)" target="_blank">setDisplayShowHomeEnabled</a> – скрыть/показать кнопку Home</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

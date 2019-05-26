@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 58. Диалоги. TimePickerDialog</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем TimePickerDialog</p>
+<p>Начнем рассматривать новую тему – <b>диалоги</b>. Диалог – небольшое всплывающее окно, которое чаще всего используется для подтверждения каких-либо операций или ввода небольшого количества данных.</p>
+<p>Мы рассмотрим стандартные диалоги, предоставляемые системой, и научимся делать свои. На этом уроке рассмотрим <a href="http://developer.android.com/reference/android/app/TimePickerDialog.html" target="_blank">TimePickerDialog</a>. Это диалог, который позволяет указать время.</p>
+<p>Сделаем простое приложение. На экране будет TextView, на него можно будет нажать и появится диалог для выбора времени. После выбора оно отобразится в TextView.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0581_TimePickerDialog<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: TimePickerDialog<br><b>Package name</b>: ru.startandroid.develop.p0581timepickerdialog<br><b>Create Activity</b>: MainActivity</p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvTime"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:onClick="onclick"
+        android:text="@string/hello"
+        android:textSize="22sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране <b>TextView</b>, для которого включим <b>clickable</b> и назначим метод обработки <b>onclick</b>.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0581timepickerdialog;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.TimePickerDialog;
+import android.app.TimePickerDialog.OnTimeSetListener;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.TimePicker;
+
+public class MainActivity extends Activity {
+  
+  int DIALOG_TIME = 1;
+  int myHour = 14;
+  int myMinute = 35;
+  TextView tvTime;
+  
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        tvTime = (TextView) findViewById(R.id.tvTime);
+    }
+    
+    public void onclick(View view) {
+      showDialog(DIALOG_TIME);
+    }
+    
+    protected Dialog onCreateDialog(int id) {
+      if (id == DIALOG_TIME) {
+        TimePickerDialog tpd = new TimePickerDialog(this, myCallBack, myHour, myMinute, true);
+        return tpd;
+      }
+      return super.onCreateDialog(id);
+    }
+    
+    OnTimeSetListener myCallBack = new OnTimeSetListener() {
+    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+      myHour = hourOfDay;
+      myMinute = minute; 
+      tvTime.setText("Time is " + myHour + " hours " + myMinute + " minutes");
+    }
+  };
+}</code></pre>
+<p>В <b>onCreate</b> находим TextView.</p>
+<p>В <b>onClick</b> вызываем метод showDialog и передаем ему ID диалога. Этот метод (showDialog) создает диалог с помощью отдельного метода и показывает его. ID используется для указания, какой именно диалог создавать и показывать.</p>
+<p>Метод <b>onCreateDialog</b> – это и есть отдельный метод, который вызывается в showDialog для создания диалога. В этом методе мы смотрим, какой ID пришел на вход, создаем соответствующий диалог и возвращаем его.</p>
+<p>В нашем случае мы создаем TimePickerDialog, используя конструктор:</p>
+<p><a href="http://developer.android.com/reference/android/app/TimePickerDialog.html#TimePickerDialog(android.content.Context, android.app.TimePickerDialog.OnTimeSetListener, int, int, boolean)" target="_blank">TimePickerDialog (Context context, TimePickerDialog.OnTimeSetListener callBack, int hourOfDay, int minute, boolean is24HourView)</a>, где</p>
+<p><i>context</i> – контекст<br><i> callBack</i> – это обработчик с интерфйесом <a href="http://developer.android.com/reference/android/app/TimePickerDialog.OnTimeSetListener.html" target="_blank">TimePickerDialog.OnTimeSetListener</a>, метод которого срабатывает при нажатии кнопки ОК на диалоге<br><i> hourOfDay</i> – час, который покажет диалог<br><i> minute</i> – минута, которую покажет диалог<br><i> is24HourView</i> – формат времени 24 часа (иначе AM/PM)</p>
+<p><b>myCallBack</b> – объект, реализующий интерфейс TimePickerDialog.OnTimeSetListener. У него только один метод – onTimeSet, который предоставляет нам <a href="http://developer.android.com/reference/android/widget/TimePicker.html" target="_blank">TimePicker</a> из диалога, и час и минуту, которые он показывает. Т.е. то, что мы ввели в диалоге.</p>
+<p>Эти данные мы пишем в tvTime.</p>
+<p>Все сохраним и запустим. Нажмем на TextView. Появился диалог для ввода времени.</p>
+<p><img src="images/lesson_57_0.png" alt="" width="640"></p>
+<p>Сейчас он показывает 14:35, т.к. мы при создании передали ему значения myHour и myMinute.</p>
+<p>Поменяем значения</p>
+<p><img src="images/lesson_57_1.png" alt="" width="640" height="449"></p>
+<p>и нажмем Set.</p>
+<p><img src="images/lesson_57_2.png" alt="" width="640" height="449"></p>
+<p>Текст показал новые значения.</p>
+<p>Диалог также можно закрыть кнопкой <b>Cancel </b>или кнопкой <b>Back</b> (назад)<b> </b>на эмуляторе. В этом случае метод обработчика не сработает и текст не обновится.</p>
+<p>Это самый простейший диалог. И тут, разумеется, рассмотрены далеко не все возможности. Здесь пока важно понять схему взаимодействия showDialog и onCreateDialog, и наличие обработчика результатов диалога.</p>
+<p>Также здесь использовался новый для нас компонент TimePicker. Он несложен и просто позволяет удобно задавать или отображать время.</p>
+<p>На следующем уроке сделаем похожий пример, но с датой, для закрепления.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

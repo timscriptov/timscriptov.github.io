@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 151. Рисование. PathEffect</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- рассматриваем PathEffect-объекты</p>
+<p>У класса <a href="http://developer.android.com/reference/android/graphics/PathEffect.html" target="_blank" rel="noopener noreferrer">PathEffect</a> есть несколько наследников, которые позволяют влиять на рисуемые нами объекты. Рассмотрим на примерах их использование.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1511_PathEffect<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: PathEffect<br/> <b>Package name</b>: ru.startandroid.develop.p1511patheffect<br/> <b>Create Activity</b>: MainActivity</p>
+<h3>CornerPathEffect</h3>
+<p>Эффект <a href="http://developer.android.com/reference/android/graphics/CornerPathEffect.html" target="_blank" rel="noopener noreferrer">CornerPathEffect</a> просто закругляет углы. На вход принимает радиус закругления.</p>
+<p>Пишем в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1511patheffect;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.CornerPathEffect;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Path path;
+    Paint p1;
+    Paint p2;
+    Paint p3;
+
+    public DrawView(Context context) {
+      super(context);
+      path = new Path();
+      path.rLineTo(100, 300);
+      path.rLineTo(100, -100);
+      path.rLineTo(100, 300);
+
+      p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p1.setStyle(Paint.Style.STROKE);
+      p1.setStrokeWidth(3);
+
+      p2 = new Paint(p1);
+      p2.setColor(Color.GREEN);
+      p2.setPathEffect(new CornerPathEffect(25));
+
+      p3 = new Paint(p1);
+      p3.setColor(Color.BLUE);
+      p3.setPathEffect(new CornerPathEffect(50));
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.translate(100, 100);
+      canvas.drawPath(path, p1);
+
+      canvas.translate(250, 0);
+      canvas.drawPath(path, p2);
+
+      canvas.translate(250, 0);
+      canvas.drawPath(path, p3);
+
+    }
+
+  }
+
+}</code></pre>
+<p>Смотрим код. Мы создаем Path, состоящий из трех линий. Создаем три кисти с разными цветами: черную без эффектов, зеленую с закруглением с радиусом в 25, и синюю с закруглением 50. И рисуем фигуру три раза.</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson1.png" alt="" width="640" height="385"/></p>
+<h3>DiscretePathEffect</h3>
+<p><a href="http://developer.android.com/reference/android/graphics/DiscretePathEffect.html" target="_blank" rel="noopener noreferrer">DiscretePathEffect</a> позволяет получить ломанную линию из прямой. Полученная ломанная линия будет состоять из фрагментов, а мы можем повлиять на длину этих фрагментов (первый параметр конструктора) и степень излома (второй параметр).</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+      
+      Path path;
+      Paint p1;
+      Paint p2;
+      Paint p3;
+      
+      public DrawView(Context context) {
+        super(context);
+        path = new Path();
+        path.rLineTo(100, 300);
+        path.rLineTo(100, -100);
+        path.rLineTo(100, 300);
+        
+        p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p1.setStyle(Paint.Style.STROKE);
+        p1.setStrokeWidth(3);
+        
+        p2 = new Paint(p1);
+        p2.setColor(Color.GREEN);
+        p2.setPathEffect(new DiscretePathEffect(10,5));
+        
+        p3 = new Paint(p1);
+        p3.setColor(Color.BLUE);
+        p3.setPathEffect(new DiscretePathEffect(10,15));
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(100, 100);
+        canvas.drawPath(path, p1);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p2);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p3);
+        
+      }
+      
+    }</code></pre>
+</div>
+<p>Для зеленой линии используем степень излома – 5, а для синей – 15. Длина фрагментов = 10.</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson2.png" alt="" width="640" height="385"/></p>
+<h3>DashPathEffect</h3>
+<p>С помощью <a href="http://developer.android.com/reference/android/graphics/DashPathEffect.html" target="_blank" rel="noopener noreferrer">DashPathEffect</a> мы из сплошной линии можем получить прерывистую. От нас требуется задать длину участка который будет прорисован и длину участка, который прорисован не будет, т.е. «пусто». Далее эта комбинация будет циклично использована для прорисовки всей линии.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+      
+      Path path;
+      Paint p1;
+      Paint p2;
+      Paint p3;
+      
+      public DrawView(Context context) {
+        super(context);
+        path = new Path();
+        path.rLineTo(100, 300);
+        path.rLineTo(100, -100);
+        path.rLineTo(100, 300);
+        
+        p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p1.setStyle(Paint.Style.STROKE);
+        p1.setStrokeWidth(7);
+        
+        p2 = new Paint(p1);
+        p2.setColor(Color.GREEN);
+        p2.setPathEffect(new DashPathEffect(new float[] { 30, 10}, 0));
+        
+        p3 = new Paint(p1);
+        p3.setColor(Color.BLUE);
+        p3.setPathEffect(new DashPathEffect(new float[] { 50, 10, 5, 10 }, 25));
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(100, 100);
+        canvas.drawPath(path, p1);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p2);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p3);
+        
+      }
+      
+    }</code></pre>
+<p>Для зеленой линии мы настраиваем длину выводимого участка = 30, длину пустоты = 10. Мы помещаем эти значение в массив и передаем в DashPathEffect-конструктор первым параметром. Вторым параметром идет отступ, его не используем.</p>
+<p>Для синей линии мы задаем чуть более сложную последовательность: 50 выводить, 10 пусто, 5, выводить, 10 пусто. Т.е. принцип наверно уже понятен. Система будет поочередно использовать значения из массива для определения длины рисуемого куска линии и длины следующей за ним пустоты. Отступ используем в 25.</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Зеленая линяя состоит из отрезков длиной 30 и пустоты длиной 10. А синяя из отрезка длиной 50, пустоты 10, отрезка 5, пустоты 10. У синей линии первый отрезок выглядит короче остальных больших. Это сработал отступ в 25. Если вы этот отступ повесите в цикл, то линия оживет и поедет на месте, что выглядит достаточно эффектно.</p>
+<h3>PathDashPathEffect</h3>
+<p><a href="http://developer.android.com/reference/android/graphics/PathDashPathEffect.html" target="_blank" rel="noopener noreferrer">PathDashPathEffect</a> позволяет сделать пунктирную линию, но в качестве пунктира можно использовать свой Path-объект.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+      
+      Path path;
+      Path pathStamp;
+      Paint p1;
+      Paint p2;
+      Paint p3;
+      Paint p4;
+      
+      public DrawView(Context context) {
+        super(context);
+        path = new Path();
+        path.addRect(-100, 0, 100, 500, Path.Direction.CW);
+        
+        pathStamp = new Path();
+        pathStamp.lineTo(-10, -10);
+        pathStamp.lineTo(10, 0);
+        pathStamp.lineTo(-10, 10);
+        pathStamp.close();
+        
+        p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p1.setStyle(Paint.Style.STROKE);
+        p1.setStrokeWidth(20);
+        
+        p2 = new Paint(p1);
+        p2.setColor(Color.GREEN);
+        p2.setPathEffect(new PathDashPathEffect(pathStamp, 20, 0, PathDashPathEffect.Style.MORPH));
+        
+        p3 = new Paint(p1);
+        p3.setColor(Color.BLUE);
+        p3.setPathEffect(new PathDashPathEffect(pathStamp, 20, 0, PathDashPathEffect.Style.ROTATE));
+        
+        p4 = new Paint(p1);
+        p4.setColor(Color.RED);
+        p4.setPathEffect(new PathDashPathEffect(pathStamp, 20, 10, PathDashPathEffect.Style.TRANSLATE));
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(120, 100);
+        canvas.drawPath(path, p1);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p2);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p3);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p4);
+      }
+      
+    }</code></pre>
+<p>Создаем объект path с прямоугольником и pathStamp в виде стрелки. Далее на кисти вешаем эффект PathDashPathEffect. Его конструктор на вход принимает:</p>
+<p>- path-объект, который будет использован в качестве пунктира</p>
+<p>- расстояние между пунктирами</p>
+<p>- отступ от начала</p>
+<p>- стиль эффекта</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Линии состоят из стрелок (объект pathStamp). Расстояние между ними = 20. По стилям документация не дает толковой инфы. По моим наблюдениям могу предположить следующее:</p>
+<p>PathDashPathEffect.Style.MORPH – срезает пунктир на углах (видно по зеленой линии)</p>
+<p>PathDashPathEffect.Style.ROTATE – корректно работает с углами (видно по синей линии)</p>
+<p>PathDashPathEffect.Style.TRANSLATE – не поворачивает pathStamp по направлению основной линии (видно по красной фигуре)</p>
+<p>Для красной линии я использовал небольшой отступ, это видно – стрелки идут не из самого угла. Опять же, повесив отступ в цикл вы получите ожившую линию.</p>
+<h3>SumPathEffect и ComposePathEffect</h3>
+<p>Позволяют нам комбинировать два эффекта, которые подаются им на вход.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/ComposePathEffect.html" target="_blank" rel="noopener noreferrer">ComposePathEffect</a> применит сначала один эффект, потом к получившемуся результату – второй и выведет результат. <a href="http://developer.android.com/reference/android/graphics/SumPathEffect.html" target="_blank" rel="noopener noreferrer">SumPathEffect</a> – применит к искомой фигуре один эффект, выведет результат, затем применит к искомой фигуре второй эффект и выведет результат.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+      
+      Path path;
+      Paint p1;
+      Paint p2;
+      Paint p3;
+      Paint p4;
+      Paint p5;
+      
+      public DrawView(Context context) {
+        super(context);
+        path = new Path();
+        path.addRect(-100, 0, 100, 500, Path.Direction.CW);
+      
+        PathEffect pe1 = new CornerPathEffect(100);
+        PathEffect pe2 = new DashPathEffect(new float[] { 20, 5}, 0);
+        PathEffect pe3 = new ComposePathEffect(pe2, pe1);
+        PathEffect pe4 = new SumPathEffect(pe1, pe2);
+        
+        p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p1.setStyle(Paint.Style.STROKE);
+        p1.setStrokeWidth(3);
+        
+        p2 = new Paint(p1);
+        p2.setColor(Color.GREEN);
+        p2.setPathEffect(pe1);
+        
+        p3 = new Paint(p1);
+        p3.setColor(Color.BLUE);
+        p3.setPathEffect(pe2);
+        
+        p4 = new Paint(p1);
+        p4.setColor(Color.RED);
+        p4.setPathEffect(pe3);
+        
+        p5 = new Paint(p1);
+        p5.setColor(Color.YELLOW);
+        p5.setPathEffect(pe4);
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(120, 100);
+        canvas.drawPath(path, p1);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p2);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p3);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p4);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p5);        
+      }
+      
+    }</code></pre>
+<p>Создаем 4 эффекта.</p>
+<p>pe1 – закругление</p>
+<p>pe2 – прерывистая линяя</p>
+<p>pe3 – комбинация, сначала будет применен pe1, затем к получившемуся результату - pe2</p>
+<p>pe4 – сумма линия будет нарисована с эффектом pe1 и с эффектом pe2</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Зеленый прямоугольник закруглен (pe1). Синий нарисован прерывистым (pe2). Красный сначала закруглен, затем сделан прерывистым (pe1, затем pe2). Желтый – просто вывод обоих эффектов отдельно (pe1 и pe2).</p>
+<p>В ComposePathEffect имеет значение порядок эффектов. Немного изменим предыдущий пример</p>
+<pre><code class="java">class DrawView extends View {
+      
+      Path path;
+      Paint p1;
+      Paint p2;
+      Paint p3;
+      Paint p4;
+      Paint p5;
+      
+      public DrawView(Context context) {
+        super(context);
+        path = new Path();
+        path.addRect(-100, 0, 100, 500, Path.Direction.CW);
+        
+        
+        PathEffect pe1 = new CornerPathEffect(100);
+        PathEffect pe2 = new DiscretePathEffect(15, 10);
+        PathEffect pe3 = new ComposePathEffect(pe1, pe2);
+        PathEffect pe4 = new ComposePathEffect(pe2, pe1);
+        
+        
+        p1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p1.setStyle(Paint.Style.STROKE);
+        p1.setStrokeWidth(7);
+        
+        p2 = new Paint(p1);
+        p2.setColor(Color.GREEN);
+        p2.setPathEffect(pe1);
+        
+        p3 = new Paint(p1);
+        p3.setColor(Color.BLUE);
+        p3.setPathEffect(pe2);
+        
+        p4 = new Paint(p1);
+        p4.setColor(Color.RED);
+        p4.setPathEffect(pe3);
+        
+        p5 = new Paint(p1);
+        p5.setColor(Color.YELLOW);
+        p5.setPathEffect(pe4);
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(120, 100);
+        canvas.drawPath(path, p1);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p2);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p3);
+
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p4);
+        
+        canvas.translate(250, 0);
+        canvas.drawPath(path, p5);        
+      }
+      
+    }</code></pre>
+<p>pe1 – закругление</p>
+<p>pe2 – излом</p>
+<p>pe3 – сначала применен pe2, затем pe1</p>
+<p>pe4 – сначала применен pe1, затем pe2</p>
+<p>Результат:</p>
+<p><img src="images/lesson151/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Красная фигура – это результат применения сначала излома, затем закругления. Т.е. закругление было применено уже к излому и он получился сглаженным.</p>
+<p>А желтая фигура – результат применения сначала закругления, затем излома. Т.е. излом был применен к уже закругленному прямоугольнику.</p>
+<p>Я везде использовал Path, но эти эффекты можно применять и при рисовании объектов канвы, например, Canvas.drawRect или Canvas.drawCircle</p>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

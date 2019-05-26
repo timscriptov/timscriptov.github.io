@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 81. Handler. Посылаем простое сообщение</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- посылаем простейшее сообщение для Handler</p>
+<p>Надеюсь, вы прониклись предыдущим уроком и осознали, какая полезная штука Handler. Мы там отправляли ему сообщение. Сегодня сделаем это еще раз, но уже без кучи лишнего кода, зависающих экранов и ошибок приложения. Этакий чистый пример, чтобы закрепить.</p>
+<p>Как мы помним, <b>Handler </b>позволяет <b>класть </b>в очередь сообщения и сам же умеет их <b>обрабатывать</b>. Фишка тут в том, что положить сообщение он может из <b>одного </b>потока, а прочесть из <b>другого</b>.</p>
+<p>Сообщение может содержать в себе атрибуты. Сегодня рассмотрим самый простой вариант, атрибут <b>what</b>.</p>
+<p>Напишем простое приложение-клиент. Оно, как-будто, будет подключаться к серверу, выполнять какую-то работу и отключаться. На экране мы будем наблюдать, как меняется статус подключения и как крутится ProgressBar при подключении.</p>
+<p>При сменах состояния подключения мы будем отправлять сообщение для Handler. А в атрибут what будем класть текущий статус. Handler при обработке сообщения прочтет из него what и выполнит какие-либо действия.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0811_ HandlerSimpleMessage <br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: HandlerSimpleMessage<br><b>Package name</b>: ru.startandroid.develop.p0811handlersimplemessage<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;HandlerSimpleMessage&lt;/string&gt;
+	&lt;string name="connect"&gt;Connect&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnConnect"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/connect"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tvStatus"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+	&lt;ProgressBar
+		android:id="@+id/pbConnect"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:indeterminate="true"
+		android:visibility="gone"&gt;
+	&lt;/ProgressBar&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка для старта подключения, TextView для вывода информации о статусе подключения и ProgressBar, работающий в процессе подключения.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0811handlersimplemessage;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final int STATUS_NONE = 0; // нет подключения
+  final int STATUS_CONNECTING = 1; // подключаемся
+  final int STATUS_CONNECTED = 2; // подключено
+
+  Handler h;
+
+  TextView tvStatus;
+  ProgressBar pbConnect;
+  Button btnConnect;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvStatus = (TextView) findViewById(R.id.tvStatus);
+    pbConnect = (ProgressBar) findViewById(R.id.pbConnect);
+    btnConnect = (Button) findViewById(R.id.btnConnect);
+
+    h = new Handler() {
+      public void handleMessage(android.os.Message msg) {
+        switch (msg.what) {
+        case STATUS_NONE:
+          btnConnect.setEnabled(true);
+          tvStatus.setText("Not connected");
+          break;
+        case STATUS_CONNECTING:
+          btnConnect.setEnabled(false);
+          pbConnect.setVisibility(View.VISIBLE);
+          tvStatus.setText("Connecting");
+          break;
+        case STATUS_CONNECTED:
+          pbConnect.setVisibility(View.GONE);
+          tvStatus.setText("Connected");
+          break;
+        }
+      };
+    };
+    h.sendEmptyMessage(STATUS_NONE);
+  }
+
+  public void onclick(View v) {
+    Thread t = new Thread(new Runnable() {
+      public void run() {
+        try {
+          // устанавливаем подключение
+          h.sendEmptyMessage(STATUS_CONNECTING);
+          TimeUnit.SECONDS.sleep(2);
+
+          // установлено
+          h.sendEmptyMessage(STATUS_CONNECTED);
+
+          // выполняется какая-то работа
+          TimeUnit.SECONDS.sleep(3);
+
+          // разрываем подключение
+          h.sendEmptyMessage(STATUS_NONE);
+
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    t.start();
+  }
+
+}</code></pre>
+<p><b>STATUS_NONE</b>, <b>STATUS_CONNECTING</b>, <b>STATUS_CONNECTED </b>– это константы статуса. Их будем передавать в сообщении, в атрибуте what. Разумеется, названия и значения этих констант произвольны и взяты из головы. Вы можете придумать и использовать свои.</p>
+<p>В <b>onCreate </b>мы создаем Handler и реализуем его метод handleMessage. Этот метод отвечает за обработку сообщений, которые предназначены для этого Handler. Соответственно на вход метода идет сообщение – Message. Мы читаем атрибут what и в зависимости от статуса подключения меняем экран:</p>
+<p>STATUS_NONE – нет подключения. Кнопка подключения активна, TextView отражает статус подключения.</p>
+<p>STATUS_CONNECTING – в процессе подключения. Кнопка подключения неактивна, показываем ProgressBar, TextView отражает статус подключения.</p>
+<p>STATUS_CONNECTED – подключено. Скрываем ProgressBar, TextView отражает статус подключения.</p>
+<p>В onCreate после создания Handler мы сразу отправляем ему сообщение со статусом STATUS_NONE. Для этого мы используем метод sendEmptyMessage. В этом методе создается сообщение, заполняется его атрибут what (значением, которое мы передаем в sendEmptyMessage), устанавливается Handler в качестве адресата и сообщение отправляется в очередь.</p>
+<p>В методе <b>onclick </b>мы создаем и запускаем новый поток. В нем мы, с помощью <b>sleep</b>, эмулируем процесс подключения к серверу, выполнение работы и отключение. И, по мере выполнения действий, отправляем сообщения со статусами для Handler. Т.е. получается, что после нажатия на кнопку <b>Connect </b>статус меняется на STATUS_CONNECTING, две секунды идет подключение, статус меняется на STATUS_CONNECTED, 3 секунды выполняются действия и статус меняется на STATUS_NONE. Давайте проверим.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_80_0.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Connect</b>.</p>
+<p>Подключение пошло. Появляется ProgressBar, меняется текст и неактивна кнопка Connect.</p>
+<p><img src="images/lesson_80_1.png" alt="" width="640" height="454"></p>
+<p>Проходит две секунды.</p>
+<p>Подключение установлено. ProgressBar исчезает и меняется текст.</p>
+<p><img src="images/lesson_80_2.png" alt="" width="640" height="454"></p>
+<p>Проходит еще 3 секунды.</p>
+<p>Подключение завершается. Кнопка Connect снова активна, а текст показывает, что мы не подключены.</p>
+<p><img src="images/lesson_80_3.png" alt="" width="640" height="454"></p>
+<p>Т.е. для простого обновления статуса из нового потока нам хватило атрибута what. Но кроме what сообщение может иметь еще несколько атрибутов. Рассмотрим их на следующем уроке.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 155. Рисование. PorterDuffColorFilter</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем PorterDuffColorFilter</p>
+<p>Вернемся к теме <a href="http://developer.android.com/reference/android/graphics/ColorFilter.html" target="_blank" rel="noopener noreferrer">ColorFilter</a>, рассмотренной нами в Уроке 153. Там мы использовали два фильтра <a href="http://developer.android.com/reference/android/graphics/ColorMatrixColorFilter.html" target="_blank" rel="noopener noreferrer">ColorMatrixColorFilter</a> и <a href="http://developer.android.com/reference/android/graphics/LightingColorFilter.html" target="_blank" rel="noopener noreferrer">LightingColorFilter</a>. Сейчас рассмотрим третий – <a href="http://developer.android.com/reference/android/graphics/PorterDuffColorFilter.html" target="_blank" rel="noopener noreferrer">PorterDuffColorFilter</a>. Если вы не читали Урок 154, то обязательно прочитайте, там я уже начал рассказывать про <a href="http://developer.android.com/reference/android/graphics/PorterDuff.Mode.html" target="_blank" rel="noopener noreferrer">PorterDuff-режимы</a>. Сейчас будет продолжение этой темы.</p>
+<p>Механизм PorterDuffColorFilter похож на <a href="http://developer.android.com/reference/android/graphics/PorterDuffXfermode.html" target="_blank" rel="noopener noreferrer">PorterDuffXfermode</a>. Только вместо двух картинок у нас будет картинка и цвет. При создании объекта PorterDuffColorFilter вы указываете цвет, и он будет играть роль SRC-картинки полностью залитой этим цветом.</p>
+<p>Посмотрим на примере.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1551_PorterDuffColorFilter<br/> <b>Build Target</b>: Android 4.4 <br/> <b>Application name</b>: PorterDuffColorFilter<br/> <b>Package name</b>: ru.startandroid.develop.p1551porterduffcolorfilter<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1551porterduffcolorfilter;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint[] paints;
+    Paint paintBorder;
+
+    Bitmap bitmap;
+
+    int size = 200;
+
+    PorterDuff.Mode mode = PorterDuff.Mode.SRC;
+    int[] colorSrc = new int[] { Color.WHITE, Color.LTGRAY, Color.GRAY,
+        Color.DKGRAY, Color.BLACK };
+
+    public DrawView(Context context) {
+      super(context);
+
+      // необходимо для корректной работы
+      if (android.os.Build.VERSION.SDK_INT &gt;= 11) {
+        setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+      }
+
+      // создание bitmap картинки необходимого размера
+      bitmap = BitmapFactory.decodeResource(getResources(),
+          R.drawable.ic_launcher);
+      bitmap = Bitmap.createScaledBitmap(bitmap, size, size, true);
+
+      // создание массива кистей paints
+      paints = new Paint[colorSrc.length];
+      for (int i = 0; i &lt; colorSrc.length; i++) {
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // для каждой кисти свой PorterDuffColorFilter 
+        // с цветом из массива colorSrc
+        paint.setColorFilter(new PorterDuffColorFilter(colorSrc[i],
+            mode));
+        paints[i] = paint;
+      }
+
+      // кисть для рамок
+      paintBorder = new Paint();
+      paintBorder.setStyle(Paint.Style.STROKE);
+      paintBorder.setStrokeWidth(3);
+      paintBorder.setColor(Color.BLACK);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+
+      canvas.translate(0, 200);
+      int delta = (canvas.getWidth() - size * paints.length)
+          / (paints.length + 1);
+
+      // рисование bitmap
+      for (int i = 0; i &lt; paints.length; i++) {
+        canvas.translate(delta, 0);
+        // используем кисти из массива paints
+        canvas.drawBitmap(bitmap, 0, 0, paints[i]);
+        canvas.drawRect(0, 0, size, size, paintBorder);
+        canvas.translate(size, 0);
+      }
+    }
+  }
+}</code></pre>
+<p>Переменная <b>mode</b> будет содержать текущий PorterDuff-режим. Эту переменную будем менять по ходу урока.</p>
+<p>Массив <b>colorSrc</b> содержит 5 цветов: градация от белого до черного. Наш пример будет выводить сразу 5 результатов наложения картинки на цвет. Это придаст результату больше наглядности.</p>
+<p>В конструкторе <b>DrawView</b> создаем картинку со стандартной Android-иконкой. Затем для каждого цвета из массива colorSrc создаем отдельную кисть со своим PorterDuffColorFilter.</p>
+<p>В <b>onDraw</b> выводим bitmap используя созданный массив кистей.</p>
+<p>Результат:</p>
+<p><img style="border: 1px solid black;" src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2256758593" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Напомню, что цвет указанный при создании PorterDuffColorFilter – это SRC-картинка, а bitmap – DST-картинка.</p>
+<p>Т.к. мы указали режим PorterDuff.Mode.SRC, то мы видим только SRC-картинку т.е. цвет.</p>
+<p>Поменяем значение mode на PorterDuff.Mode.DST.</p>
+<p><img src="images/lesson155/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Теперь мы во всех вариантах видим только DST-картинку, т.е. bitmap.</p>
+<p>Эти простые PorterDuff-режимы мы уже рассматривали на прошлом уроке. Теперь посмотрим на более сложные.</p>
+<p>MULTIPLY</p>
+<p>Перемножение SRC и DST цветов. Умножение цвета на белый (1,1,1) не меняет цвет, умножение на черный (0,0,0) – делает его черным.</p>
+<p><img src="images/lesson155/lesson2.png" alt="" width="640" height="385"/></p>
+<p>DARKEN</p>
+<p>При расчете пикселов результата выбирается наиболее темный из двух исходных: SRC и DST.</p>
+<p><img src="images/lesson155/lesson3.png" alt="" width="640" height="385"/></p>
+<p>LIGHTEN</p>
+<p>При расчете пикселов результата выбирается наиболее светлый из двух исходных: SRC и DST.</p>
+<p><img src="images/lesson155/lesson4.png" alt="" width="640" height="385"/></p>
+<p>SCREEN</p>
+<p>Похож на MULTIPLY, только наоборот. При скрещении цвета с белым получается белый, при скрещении с черным – цвет не меняется.</p>
+<p><img src="images/lesson155/lesson5.png" alt="" width="640" height="385"/></p>
+<p>OVERLAY</p>
+<p>Этот режим, к сожалению, не могу прокомментировать. Похоже на изменение контрастности картинки.</p>
+<p><img src="images/lesson155/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Рекомендую поэксперементировать с цветами и использовать не белый/серый/черный, а оттенки какого-либо другого цвета. И посмотреть результат при разных режимах.</p>
+<p>Например, красный цвет:</p>
+<pre><code class="java">    int[] colorSrc = new int[] { Color.rgb(50, 0, 0), Color.rgb(100, 0, 0),
+        Color.rgb(150, 0, 0), Color.rgb(200, 0, 0),
+        Color.rgb(250, 0, 0) };</code></pre>
+<p>c режимом MULTIPLY будет выглядеть вот так:</p>
+<p><img src="images/lesson155/lesson7.png" alt="" width="640" height="385"/></p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

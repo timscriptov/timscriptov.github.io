@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 179. ConstraintLayout: chain, weight, barrier, group, circular</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>Продолжаем рассматривать возможности ConstraintLayout.</p>
+<h2><br/>Chain</h2>
+<p>Chain можно перевести, как цепочка. Цепочка позволит вам равномерно распределить несколько View в имеющемся свободном пространстве.</p>
+<p>Чтобы создать цепочку, необходимо выделить View и центрировать их по горизонтали или вертикали.</p>
+<p><img src="images/lesson179/lesson1.gif" alt="" width="640" height="454" border="0"></p>
+<p>Цепочка может быть в одном из трех режимов.</p>
+<p><b>spread</b></p>
+<p><img src="images/lesson179/lesson2.webp" alt="" width="640" height="454" border="0"></p>
+<p>Свободное пространство равномерно распределяется между View и границами родителя.</p>
+<p><b>spread_inside</b></p>
+<p><img src="images/lesson179/lesson3.webp" alt="" width="640" height="454" border="0"></p>
+<p>Свободное пространство равномерно распределяется только между View. Крайние View прижимаются к границам родителя.</p>
+<p><b>packed</b></p>
+<p><img src="images/lesson179/lesson4.webp" alt="" width="640" height="454" border="0"></p>
+<p>Свободное пространство равномерно распределяется между крайними View и границами родителя. Вы можете использовать margin, чтобы сделать отступы между View.</p>
+<p>Режимы цепочки переключаются нажатием на значок цепи.</p>
+<p><img src="images/lesson179/lesson5.gif" alt="" width="640" height="454" border="0"></p>
+<p>В режиме packed можно использовать скролл для настройки положения всех View относительно границ родителя.</p>
+<p><img src="images/lesson179/lesson6.gif" alt="" width="640" height="454" border="0"></p>
+<p>В качестве объектов для привязки можно использовать не только границы родителя, но и другие объекты.</p>
+<p><img src="images/lesson179/lesson7.gif" alt="" width="640" height="454" border="0"></p>
+<h2>Вес</h2>
+<p>Цепочка позволяет нам указывать для View значение веса - weight. Это тот же вес, что мы обычно используем в LinearLayout.</p>
+<p>Для работы с весами нам понадобятся weight атрибуты. По умолчанию их нет в основном списке Properties.</p>
+<p><img src="images/lesson179/lesson8.webp" alt="" width="640" height="454" border="0"></p>
+<p>Чтобы увидеть все атрибуты, необходимо нажать на значок с двумя стрелками. Но каждый раз бегать туда неудобно. Есть другое решение. Обратите внимание, внизу в Properties есть секция Favorite Attributes. Мы добавим необходимые нам атрибуты туда.</p>
+<p>Для этого воспользуемся поиском по слову weight и добавим найденные атрибуты в Favorite, нажав на звездочку.</p>
+<p><img src="images/lesson179/lesson9.gif" alt="" width="640" height="454" border="0"></p>
+<p>Теперь атрибуты весов появились в основном списке Properties.</p>
+<p>Как и в LinearLayout, чтобы использовать вес, надо поставить размер View в 0dp. Давайте поставим левому TextView вес = 2, а правому = 1. А центральный TextView оставим wrap_content.</p>
+<p><img src="images/lesson179/lesson10.gif" alt="" width="640" height="454" border="0"></p>
+<p>Теперь первый и третий TextView делят между собой свободное пространство в соотношении 2:1.</p>
+<h2>Barriers</h2>
+<p>Барьеры были презентованы на Google IO 2017. На сегодняшний день (12.07.17) они еще недоступны в релизной версии ConstraintLayout, но есть в beta версии.</p>
+<p>Чтобы использовать бету, необходимо добавить google maven репозиторий и в dependencies указать бета версию для constraint-layout</p>
+<pre><code class="groovy">repositories {
+    maven {
+        url 'https://maven.google.com'
+    }
+}
+dependencies {
+    ...
+    compile 'com.android.support.constraint:constraint-layout:1.1.0-beta3'
+}</code></pre>
+<p>Предположим, что у нас есть такой экран. <br/><img src="images/lesson179/lesson11.webp" alt="" width="640" height="454" border="0"></p>
+<p>Два текста и картинка.</p>
+<p>Картинка должна быть справа от обоих текстов, независимо от их размера. Т.е. если первый текст занимает больше места в ширину, то картинка должна быть правее первого текста. А если второй текст шире - то правее второго текста.</p>
+<p>Это достаточно распространенный случай. Обычно это решается тем, что мы добавляем оба текста в LinearLayout (или RelativeLayout), ставим ему ширину wrap_content и располагаем картинку правее этого LinearLayout. В этом случае LinearLayout будет равен ширине самого широкого текста и картинка будет расположена справа от обоих текстов. Но учебники по UI оптимизации твердят нам, чтобы мы использовали как можно меньшее количество разных ViewGroup на экране, т.к. это не лучшим образом сказывается на производительности. Ок, прислушаемся к ним.</p>
+<p>Чтобы не добавлять лишний LinearLayout, мы можем использовать барьер. Барьер можно настроить так, чтобы он располагался правее обоих TextView, независимо от того, какой из них шире. После этого останется только привязать картинку к этому барьеру.</p>
+<p><br/>Добавим и настроим барьер</p>
+<p><img src="images/lesson179/lesson12.gif" alt="" width="640" height="454" border="0"></p>
+<p>Мы выполняем 4 действия:<br/>1) Добавляем вертикальный барьер<br/>2) В Component Tree перетаскиваем оба TextView в барьер. Тем самым мы сообщаем барьеру, на какие View ему ориентироваться.<br/>3) В Properties ставим для барьера barrierDirection в режим end (или right). Это значит, что барьер будет располагаться справа от всех View, которые были добавлены в пункте 2.<br/>4) Привязываем картинку к барьеру.</p>
+<p>Теперь, при изменении ширины TextView, будет смещаться барьер, а за ним и картинка.</p>
+<p><img src="images/lesson179/lesson13.gif" alt="" width="640" height="454" border="0"></p>
+<h2>Group</h2>
+<p>Группы были презентованы на Google IO 2017 и пока не доступны официально. Чтобы поработать с ними, нужны те же действия, что и для барьеров.</p>
+<p>Группа позволяет создать набор View, над которыми можно будет выполнять групповые операции.</p>
+<p>Создадим группу</p>
+<p><img src="images/lesson179/lesson14.gif" alt="" width="640" height="454" border="0"></p>
+<p>Мы добавляем группу на экран, а затем перетаскиванием добавляем в нее все TextView. Где будет находится группа на экране - неважно. Главное - какие View в нее были добавлены.</p>
+<p>В layout-файле группа будет выглядеть так</p>
+<pre><code class="xml">    &lt;android.support.constraint.Group
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/group"
+        app:constraint_referenced_ids="textView2,textView3,textView" /&gt;</code></pre>
+<p>Все добавленные View содержатся в атрибуте constraint_referenced_ids.</p>
+<p>Теперь мы можем в коде работать с этой группой, как с обычным View.</p>
+<pre><code class="java">Group group = (Group) findViewById(R.id.group);
+group.setVisibility(View.GONE);
+</code></pre>
+<p>Все входящие в эту группу View станут невидимыми.</p>
+<p>Документации пока маловато по этой теме, и не совсем понятны возможности. Т.е. не ясно, что группа делегирует своим View, а что нет. Например, видимость работает, а вот обработчик кликов - нет. Будем ждать официального релиза.</p>
+<h2>Circular </h2>
+<p>С помощью circular position мы можем настроить два View так, чтобы одно находилось на определенном расстоянии и под определенным углом от другого</p>
+<p><img src="images/lesson179/lesson15.webp" alt="" width="640" height="454" border="0"></p>
+<p>На картинке View B находится под углом и на определенном расстоянии от View A</p>
+<p>Чтобы получить такой результат, нам надо настроить три атрибута для View B</p>
+<p>- layout_constraintCircle - указываем id view, которое будет центром окружности, т.е. View A</p>
+<p>- layout_constraintCircleRadius - расстояние от центра окружности до View B</p>
+<p>- layout_constraintCircleAngle - угол (в градусах, от 0 до 360)</p>
+<p>В следующем уроке рассмотрим ConstraintSet</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

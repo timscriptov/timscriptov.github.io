@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 70. onSaveInstanceState. Сохранение данных Activity при повороте экрана</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- сохраняем данные при повороте экрана</p>
+<p> </p>
+<p>Теорию по этому вопросу можно почитать <a href="http://developer.android.com/guide/topics/fundamentals/activities.html#SavingActivityState" target="_blank">тут</a>. Я здесь вкратце дам вольный перевод.</p>
+<p>Когда работа Activity приостанавливается(<b>onPause </b>или <b>onStop</b>), она остается в памяти и хранит все свои объекты и их значения. И при возврате в Activity, все остается, как было. Но если приостановленное Activity уничтожается, например, при нехватке памяти, то соответственно удаляются и все его объекты. И если к нему снова вернуться, то системе надо заново его создавать и восстанавливать данные, которые были утеряны при уничтожении. Для этих целей Activity предоставляет нам для реализации пару методов: первый позволяет сохранить данные – <a href="http://developer.android.com/reference/android/app/Activity.html#onSaveInstanceState(android.os.Bundle)" target="_blank">onSaveInstanceState</a>, а второй – восстановить - <a href="http://developer.android.com/reference/android/app/Activity.html#onRestoreInstanceState(android.os.Bundle)" target="_blank">onRestoreInstanceState</a>.</p>
+<p>Эти методы используются в случаях, когда Activity уничтожается, но есть вероятность, что оно еще будет востребовано в своем текущем состоянии. Т.е. при нехватке памяти или при повороте экрана. Если же вы просто нажали кнопку Back (назад) и тем самым явно сами закрыли Activity, то эти методы не будут выполнены.</p>
+<p>Но даже если не реализовать эти методы, у них есть реализация по умолчанию, которая сохранит и восстановит данные в экранных компонентах. Это выполняется для всех экранных компонентов, у которых есть ID.</p>
+<p> </p>
+<p>Создадим простое приложение, чтобы протестить все эти тезисы. Посмотрим, в какой момент вызываются эти методы, попробуем в них что-нить сохранить. Также убедимся, что необходимо вызывать соответствующие методы супер-класса, чтобы сохранялись данные экранных компонентов.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0701_SaveInstanceState<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SaveInstanceState<br><b>Package name</b>: ru.startandroid.develop.p0701saveinstancestate<br><b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;SaveInstanceState&lt;/string&gt;
+    &lt;string name="count"&gt;Count&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p> </p>
+<p>В <b>main.xml</b> нарисуем кнопку и пару полей для ввода текста:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onclick"
+        android:text="@string/count"&gt;
+    &lt;/Button&gt;
+    &lt;EditText
+        android:id="@+id/editText1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"&gt;
+        &lt;requestFocus&gt;
+        &lt;/requestFocus&gt;
+    &lt;/EditText&gt;
+    &lt;EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"&gt;
+    &lt;/EditText&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Обратите внимание, что второй EditText без ID.</p>
+<p> </p>
+<p>В <b>MainActivity</b> будем вызывать все методы Lifecycle и два вышеописанных:</p>
+<pre><code class="java">package ru.startandroid.develop.p0701saveinstancestate;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  int cnt = 0;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d(LOG_TAG, "onCreate");
+  }
+
+  protected void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "onDestroy");
+  }
+
+  protected void onPause() {
+    super.onPause();
+    Log.d(LOG_TAG, "onPause");
+  }
+
+  protected void onRestart() {
+    super.onRestart();
+    Log.d(LOG_TAG, "onRestart");
+  }
+
+  protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    Log.d(LOG_TAG, "onRestoreInstanceState");
+  }
+
+  protected void onResume() {
+    super.onResume();
+    Log.d(LOG_TAG, "onResume ");
+  }
+
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    Log.d(LOG_TAG, "onSaveInstanceState");
+  }
+
+  protected void onStart() {
+    super.onStart();
+    Log.d(LOG_TAG, "onStart");
+  }
+
+  protected void onStop() {
+    super.onStop();
+    Log.d(LOG_TAG, "onStop");
+  }
+
+  public void onclick(View v) {
+  }
+}</code></pre>
+<p>В каждом из них пишем лог, чтобы отследить последовательность вызовов. Метод <b>onclick </b>пока не реализуем.</p>
+<p>Все сохраним и запустим. Введем в текстовые поля какие-нить данные:</p>
+<p><img src="images/lesson_69_0.png" alt="" width="640" height="449"></p>
+<p>и повернем экран CTRL+F12.</p>
+<p>В итоге видим:</p>
+<p><img src="images/lesson_69_1.png" alt="" width="640" height="620"></p>
+<p>Данные в первом поле сохранились при повороте, а во втором пропали. Это произошло потому, что дефолтовые методы сохранения/восстановления умеют работать только с компонентами, которые имеют ID. Посмотрим лог.</p>
+<p><em>onCreate</em><em><br></em><em>onStart</em><em><br></em><em>onResume</em></p>
+<p>Эти три метода выполнились при запуске.</p>
+<p>Затем мы повернули экран:</p>
+<p><em>onSaveInstanceState<br> onPause<br> onStop<br> onDestroy<br> onCreate<br> onStart<br> onRestoreInstanceState<br> onResume</em></p>
+<p>Первым делом вызывается <b><i>onSaveInstanceState</i></b>, здесь нам надо будет реализовывать сохранение своих данных. Далее идет уничтожение Activity (<i><b>onPause</b></i>, <i><b>onStop</b></i>, <i><b>onDestroy</b></i>) и создание нового <i><b>onCreate</b></i>, <i><b>onStart</b></i>. И перед <i><b>onResume</b></i> вызывается метод восстановления данных – <i><b>onRestoreInstanceState</b></i>.</p>
+<p>Последовательность мы рассмотрели - сохраняются данные перед onPause, а восстанавливаются перед onResume. Попробуем теперь что-нибудь сохранить и восстановить. У нас на экране есть кнопка, будем по ее нажатию увеличивать счетчик нажатий на единицу и выводить всплывающее сообщение с итоговым кол-вом нажатий. Переменная cnt у нас уже есть. Реализуем <b>onclick</b>:</p>
+<pre><code class="java">  public void onclick(View v) {
+    Toast.makeText(this, "Count = " + ++cnt, Toast.LENGTH_SHORT).show();
+  }</code></pre>
+<p> </p>
+<p>Повернем эмулятор обратно в вертикальную ориентацию. Запустим приложение, и жмем на кнопку <b>Count</b>. Видим сообщение с кол-вом нажатий. Нажмем еще несколько раз, получим, например 5.</p>
+<p><img src="images/lesson_69_2.png" alt="" width="640" height="449"></p>
+<p>Теперь повернем экран и снова нажмем кнопку.</p>
+<p>Мы видим, что счетчик сбросился.</p>
+<p><img src="images/lesson_69_3.png" alt="" width="640" height="620"></p>
+<p>Это произошло потому, что текущий объект <b>Activity </b>был уничтожен и потерял значения всех переменных, в том числе и <b>cnt</b>. При создании нового Activity значение cnt равно 0 и отсчет пошел заново. Давайте это пофиксим. Реализуем метод сохранения <b>onSaveInstanceState</b>: </p>
+<pre><code class="java">  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putInt("count", cnt);
+    Log.d(LOG_TAG, "onSaveInstanceState");
+  }</code></pre>
+<p>В объект <b>outState</b> мы пишем значение переменной cnt. Механизм аналогичен помещению данных в Intent.</p>
+<p> </p>
+<p>Метод восстановления <b>onRestoreInstanceState</b>:</p>
+<pre><code class="java">  protected void onRestoreInstanceState(Bundle savedInstanceState) {
+    super.onRestoreInstanceState(savedInstanceState);
+    cnt = savedInstanceState.getInt("count");
+    Log.d(LOG_TAG, "onRestoreInstanceState");
+  }</code></pre>
+<p>Из <b>savedInstanceState</b> вытаскиваем значение и помещаем в переменную <b>cnt</b>. Теперь при уничтожении и воссоздании Activity переменная cnt сохранит свое значение, и наш счетчик продолжит работать.</p>
+<p>Проверим. Вернем AVD в вертикальную ориентацию. Все сохраним, запустим приложение. Понажимаем на кнопку, немного накрутим счетчик</p>
+<p><img src="images/lesson_69_4.png" alt="" width="640" height="449"></p>
+<p>и поворачиваем экран.</p>
+<p>Жмем снова кнопку</p>
+<p><img src="images/lesson_69_5.png" alt="" width="640" height="620"></p>
+<p>счетчик не сбросился, а продолжил увеличиваться с последней позиции.</p>
+<p> </p>
+<p>Итак, методы <b>onSaveInstanceState </b>и <b>onRestoreInstanceState </b>по дефолту сохраняют данные в экранных компонентах. Если мы реализуем их самостоятельно, то вызываем методы супер-класса и пишем свой код для своих переменных. Ради интереса, можете попробовать убрать вызовы методов суперкласса из onSaveInstanceState и onRestoreInstanceState. Данные в текстовом поле перестанут сохраняться при повороте экрана.</p>
+<p>Кроме метода onRestoreInstanceState, доступ к сохраненным данным также можно получить в методе onCreate. На вход ему подается тот же самый Bundle. Если восстанавливать ничего не нужно, он будет = null.</p>
+<p> </p>
+<p>Есть еще один полезный механизм сохранения данных. Android дает нам возможность сохранить ссылку на какой-либо объект и вернуть ее в новый созданный Activity. Для этого существуют методы:</p>
+<p><a href="http://developer.android.com/reference/android/app/Activity.html#onRetainNonConfigurationInstance()" target="_blank">onRetainNonConfigurationInstance</a> – в нем мы сохраняем ссылку, передавая ее на выход (return) метода</p>
+<p><a href="http://developer.android.com/reference/android/app/Activity.html#getLastNonConfigurationInstance()" target="_blank">getLastNonConfigurationInstance</a> – этот метод ссылку нам возвращает</p>
+<p> </p>
+<p>Т.е., например, у нас есть какой то объект myObj (класс MyObject) и нам надо сохранить ссылку на него при повороте экрана.</p>
+<p>Мы реализуем в Activity метод <b>onRetainNonConfigurationInstance</b>:</p>
+<pre><code class="java">  public Object onRetainNonConfigurationInstance() {
+    return myObj;
+  }</code></pre>
+<p>Этот метод будет вызван перед уничтожением Activity. От нас требуется дать на выход этому методу наш объект, который надо сохранить.</p>
+<p> </p>
+<p>А, при создании нового Activity, в onCreate (например) мы используем метод <b>getLastNonConfigurationInstance</b>:</p>
+<pre><code class="java">myObj = (MyObject) getLastNonConfigurationInstance();</code></pre>
+<p>Мы получили обратно объект класса Object и привели его к нашему классу MyObject.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

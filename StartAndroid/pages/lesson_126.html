@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+	  
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	  
+	<title>Урок 126. Медиа. MediaPlayer – аудио/видео плеер, основные возможности</title>
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- используем MediaPlayer</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html" target="_blank" rel="noopener noreferrer">MediaPlayer</a> – класс, который позволит вам проигрывать аудио/видео файлы с возможностью сделать паузу и перемотать в нужную позицию. MediaPlayer умеет работать с различными источниками, это может быть: путь к файлу (на SD или в инете), адрес потока, Uri или файл из папки res/raw.</p>
+<p>Напишем небольшое приложение аудио-плеер и используем в нем все эти возможности.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1261_MediaPlayer<br/> <b>Build Target</b>: Android 4.0<br/> <b>Application name</b>: MediaPlayer<br/> <b>Package name</b>: ru.startandroid.develop.p1261mediaplayer<br/> <b>Create Activity</b>: MainActivity</p>
+<p>Добавляем строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="http"&gt;HTTP&lt;/string&gt;
+&lt;string name="stream"&gt;Stream&lt;/string&gt;
+&lt;string name="sd"&gt;SD&lt;/string&gt;
+&lt;string name="uri"&gt;Uri&lt;/string&gt;
+&lt;string name="raw"&gt;Raw&lt;/string&gt;
+&lt;string name="pause"&gt;Pause&lt;/string&gt;
+&lt;string name="resume"&gt;Resume&lt;/string&gt;
+&lt;string name="stop"&gt;Stop&lt;/string&gt;
+&lt;string name="loop"&gt;Loop&lt;/string&gt;
+&lt;string name="backward"&gt;Back&lt;/string&gt;
+&lt;string name="forward"&gt;Forw&lt;/string&gt;
+&lt;string name="info"&gt;Info&lt;/string&gt;</code></pre>
+<p>layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:tools="http://schemas.android.com/tools"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="5dp"
+	tools:context=".MainActivity"&gt;
+	&lt;LinearLayout
+		android:id="@+id/linearLayout1"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentRight="true"
+		android:layout_alignParentTop="true"
+		android:layout_marginTop="10dp"&gt;
+		&lt;Button
+			android:id="@+id/btnStartHttp"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClickStart"
+			android:text="@string/http"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnStartStream"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClickStart"
+			android:text="@string/stream"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnStartSD"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClickStart"
+			android:text="@string/sd"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnStartUri"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClickStart"
+			android:text="@string/uri"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnStartRaw"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClickStart"
+			android:text="@string/raw"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+	&lt;LinearLayout
+		android:id="@+id/linearLayout2"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentRight="true"
+		android:layout_below="@+id/linearLayout1"
+		android:layout_marginTop="30dp"&gt;
+		&lt;Button
+			android:id="@+id/btnPause"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/pause"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnResume"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/resume"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnStop"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/stop"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;CheckBox
+			android:id="@+id/chbLoop"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/loop"&gt;
+		&lt;/CheckBox&gt;
+	&lt;/LinearLayout&gt;
+	&lt;LinearLayout
+		android:id="@+id/linearLayout3"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentRight="true"
+		android:layout_below="@+id/linearLayout2"
+		android:layout_marginTop="10dp"&gt;
+		&lt;Button
+			android:id="@+id/btnBackward"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/backward"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnForward"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/forward"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnInfo"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:onClick="onClick"
+			android:text="@string/info"
+			android:textSize="12sp"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Так это выглядит на экране</p>
+<p><img src="images/xl0126_010.jpg.pagespeed.ic.pipaoav5ms.jpg" alt=""/></p>
+<p>Кнопки верхнего ряда запускают проигрывание треков из различных источников. Кнопки среднего ряда – это пауза, возобновление, стоп и чекбокс повторения трека. А в нижнем ряду кнопки перемотки назад/вперед и вывод в лог текущей информации.</p>
+<p>Создайте папку <b>res/raw</b> и положите в нее какой-нить звуковой файл с именем <b>explosion.mp3</b>. Например, его можно скачать здесь - <a href="http://dl.dropboxusercontent.com/u/6197740/explosion.mp3" target="_blank" rel="noopener noreferrer">http://dl.dropboxusercontent.com/u/6197740/explosion.mp3</a>.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1261mediaplayer;
+
+import java.io.IOException;
+
+import android.app.Activity;
+import android.content.ContentUris;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+
+public class MainActivity extends Activity implements OnPreparedListener,
+    OnCompletionListener {
+
+  final String LOG_TAG = "myLogs";
+
+  final String DATA_HTTP = "http://dl.dropboxusercontent.com/u/6197740/explosion.mp3";
+  final String DATA_STREAM = "http://online.radiorecord.ru:8101/rr_128";
+  final String DATA_SD = Environment
+      .getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+      + "/music.mp3";
+  final Uri DATA_URI = ContentUris
+      .withAppendedId(
+          android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+          13359);
+
+  MediaPlayer mediaPlayer;
+  AudioManager am;
+  CheckBox chbLoop;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    am = (AudioManager) getSystemService(AUDIO_SERVICE);
+    chbLoop = (CheckBox) findViewById(R.id.chbLoop);
+    chbLoop.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView,
+          boolean isChecked) {
+        if (mediaPlayer != null)
+          mediaPlayer.setLooping(isChecked);
+      }
+    });
+  }
+
+  public void onClickStart(View view) {
+    releaseMP();
+
+    try {
+      switch (view.getId()) {
+      case R.id.btnStartHttp:
+        Log.d(LOG_TAG, "start HTTP");
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(DATA_HTTP);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        Log.d(LOG_TAG, "prepareAsync");
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.prepareAsync();
+        break;
+      case R.id.btnStartStream:
+        Log.d(LOG_TAG, "start Stream");
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(DATA_STREAM);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        Log.d(LOG_TAG, "prepareAsync");
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.prepareAsync();
+        break;
+      case R.id.btnStartSD:
+        Log.d(LOG_TAG, "start SD");
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(DATA_SD);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.prepare();
+        mediaPlayer.start();
+        break;
+      case R.id.btnStartUri:
+        Log.d(LOG_TAG, "start Uri");
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(this, DATA_URI);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.prepare();
+        mediaPlayer.start();
+        break;
+      case R.id.btnStartRaw:
+        Log.d(LOG_TAG, "start Raw");
+        mediaPlayer = MediaPlayer.create(this, R.raw.explosion);
+        mediaPlayer.start();
+        break;
+
+      }
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    if (mediaPlayer == null)
+      return;
+
+    mediaPlayer.setLooping(chbLoop.isChecked());
+    mediaPlayer.setOnCompletionListener(this);
+  }
+
+  private void releaseMP() {
+    if (mediaPlayer != null) {
+      try {
+        mediaPlayer.release();
+        mediaPlayer = null;
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public void onClick(View view) {
+    if (mediaPlayer == null)
+      return;
+    switch (view.getId()) {
+    case R.id.btnPause:
+      if (mediaPlayer.isPlaying())
+        mediaPlayer.pause();
+      break;
+    case R.id.btnResume:
+      if (!mediaPlayer.isPlaying())
+        mediaPlayer.start();
+      break;
+    case R.id.btnStop:
+      mediaPlayer.stop();
+      break;
+    case R.id.btnBackward:
+      mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() - 3000);
+      break;
+    case R.id.btnForward:
+      mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() + 3000);
+      break;
+    case R.id.btnInfo:
+      Log.d(LOG_TAG, "Playing " + mediaPlayer.isPlaying());
+      Log.d(LOG_TAG, "Time " + mediaPlayer.getCurrentPosition() + " / "
+          + mediaPlayer.getDuration());
+      Log.d(LOG_TAG, "Looping " + mediaPlayer.isLooping());
+      Log.d(LOG_TAG,
+          "Volume " + am.getStreamVolume(AudioManager.STREAM_MUSIC));
+      break;
+
+    }
+  }
+
+  @Override
+  public void onPrepared(MediaPlayer mp) {
+    Log.d(LOG_TAG, "onPrepared");
+    mp.start();
+  }
+
+  @Override
+  public void onCompletion(MediaPlayer mp) {
+    Log.d(LOG_TAG, "onCompletion");
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    releaseMP();
+  }
+}</code></pre>
+<p>Разбираемся. Сначала создаем константы-пути, которые будет использовать проигрыватель. Это файл в инете (DATA_HTTP), поток в инете (DATA_STREAM), файл на флэшке (DATA_SD) и Uri на мелодию из системы (DATA_URI). Для SD и Uri укажите ваши значения, чтобы такие файлы существовали. (<i>По получению Uri в конце урока есть вспомогательный код</i>)</p>
+<p>В <b>onCreate </b>получаем <a href="http://developer.android.com/reference/android/media/AudioManager.html" target="_blank" rel="noopener noreferrer">AudioManager</a>, находим на экране чекбокс и настраиваем так, чтобы он включал/выключал режим повтора для плеера.</p>
+<p><b>onClickStart </b>– метод для обработки нажатий на кнопки верхнего ряда. Сначала мы освобождаем ресурсы текущего проигрывателя. Затем в зависимости от нажатой кнопки стартуем проигрывание. Какие методы для этого используются?</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setDataSource(java.lang.String)" target="_blank" rel="noopener noreferrer">setDataSource</a> – задает источник данных для проигрывания</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setAudioStreamType(int)" target="_blank" rel="noopener noreferrer">setAudioStreamType</a> – задает аудио-поток, который будет использован для проигрывания. Их существует несколько: <a href="http://developer.android.com/reference/android/media/AudioManager.html#STREAM_MUSIC" target="_blank" rel="noopener noreferrer">STREAM_MUSIC</a>, <a href="http://developer.android.com/reference/android/media/AudioManager.html#STREAM_NOTIFICATION" target="_blank" rel="noopener noreferrer">STREAM_NOTIFICATION</a> и п. Подробнее их можно посмотреть в доках по AudioManager. Предполагаю, что созданы они для того, чтобы можно было задавать разные уровни громкости, например, играм, звонкам и уведомлениям. Этот метод можно и пропустить, если вам не надо явно указывать какой-то поток. Насколько я понял, по умолчанию используется STREAM_MUSIC.</p>
+<p>Далее используется метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#prepare()" target="_blank" rel="noopener noreferrer">prepare</a> или <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#prepareAsync()" target="_blank" rel="noopener noreferrer">prepareAsync</a> (в паре с <a href="http://developer.android.com/reference/android/media/MediaPlayer.OnPreparedListener.html" target="_blank" rel="noopener noreferrer">OnPreparedListener</a>). Эти методы подготавливают плеер к проигрыванию. И, как понятно из названия, prepareAsync делает это асинхронно, и, когда все сделает, сообщит об этом слушателю из метода <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setOnPreparedListener(android.media.MediaPlayer.OnPreparedListener)" target="_blank" rel="noopener noreferrer">setOnPreparedListener</a>. А метод prepare работает синхронно. Соотвественно, если хотим прослушать файл из инета, то используем prepareAsync, иначе наше приложение повесится, т.к. заблокируется основной поток, который обслуживает UI.</p>
+<p>Ну и метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#start()" target="_blank" rel="noopener noreferrer">start</a> запускает проигрывание.</p>
+<p>В случае с raw-файлом мы используем метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#create(android.content.Context, int)" target="_blank" rel="noopener noreferrer">create</a>. В нем уже будет выполнен метод prepare и нам остается только выполнить start.</p>
+<p>Далее мы для плеера включаем/выключаем повтор (<a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setLooping(boolean)" target="_blank" rel="noopener noreferrer">setLooping</a>) в зависимости от текущего значения чекбокса. И вешаем слушателя (<a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setOnCompletionListener(android.media.MediaPlayer.OnCompletionListener)" target="_blank" rel="noopener noreferrer">setOnCompletionListener</a>), который получит уведомление, когда проигрывание закончится.</p>
+<p>В методе <b>releaseMP </b>мы выполняем метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#release()" target="_blank" rel="noopener noreferrer">release</a>. Он освобождает используемые проигрывателем ресурсы, его рекомендуется вызывать когда вы закончили работу с плеером. Более того, документация рекомендует вызывать этот метод и при onPause/onStop, если нет острой необходимости держать объект.</p>
+<p>В методе <b>onClick </b>мы обрабатываем нажатия на кнопки управления проигрывателем. Какие здесь используются методы?</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#pause()" target="_blank" rel="noopener noreferrer">pause</a> – приостанавливает проигрывание</p>
+<p>start – возобновляет проигрывание</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#stop()" target="_blank" rel="noopener noreferrer">stop</a> – останавливает проигрывание</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#seekTo(int)" target="_blank" rel="noopener noreferrer">seekTo</a> – переход к определенной позиции трека (в милисекундах)</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#getCurrentPosition()" target="_blank" rel="noopener noreferrer">getCurrentPosition</a> – получить текущую позицию (в милисекундах)</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#getDuration()" target="_blank" rel="noopener noreferrer">getDuration</a> – общая продолжительность трека</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.html#isLooping()" target="_blank" rel="noopener noreferrer">isLooping</a> – включен ли режим повтора</p>
+<p><a href="http://developer.android.com/reference/android/media/AudioManager.html#getStreamVolume(int)" target="_blank" rel="noopener noreferrer">getStreamVolume</a> – получить уровень громкости указанного потока</p>
+<p>Далее идут методы</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.OnPreparedListener.html#onPrepared(android.media.MediaPlayer)" target="_blank" rel="noopener noreferrer">onPrepared</a> – метод слушателя OnPreparedListener. Вызывается, когда плеер готов к проигрыванию.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaPlayer.OnCompletionListener.html#onCompletion(android.media.MediaPlayer)" target="_blank" rel="noopener noreferrer">onCompletion</a> – метод слушателя OnCompletionListener. Вызывается, когда достигнут конец проигрываемого содержимого.</p>
+<p>В методе <b>onDestroy</b> обязательно освобождаем ресурсы проигрывателя.</p>
+<p>В манифесте добавляем права на интернет - <i>android.permission.INTERNET.</i></p>
+<p>Все сохраняем, запускаем приложение. Дизайн получившегося плеера, конечно, не ахти какой :), но нас сейчас интересует функционал.</p>
+<p>Еще раз перечислю возможные действия. Нажимая верхние кнопки, мы запускаем проигрывание из различных источников. Кнопки среднего ряда позволят нам поставить паузу, возобновить/остановить проигрывание и включить режим повтора. Кнопки нижнего ряда перематывают назад/вперед на 3 сек (3000 мсек) и выводят инфу в лог.</p>
+<p>Я включу проигрывание файла с SD и выведу инфу в лог (кнопка Info).</p>
+<p><i>start SD<br/> Playing true<br/> Time 4702 / 170588<br/> Looping false<br/> Volume 10</i></p>
+<p>Проигрывание идет, текущая позиция – 4-я секунда из 170, режим повтора выключен, громкость - 10.</p>
+<p>Уменьшу громкость (кнопками устройства или эмулятора), включу режим повтора (чекбокс Loop), поставлю паузу (кнопка Pause) и снова выведу инфу в лог:</p>
+<p><i>Playing false<br/> Time 46237 / 170588<br/> Looping true<br/> Volume 6</i></p>
+<p>Видим, что проигрывание остановилось, текущая позиция уже 46 секунд, режим повтора включен, а громкость уменьшилась до 6.</p>
+<p>Теперь включу проигрывание потока (кнопка Stream). Смотрим лог:</p>
+<p><i>08:49:13.799: D/myLogs(18805): start Stream<br/> 08:49:13.809: D/myLogs(18805): prepareAsync<br/> 08:49:27.589: D/myLogs(18805): onPrepared</i></p>
+<p>Обратите внимание, сколько прошло времени с начала (prepareAsync) до завершения (onPrepared) подготовки проигрывателя – 14 секунд. Если бы мы использовали метод prepare, а не prepareAsync, то наше приложение было бы недоступно все это время.</p>
+<p>Расскажу еще про несколько методов, которые я не использовал в примере, но о которых стоит знать.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#reset()" target="_blank" rel="noopener noreferrer">reset</a> – сбрасывает плеер в начальное состояние, после него необходимо снова вызвать setDataSource и prepare. Похож на onRelease, но позволяет продолжить работу с этим же объектом. А вот после onRelease надо создавать новый объект MediaPlayer.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setOnBufferingUpdateListener(android.media.MediaPlayer.OnBufferingUpdateListener)" target="_blank" rel="noopener noreferrer">setOnBufferingUpdateListener</a> устанавливает слушателя буферизации проигрываемого потока. По идее слушатель будет получать процент буферизации, но у меня оно как-то странно работает - показывает или 0 или 100.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setOnErrorListener(android.media.MediaPlayer.OnErrorListener)" target="_blank" rel="noopener noreferrer">setOnErrorListener</a> устанавливает слушателя для получения ошибок. Особенно это полезно при методe prepareAsync. Если в ходе этого метода возникнут ошибки, то их можно поймать только так.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setWakeMode(android.content.Context, int)" target="_blank" rel="noopener noreferrer">setWakeMode</a> позволяет ставить стандартную (<a href="http://developer.android.com/reference/android/os/PowerManager.WakeLock.html" target="_blank" rel="noopener noreferrer">PowerManager.WakeLock</a>) блокировку на время проигрывания, указав тип блокировки. Не забудьте в манифесте добавить права на WAKE_LOCK.</p>
+<p>По поводу видео. Метод <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#setDisplay(android.view.SurfaceHolder)" target="_blank" rel="noopener noreferrer">setDisplay</a> позволяет указать плееру, куда выводить изображение. Размещаете на экране компонент <a href="http://developer.android.com/reference/android/view/SurfaceView.html" target="_blank" rel="noopener noreferrer">SurfaceView</a> (вкладка Advanced), вызываете его метод <a href="http://developer.android.com/reference/android/view/SurfaceView.html#getHolder()" target="_blank" rel="noopener noreferrer">getHolder</a> и полученный объект передаете в setDisplay. Плеер выведет изображение на этот компонент.</p>
+<p>Чтобы узнать размер проигрываемого изображения можно использовать методы <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#getVideoHeight()" target="_blank" rel="noopener noreferrer">getVideoHeight</a> и <a href="http://developer.android.com/reference/android/media/MediaPlayer.html#getVideoWidth()" target="_blank" rel="noopener noreferrer">getVideoWidth</a>.</p>
+<p>В документацие класса MediaPlayer есть хорошая схема состояний плеера. Она кажется запутанной, но если посидеть и поразбираться, то вполне можно все понять. Схема полезная, советую вникнуть.</p>
+<p>А <a href="http://developer.android.com/guide/appendix/media-formats.html" target="_blank" rel="noopener noreferrer">здесь</a> можно посмотреть какие форматы поддерживаются системой.</p>
+<p>Также документация предоставляет нам код, который позволит просмотреть существующие медиа-файлы в системе:</p>
+<pre><code class="java">ContentResolver contentResolver = getContentResolver();
+    Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+    Cursor cursor = contentResolver.query(uri, null, null, null, null);
+    if (cursor == null) {
+      // query failed, handle error.
+    } else if (!cursor.moveToFirst()) {
+      // no media on the device
+    } else {
+      int titleColumn = cursor
+          .getColumnIndex(android.provider.MediaStore.Audio.Media.TITLE);
+      int idColumn = cursor
+          .getColumnIndex(android.provider.MediaStore.Audio.Media._ID);
+      do {
+        long thisId = cursor.getLong(idColumn);
+        String thisTitle = cursor.getString(titleColumn);
+        // ...process entry...
+      } while (cursor.moveToNext());
+    }
+</code></pre>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

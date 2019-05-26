@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 62. Диалоги. AlertDialog. Список</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- формируем список в диалоге</p>
+<p><i>Некоторые методы, которые использовались в уроке, устарели. После его прочтения рекомендую прочесть актуальные уроки по темам:<br>- создание диалогов с помощью фрагментов (уроки 104-105,110)<br>-  работа с курсором через лоадер (уроки 135-136)</i></p>
+<p>В диалог можно выводить не только <b>текст</b>, но и <b>список </b>значений. Диалоговый список может быть <b>трех </b>видов: </p>
+<p>- без выбора элементов<br> - с одиночным выбором<br> - с множественным выбором</p>
+<p>В этом уроке рассмотрим первый вид.</p>
+<p>Научимся создавать диалог со списком, используя <b>массив </b>данных, <b>адаптер </b>или <b>курсор</b>. Кроме создания попробуем менять данные и обновлять список перед каждым показом. Для этого введем счетчик показов и будем показывать его в последней строке списка. Каждый вызов списка будет увеличивать счетчик на единицу и это должно отразиться в списке. Так мы убедимся, что он обновляется.</p>
+<p><b>Создадим</b> <b>проект</b><b>:</b></p>
+<p><b>Project name</b>: P0621_AlertDialogItems<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogItems<br><b>Package name</b>: ru.startandroid.develop.p0621alertdialogitems<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;AlertDialogItems&lt;/string&gt;
+    &lt;string name="items"&gt;Items&lt;/string&gt;
+    &lt;string name="adapter"&gt;Adapter&lt;/string&gt;
+    &lt;string name="cursor"&gt;Cursor&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>На экране <b>main.xml</b> три кнопки:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/btnItems"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/items"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnAdapter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/adapter"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnCursor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/cursor"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Для работы с БД выделим отдельный класс <b>DB.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0621alertdialogitems;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DB {
+  
+  private static final String DB_NAME = "mydb";
+  private static final int DB_VERSION = 1;
+  private static final String DB_TABLE = "mytab";
+  
+  public static final String COLUMN_ID = "_id";
+  public static final String COLUMN_TXT = "txt";
+  
+  private static final String DB_CREATE = 
+    "create table " + DB_TABLE + "(" +
+      COLUMN_ID + " integer primary key, " +
+      COLUMN_TXT + " text" +
+    ");";
+  
+  private final Context mCtx;
+  
+  
+  private DBHelper mDBHelper;
+  private SQLiteDatabase mDB;
+  
+  public DB(Context ctx) {
+    mCtx = ctx;
+  }
+  
+  // открыть подключение
+  public void open() {
+    mDBHelper = new DBHelper(mCtx, DB_NAME, null, DB_VERSION);
+    mDB = mDBHelper.getWritableDatabase();
+  }
+  
+  // закрыть подключение
+  public void close() {
+    if (mDBHelper!=null) mDBHelper.close();
+  }
+  
+  // получить все данные из таблицы DB_TABLE
+  public Cursor getAllData() {
+    return mDB.query(DB_TABLE, null, null, null, null, null, null);
+  }
+  
+  // изменить запись в DB_TABLE
+  public void changeRec(int id, String txt) {
+    ContentValues cv = new ContentValues();
+    cv.put(COLUMN_TXT, txt);
+    mDB.update(DB_TABLE, cv, COLUMN_ID + " = " + id, null);
+  }
+
+  // класс по созданию и управлению БД
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context, String name, CursorFactory factory,
+        int version) {
+      super(context, name, factory, version);
+    }
+
+    // создаем и заполняем БД
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt; 5; i++) {
+        cv.put(COLUMN_ID, i);
+        cv.put(COLUMN_TXT, "sometext " + i);
+        db.insert(DB_TABLE, null, cv);
+      }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+<p>Тут все как обычно. Методы для открытия и закрытия подключения, получение курсора с данными, и изменение записи по ID. Таблица всего из двух полей – _id и txt. При создании вставляем в таблицу 4 записи.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0621alertdialogitems;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.CursorAdapter;
+import android.widget.ListAdapter;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  
+  final int DIALOG_ITEMS = 1;
+  final int DIALOG_ADAPTER = 2;
+  final int DIALOG_CURSOR = 3;
+  int cnt = 0;
+  DB db;
+  Cursor cursor;
+
+  String data[] = { "one", "two", "three", "four" };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // открываем подключение к БД
+    db = new DB(this);
+    db.open();
+    cursor = db.getAllData();
+    startManagingCursor(cursor);
+  }
+
+  public void onclick(View v) {
+    changeCount();
+    switch (v.getId()) {
+    case R.id.btnItems:
+      showDialog(DIALOG_ITEMS);
+      break;
+    case R.id.btnAdapter:
+      showDialog(DIALOG_ADAPTER);
+      break;
+    case R.id.btnCursor:
+      showDialog(DIALOG_CURSOR);
+      break;
+    default:
+      break;
+    }
+  }
+
+  protected Dialog onCreateDialog(int id) {
+    AlertDialog.Builder adb = new AlertDialog.Builder(this);
+    switch (id) {
+    // массив
+    case DIALOG_ITEMS:
+      adb.setTitle(R.string.items);
+      adb.setItems(data, myClickListener);
+      break;
+    // адаптер
+    case DIALOG_ADAPTER:
+      adb.setTitle(R.string.adapter);
+      ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+          android.R.layout.select_dialog_item, data);
+      adb.setAdapter(adapter, myClickListener);
+      break;
+    // курсор
+    case DIALOG_CURSOR:
+      adb.setTitle(R.string.cursor);
+      adb.setCursor(cursor, myClickListener, DB.COLUMN_TXT);
+      break;
+    }
+    return adb.create();
+  }
+
+  protected void onPrepareDialog(int id, Dialog dialog) {
+    // получаем доступ к адаптеру списка диалога
+    AlertDialog aDialog = (AlertDialog) dialog;
+    ListAdapter lAdapter = aDialog.getListView().getAdapter();
+ 
+    switch (id) {
+    case DIALOG_ITEMS:
+    case DIALOG_ADAPTER:
+      // проверка возможности преобразования
+      if (lAdapter instanceof BaseAdapter) {
+        // преобразование и вызов метода-уведомления о новых данных
+        BaseAdapter bAdapter = (BaseAdapter) lAdapter;
+        bAdapter.notifyDataSetChanged();
+      }
+      break;
+    case DIALOG_CURSOR:
+      break;
+    default:
+      break;
+    }
+  };
+
+  // обработчик нажатия на пункт списка диалога
+  OnClickListener myClickListener = new OnClickListener() {
+    public void onClick(DialogInterface dialog, int which) {
+      // выводим в лог позицию нажатого элемента
+      Log.d(LOG_TAG, "which = " + which);
+    }
+  };
+
+  // меняем значение счетчика 
+  void changeCount() {
+    cnt++;
+    // обновляем массив
+    data[3] = String.valueOf(cnt);
+    // обновляем БД
+    db.changeRec(4, String.valueOf(cnt));
+    cursor.requery();
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    db.close();
+  }
+}</code></pre>
+<p><b>data</b> – массив из 4 элементов. В таблице из <b>DB.java</b> у нас тоже 4 записи. Мы решили, что будем менять последний (четвертый) элемент/запись в данных и помещать туда кол-во показов.</p>
+<p>В <b>onCreate</b> подключаемся к базе.</p>
+<p><b>onclick</b> – меняем значение счетчика и корректируем данные массива и БД,  и в зависимости от нажатой кнопки вызываем соответствующий диалог.</p>
+<p><b>onCreateDialog</b> – создаем вызываемый диалог, используя AlertDialog.Builder. Диалог может построить <b>список</b>, используя один из следующих объектов:</p>
+<p>1) <b>Массив </b>строк. Используется метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setItems(int, android.content.DialogInterface.OnClickListener)" target="_blank">setItems</a>. На вход подается массив и обработчик нажатия.</p>
+<p>2) <b>Адаптер</b>. Мы создаем ArrayAdapter, используя массив <b>data </b>и стандартный <b>layout select_dialog_item</b>, и передаем его в метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setAdapter(android.widget.ListAdapter, android.content.DialogInterface.OnClickListener)" target="_blank">setAdapter</a>. Также передаем туда и обработчик.</p>
+<p>3) <b>Курсор </b>БД. Вызываем метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setCursor(android.database.Cursor, android.content.DialogInterface.OnClickListener, java.lang.String)" target="_blank">setCursor</a>. Передаем туда курсор, обработчик нажатия и имя поля, значение которого будет показано в списке.</p>
+<p>Кроме списка указываем только заголовок. Кнопки и иконку не добавляем. В конце создаем и возвращаем Dialog.</p>
+<p>Метод создания диалога (onCreateDialog) выполняется один раз, чтобы создать диалог. При последующих показах диалога выполняется метод <b>onPrepareDialog</b>. В нем мы будем обновлять данные списка. С помощью преобразований и методов <a href="http://developer.android.com/reference/android/app/AlertDialog.html#getListView()" target="_blank">getListView</a> и <a href="http://developer.android.com/reference/android/widget/ListView.html#getAdapter()" target="_blank">getAdapter</a> получим список из диалога, а потом адаптер из списка.</p>
+<p>Далее для диалогов, использующих массив и адаптер мы выполняем преобразование до BaseAdapter, чтобы иметь возможность вызвать метод <a href="http://developer.android.com/reference/android/widget/BaseAdapter.html#notifyDataSetChanged()" target="_blank">notifyDataSetChanged</a>. Этот метод обновит список в соответствии с новыми данными.</p>
+<p>Для диалога с курсором нет необходимости уведомлять адаптер о новых данных. Курсор это делает сам. </p>
+<p><b>myClickListener</b> – обработчик нажатия на пункты списка. Он у нас общий для всех  диалогов и просто выводит в лог позицию нажатого пункта.</p>
+<p>В <b>changeCount</b> увеличиваем счетчик на единицу и пишем это значение в четвертый элемент массива (нумерация с нуля) и в строку с _id = 4 в БД. Обновляем курсор.</p>
+<p>В <b>onDestroy</b> закрываем подключение к БД.</p>
+<p>Все сохраним и запустим. Повызываем диалоги и убедимся, что данные в них обновляются при каждом показе.</p>
+<p><img src="images/lesson_61_0.png" alt="" width="640"></p>
+<p><img src="images/lesson_61_1.png" alt="" width="640" height="449"></p>
+<p><img src="images/lesson_61_2.png" alt="" width="640" height="449"></p>
+<p><img src="images/lesson_61_3.png" alt="" width="640"></p>
+<p>Клик на пункте списка задействует обработчик, выведет в лог его позицию и закроет диалог.</p>
+<p>Если бы мы не реализовали метод <b>onPrepareDialog</b>, то списки диалогов (кроме курсорного) не обновлялись и выводили в последней строке те значения счетчика, при которых они создавались в методе <b>onCreateDialog</b>. Попробуйте закоментить содержимое onPrepareDialog и убедиться в этом.  </p>
+<p>UPD от 11.07.2012. Протестил этот урок на Android 3.2 - данные обновляются и без onPrepareDialog. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	  
+	<title>Урок 129. Медиа. Запись звука с помощью MediaRecorder</title>
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- пишем звук с помощью MediaRecorder</p>
+ 
+<p> </p>
+<p>Воспроизводить звук мы научились, теперь попробуем его записать. Для этого можно использовать <a href="http://developer.android.com/reference/android/media/MediaRecorder.html" target="_blank" rel="noopener noreferrer">MediaRecorder</a>. Этот же класс используется и для записи видео, но об этом поговорим в следующих уроках. Пока нас интересует звук.</p>
+<p>Чтобы MediaRecorder записал для вас звук, он должен знать:<br/><span style="line-height: 1.3em;">- источник звука<br/></span><span style="line-height: 1.3em;">- формат записи <br/></span><span style="line-height: 1.3em;">- аудио-кодек <br/></span><span style="line-height: 1.3em;">- имя файла</span></p>
+<p>Если вкратце, то кодек – это способ сжатия данных. А под форматом, я так понимаю, здесь подразумевается контейнер, т.е. способ хранения. Я не буду углубляться в эти вопросы, т.к. не являюсь специалистом. В инете сейчас очень много статей на эту тему.</p>
+<p>В документацие есть пример, в котором используется кодек AMR-NB и формат 3GPP. Их я и буду использовать в своем примере.</p>
+<p>Напишем простое приложение, которое будет записывать звук с микрофона и даст возможность прослушать то, что записали.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1291_MediaRecorderAudio<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: MediaRecorderAudio<br/> <b>Package name</b>: ru.startandroid.develop.p1291mediarecorderaudio<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="record"&gt;Record&lt;/string&gt;
+&lt;string name="play"&gt;Play&lt;/string&gt;
+&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="stop"&gt;Stop&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Рисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".MainActivity"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/record"&gt;
+	&lt;/TextView&gt;
+	&lt;LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="recordStart"
+			android:text="@string/start"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="recordStop"
+			android:text="@string/stop"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="20dp"
+		android:text="@string/play"&gt;
+	&lt;/TextView&gt;
+	&lt;LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="playStart"
+			android:text="@string/start"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="playStop"
+			android:text="@string/stop"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p> </p>
+<p>Скрин:</p>
+<p><img src="images/xl0129_010.png.pagespeed.ic.hubexa4pdw.png" alt="" width="299" height="496"/></p>
+<p>Две верхние кнопки стартуют и останавливают запись, две нижние – воспроизведение записанного.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1291mediarecorderaudio;
+
+import java.io.File;
+
+import android.app.Activity;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  private MediaRecorder mediaRecorder;
+  private MediaPlayer mediaPlayer;
+  private String fileName;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    fileName = Environment.getExternalStorageDirectory() + "/record.3gpp";
+  }
+
+  public void recordStart(View v) {
+    try {
+      releaseRecorder();
+
+      File outFile = new File(fileName);
+      if (outFile.exists()) {
+        outFile.delete();
+      }
+
+      mediaRecorder = new MediaRecorder();
+      mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+      mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+      mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+      mediaRecorder.setOutputFile(fileName);
+      mediaRecorder.prepare();
+      mediaRecorder.start();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  public void recordStop(View v) {
+    if (mediaRecorder != null) {
+      mediaRecorder.stop();
+    }
+  }
+
+  public void playStart(View v) {
+    try {
+      releasePlayer();
+      mediaPlayer = new MediaPlayer();
+      mediaPlayer.setDataSource(fileName);
+      mediaPlayer.prepare();
+      mediaPlayer.start();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void playStop(View v) {
+    if (mediaPlayer != null) {
+      mediaPlayer.stop();
+    }
+  }
+
+  private void releaseRecorder() {
+    if (mediaRecorder != null) {
+      mediaRecorder.release();
+      mediaRecorder = null;
+    }
+  }
+
+  private void releasePlayer() {
+    if (mediaPlayer != null) {
+      mediaPlayer.release();
+      mediaPlayer = null;
+    }
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    releasePlayer();
+    releaseRecorder();
+  }
+
+}</code></pre>
+<p>В <b>onCreate</b> задаем имя файла, куда будет записываться звук.</p>
+<p>Так же, как и для MediaPlayer, в документацие есть подробная схема состояний и действий для MediaRecorder. Советую ознакомиться.</p>
+<p> </p>
+<p>В <b>recordStart </b>мы избавляемся от старого рекордера. Затем удаляем файл для записи, если он уже существует. Далее создаем и настраиваем рекордер используя ряд методов.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioSource(int)" target="_blank" rel="noopener noreferrer">setAudioSource</a>. Указываем источник звука – микрофон (<a href="http://developer.android.com/reference/android/media/MediaRecorder.AudioSource.html#MIC" target="_blank" rel="noopener noreferrer">MIC</a>). Кроме микрофона есть еще <a href="http://developer.android.com/reference/android/media/MediaRecorder.AudioSource.html" target="_blank" rel="noopener noreferrer">несколько источников</a>:</p>
+<p>VOICE_CALL - звук при голосовом разговоре по телефону<br/> VOICE_DOWNLINK - только входящая часть VOICE_CALL<br/> VOICE_UPLINK - только исходящая часть VOICE_CALL<br/> CAMCORDER - микрофон, связанный с веб-камерой<br/> VOICE_RECOGNITION - с микрофона будет записываться исходный аудио поток без преобразований, чтобы получить максимальное качество. Используется для распознавания речи<br/> VOICE_COMMUNICATION – аудио поток с микрофона будет "заточен" под VoIP</p>
+<p>Если три последних варианта не поддерживаются текущим устройством, то будет использован микрофон по умолчанию.</p>
+<p> </p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setOutputFormat(int)" target="_blank" rel="noopener noreferrer">setOutputFormat</a>. Указываем формат – 3GPP (<a href="http://developer.android.com/reference/android/media/MediaRecorder.OutputFormat.html#THREE_GPP" target="_blank" rel="noopener noreferrer">THREE_GPP</a>). Остальные форматы можно посмотреть <a href="http://developer.android.com/reference/android/media/MediaRecorder.OutputFormat.html" target="_blank" rel="noopener noreferrer">здесь</a>.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioEncoder(int)" target="_blank" rel="noopener noreferrer">setAudioEncoder</a>. Указываем кодек для сжатия аудио - <a href="http://developer.android.com/reference/android/media/MediaRecorder.AudioEncoder.html#AMR_NB" target="_blank" rel="noopener noreferrer">AMR_NB</a>. Остальные кодеки можно посмотреть <a href="http://developer.android.com/reference/android/media/MediaRecorder.AudioEncoder.html" target="_blank" rel="noopener noreferrer">здесь</a>.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setOutputFile(java.io.FileDescriptor)" target="_blank" rel="noopener noreferrer">setOutputFile</a>. Указываем имя файла, в который будет вести запись.</p>
+<p>После всех настроек вызываем метод <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#prepare()" target="_blank" rel="noopener noreferrer">prepare</a>, который подготовит рекордер к записи и стартуем запись методом <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#start()" target="_blank" rel="noopener noreferrer">start</a>.</p>
+<p> </p>
+<p>В <b>recordStop</b> останавливаем запись методом <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#stop()" target="_blank" rel="noopener noreferrer">stop</a>. После этого метода необходимо заново настроить рекордер, если вы снова хотите его использовать. Просто снова вызвать start не получится. На схеме это показано. Кстати, метод <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#reset()" target="_blank" rel="noopener noreferrer">reset</a> также сбрасывает все настройки рекордера и после него необходимо заново указывать источник. формат, кодек, файл. Но объект новый создавать необязательно.</p>
+<p> </p>
+<p>В <b>playStart</b> и <b>playStop</b> стартуем и останавливаем воспроизведение записанного файла. Тут ничего нового для нас, все это обсуждалось в Уроке 126.</p>
+<p> </p>
+<p>В методе <b>releaseRecorder</b> мы освобождаем все ресурсы рекордера методом <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#release()" target="_blank" rel="noopener noreferrer">release</a>. После этого объект уже нельзя использовать и необходимо создавать и настраивать новый.</p>
+<p> </p>
+<p>В манифесте необходимо прописать права на запись звука и работу с SD:</p>
+<pre><code class="xml">&lt;uses-permission android:name="android.permission.RECORD_AUDIO"&gt;&lt;/uses-permission&gt;
+&lt;uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"&gt;&lt;/uses-permission&gt;</code></pre>
+<p> </p>
+<p>После запуска приложения вы сможете записать звук с микрофона и прослушать его.</p>
+<p> </p>
+<p>Распишу еще несколько интересных методов.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioChannels(int)" target="_blank" rel="noopener noreferrer">setAudioChannels</a> – можно задать режим записи 1 (моно) или 2 (стерео)</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioEncodingBitRate(int)" target="_blank" rel="noopener noreferrer">setAudioEncodingBitRate</a> и <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioSamplingRate(int)" target="_blank" rel="noopener noreferrer">setAudioSamplingRate</a> задают соответственно битрейт и сэмплрейт. Если опять же вкратце, то битрейт – это насколько качественно пишется звук, сэмплрейт – как часто считываются данные с микрофона. Подробности можно узнать в Интернете.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setMaxDuration(int)" target="_blank" rel="noopener noreferrer">setMaxDuration</a> позволяет указать максимальную длительность записи. По достижении этого времени (в мсек), запись остановится, а слушатель, указанный в MediaRecorder.<a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setOnInfoListener(android.media.MediaRecorder.OnInfoListener)" target="_blank" rel="noopener noreferrer">OnInfoListener</a>, получит код what =  <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#MEDIA_RECORDER_INFO_MAX_DURATION_REACHED" target="_blank" rel="noopener noreferrer">MEDIA_RECORDER_INFO_MAX_DURATION_REACHED</a>.</p>
+<p><a href="http://developer.android.com/reference/android/media/MediaRecorder.html#setMaxFileSize(long)" target="_blank" rel="noopener noreferrer">setMaxFileSize</a> позволяет указать максимальный размер файла. По достижении указанного размера (в байтах), запись остановится, а слушатель, указанный в MediaRecorder.OnInfoListener, получит код what =  <a href="http://developer.android.com/reference/android/media/MediaRecorder.html#MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED" target="_blank" rel="noopener noreferrer">MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED</a>.</p>
+<p>Разумеется, эти методы надо вызывать перед вызовом prepare</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

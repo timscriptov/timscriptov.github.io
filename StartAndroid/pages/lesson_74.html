@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 74. Preferences. Программное создание экрана настроек</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем экран настроек программно</p>
+<p>На прошлых уроках мы создавали экран настроек из xml файлов. Теперь попробуем сделать это в коде. Попробуем создать экран с прошлого урока.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0741_PreferencesCode<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: PreferencesCode<br><b>Package name</b>: ru.startandroid.develop.p0741preferencescode<br><b>Create Activity</b>: MainActivity</p>
+<p>Заполним <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="hello"&gt;Hello World, MainActivity!&lt;/string&gt;
+    &lt;string name="app_name"&gt;PreferencesCode&lt;/string&gt;
+    &lt;string-array name="entries"&gt;
+        &lt;item&gt;one&lt;/item&gt;
+        &lt;item&gt;two&lt;/item&gt;
+        &lt;item&gt;three&lt;/item&gt;
+    &lt;/string-array&gt;
+    &lt;string-array name="entry_values"&gt;
+        &lt;item&gt;1&lt;/item&gt;
+        &lt;item&gt;2&lt;/item&gt;
+        &lt;item&gt;3&lt;/item&gt;
+    &lt;/string-array&gt;
+&lt;/resources&gt;</code></pre>
+<p>Напомню xml-код настроек из прошлого урока:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;CheckBoxPreference
+        android:key="chb1"
+        android:summaryOff="Description of checkbox 1 off"
+        android:summaryOn="Description of checkbox 1 on"
+        android:title="CheckBox 1"&gt;
+    &lt;/CheckBoxPreference&gt;
+    &lt;ListPreference
+        android:dependency="chb1"
+        android:entries="@array/entries"
+        android:entryValues="@array/entry_values"
+        android:key="list"
+        android:summary="Description of list"
+        android:title="List"&gt;
+    &lt;/ListPreference&gt;
+    &lt;CheckBoxPreference
+        android:key="chb2"
+        android:summary="Description of checkbox 2"
+        android:title="CheckBox 2"&gt;
+    &lt;/CheckBoxPreference&gt;
+    &lt;PreferenceScreen
+        android:dependency="chb2"
+        android:key="screen"
+        android:summary="Description of screen"
+        android:title="Screen"&gt;
+        &lt;CheckBoxPreference
+            android:key="chb3"
+            android:summary="Description of checkbox 3"
+            android:title="CheckBox 3"&gt;
+        &lt;/CheckBoxPreference&gt;
+        &lt;PreferenceCategory
+            android:key="categ1"
+            android:summary="Description of category 1"
+            android:title="Category 1"&gt;
+            &lt;CheckBoxPreference
+                android:key="chb4"
+                android:summary="Description of checkbox 4"
+                android:title="CheckBox 4"&gt;
+            &lt;/CheckBoxPreference&gt;
+        &lt;/PreferenceCategory&gt;
+        &lt;PreferenceCategory
+            android:key="categ2"
+            android:summary="Description of category 2"
+            android:title="Category 2"&gt;
+            &lt;CheckBoxPreference
+                android:key="chb5"
+                android:summary="Description of checkbox 5"
+                android:title="CheckBox 5"&gt;
+            &lt;/CheckBoxPreference&gt;
+            &lt;CheckBoxPreference
+                android:key="chb6"
+                android:summary="Description of checkbox 6"
+                android:title="CheckBox 6"&gt;
+            &lt;/CheckBoxPreference&gt;
+        &lt;/PreferenceCategory&gt;
+    &lt;/PreferenceScreen&gt;
+&lt;/PreferenceScreen&gt;</code></pre>
+<p>Попытаемся создать все эти элементы программно.</p>
+<p>Создаем <b>PrefActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0741preferencescode;
+
+import android.os.Bundle;
+import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceCategory;
+import android.preference.PreferenceScreen;
+
+public class PrefActivity extends PreferenceActivity {
+  
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    // создаем экран
+    PreferenceScreen rootScreen = getPreferenceManager().createPreferenceScreen(this);
+    // говорим Activity, что rootScreen - корневой
+    setPreferenceScreen(rootScreen);
+    
+    // даллее создаем элементы, присваиваем атрибуты и формируем иерархию
+    
+    CheckBoxPreference chb1 = new CheckBoxPreference(this);
+    chb1.setKey("chb1");
+    chb1.setTitle("CheckBox 1");
+    chb1.setSummaryOn("Description of checkbox 1 on");
+    chb1.setSummaryOff("Description of checkbox 1 off");
+    
+    rootScreen.addPreference(chb1);
+    
+    
+    ListPreference list = new ListPreference(this);
+    list.setKey("list");
+    list.setTitle("List");
+    list.setSummary("Description of list");
+    list.setEntries(R.array.entries);
+    list.setEntryValues(R.array.entry_values);
+    
+    rootScreen.addPreference(list);
+    
+        
+    CheckBoxPreference chb2 = new CheckBoxPreference(this);
+    chb2.setKey("chb2");
+    chb2.setTitle("CheckBox 2");
+    chb2.setSummary("Description of checkbox 2");
+    
+    rootScreen.addPreference(chb2);
+    
+    
+    PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(this);
+    screen.setKey("screen");
+    screen.setTitle("Screen");
+    screen.setSummary("Description of screen");
+    
+    
+    final CheckBoxPreference chb3 = new CheckBoxPreference(this);
+    chb3.setKey("chb3");
+    chb3.setTitle("CheckBox 3");
+    chb3.setSummary("Description of checkbox 3");
+    
+    screen.addPreference(chb3);
+    
+    
+    PreferenceCategory categ1 = new PreferenceCategory(this);
+    categ1.setKey("categ1");
+    categ1.setTitle("Category 1");
+    categ1.setSummary("Description of category 1");
+    
+    screen.addPreference(categ1);
+    
+    CheckBoxPreference chb4 = new CheckBoxPreference(this);
+    chb4.setKey("chb4");
+    chb4.setTitle("CheckBox 4");
+    chb4.setSummary("Description of checkbox 4");
+    
+    categ1.addPreference(chb4);
+
+
+    final PreferenceCategory categ2 = new PreferenceCategory(this);
+    categ2.setKey("categ2");
+    categ2.setTitle("Category 2");
+    categ2.setSummary("Description of category 2");
+    
+    screen.addPreference(categ2);
+    
+        
+    CheckBoxPreference chb5 = new CheckBoxPreference(this);
+    chb5.setKey("chb5");
+    chb5.setTitle("CheckBox 5");
+    chb5.setSummary("Description of checkbox 5");
+    
+    categ2.addPreference(chb5);
+    
+    
+    CheckBoxPreference chb6 = new CheckBoxPreference(this);
+    chb6.setKey("chb6");
+    chb6.setTitle("CheckBox 6");
+    chb6.setSummary("Description of checkbox 6");
+    
+    categ2.addPreference(chb6);
+
+    rootScreen.addPreference(screen);
+    
+    list.setDependency("chb1");
+    screen.setDependency("chb2");
+    
+    // код из прошлого урока для связи активности categ2 и значения chb3
+    categ2.setEnabled(chb3.isChecked());
+    chb3.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+      public boolean onPreferenceClick(Preference preference) {
+        categ2.setEnabled(chb3.isChecked());
+        return false;
+      }
+    });
+  }
+}</code></pre>
+<p>Сначала мы создаем PreferenceScreen и сообщаем Activity, что этот экран будет корневым.</p>
+<p>Далее мы последовательно создаем Preference-элементы, присваиваем им атрибуты и добавляем детей к родителям.</p>
+<p>В конце мы реализуем зависимости (dependency) и, как и на прошлом уроке, привязываем состояние активности категории <i><b>categ2</b></i> к значению чекбокса <i><b>chb3</b></i>.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/preference/Preference.html#setDependency(java.lang.String)" target="_blank">setDependency </a>лучше вызывать в самом конце. Иначе может быть неверное поведение элементов.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0741preferencescode;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+
+public class MainActivity extends Activity {
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  public boolean onCreateOptionsMenu(Menu menu) {
+    MenuItem mi = menu.add(0, 1, 0, "Preferences");
+    mi.setIntent(new Intent(this, PrefActivity.class));
+    return super.onCreateOptionsMenu(menu);
+  }
+
+}</code></pre>
+<p>Запустив приложение, вы получите экран, аналогичный экрану с предыдущего урока. Только сделан программно, а не из xml.</p>
+<p>Кстати, вы можете не только добавлять, но и удалять Preferences-элементы. Для этого у категорий и экранов есть методы <a href="http://developer.android.com/reference/android/preference/PreferenceGroup.html#removePreference(android.preference.Preference)" target="_blank">removePreference </a>и <a href="http://developer.android.com/reference/android/preference/PreferenceGroup.html#removeAll()" target="_blank">removeAll</a>.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

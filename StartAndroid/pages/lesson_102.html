@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 102. Touch – обработка касания</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- обрабатываем касание</p>
+<p>Раньше мы для View-компонентов использовали <a href="http://developer.android.com/reference/android/view/View.OnClickListener.html" target="_blank">OnClickListener </a>и ловили короткие нажатия. Теперь попробуем ловить касания и перемещения пальца по компоненту. Они состоят из трех типов событий:</p>
+<p>- нажатие (палец прикоснулся к экрану)<br> - движение (палец движется по экрану)<br> - отпускание (палец оторвался от экрана)</p>
+<p>Все эти события мы сможем ловить в обработчике <a href="http://developer.android.com/reference/android/view/View.OnTouchListener.html" target="_blank">OnTouchListener</a>, который присвоим для View-компонента. Этот обработчик дает нам объект <a href="http://developer.android.com/reference/android/view/MotionEvent.html" target="_blank">MotionEvent</a>, из которого мы извлекаем тип события и координаты.</p>
+<p>На этом уроке рассмотрим только одиночные касания. А мультитач – на следующем уроке.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: Lesson102<br>
+<b>Package name</b>: com.mycompany.myapp<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: Touch<br>
+<b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.widget.TextView;
+
+public class MainActivity extends Activity implements OnTouchListener {
+  
+  TextView tv;
+  float x;
+  float y;
+  String sDown;
+  String sMove;
+  String sUp;
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        tv = new TextView(this);
+        tv.setOnTouchListener(this);
+        setContentView(tv);
+    }
+
+  @Override
+  public boolean onTouch(View v, MotionEvent event) {
+    x = event.getX();
+    y = event.getY();
+    
+    switch (event.getAction()) {
+    case MotionEvent.ACTION_DOWN: // нажатие
+      sDown = "Down: " + x + "," + y;
+      sMove = ""; sUp = "";
+      break;
+    case MotionEvent.ACTION_MOVE: // движение
+      sMove = "Move: " + x + "," + y;
+      break;
+    case MotionEvent.ACTION_UP: // отпускание
+    case MotionEvent.ACTION_CANCEL:  
+      sMove = "";
+      sUp = "Up: " + x + "," + y;
+      break;
+    }
+    tv.setText(sDown + "\n" + sMove + "\n" + sUp);
+    return true;
+  }
+}</code></pre>
+<p>MainActivity реализует интерфейс OnTouchListener для того, чтобы выступить обработчиком касаний.</p>
+<p>В <b>onCreate </b>мы создаем новый TextView, сообщаем ему, что обработчиком касаний будет Activity, и помещаем на экран.</p>
+<p>Интерфейс OnTouchListener предполагает, что Activity реализует его метод <b><a href="http://developer.android.com/reference/android/view/View.OnTouchListener.html#onTouch(android.view.View, android.view.MotionEvent)" target="_blank">onTouch</a></b>. На вход методу идет View для которого было событие касания и объект MotionEvent с информацией о событии.</p>
+<p>Методы <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getX()" target="_blank">getX </a>и <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getY()" target="_blank">getY</a> дают нам X и Y координаты касания. Метод getAction дает тип события касания:</p>
+<p><a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_DOWN" target="_blank">ACTION_DOWN </a>– нажатие<br><a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_MOVE" target="_blank"> ACTION_MOVE </a>– движение<br><a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_UP" target="_blank"> ACTION_UP </a>– отпускание<br><a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_CANCEL" target="_blank"> ACTION_CANCEL </a>– практически никогда не случается. Насколько я понял, возникает в случае каких-либо внутренних сбоев, и следует трактовать это как ACTION_UP.</p>
+<p>В случае ACTION_DOWN мы пишем в sDown координаты нажатия.</p>
+<p>В случае ACTION_MOVE пишем в sMove координаты точки текущего положения пальца. Если мы будем перемещать палец по экрану – этот текст будет постоянно меняться.</p>
+<p>В случае ACTION_UP или ACTION_CANCEL пишем в sUp координаты точки, в которой отпустили палец.</p>
+<p>Все это в конце события выводим в TextView. И возвращаем true – мы сами обработали событие.</p>
+<p>Теперь мы будем водить пальцем по экрану (курсором по эмулятору) в приложении, и на экране увидим координаты начала движения, текущие координаты и координаты окончания движения.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_101_0.png" alt="" width="640" height="449"></p>
+<p>Ставим палец (курсор) на экран</p>
+<p><img src="images/lesson_101_1.png" alt="" width="640" height="449"></p>
+<p>Если вчерашний вечер не удался, голова не болит, рука тверда и не дрожит :), то появились координаты нажатия.</p>
+<p>Если же рука дрогнула, то появится еще и координаты перемещения.</p>
+<p><img src="images/lesson_101_2.png" alt="" width="640" height="449"></p>
+<p>Продолжаем перемещать палец и видим, как меняются координаты Move.</p>
+<p>Теперь отрываем палец от экрана и видим координаты точки, в которой это произошло</p>
+<p><img src="images/lesson_101_3.png" alt="" width="640" height="449"></p>
+<p>В целом все несложно. При мультитаче процесс немного усложнится, там уже будем отслеживать до 10 касаний.</p>
+<p>Если вы уже знакомы с техникой рисования в Android, то вполне можете создать приложение выводящее на экран геометрическую фигуру, которую можно пальцем перемещать. Простейший пример реализации можно посмотреть тут: <a href="http://forum.startandroid.ru/viewtopic.php?f=28&amp;t=535">http://forum.startandroid.ru/viewtopic.php?f=28&amp;t=535</a>.</p>
+</body>
+</html>
+
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

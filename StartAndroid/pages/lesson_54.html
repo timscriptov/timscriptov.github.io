@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 54. Кастомизация списка. Создаем свой адаптер</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем свой адаптер на основе BaseAdapter</p>
+<p>Предоставляемые нам адаптеры универсальны и полезны, но иногда их возможностей не хватает для реализации задуманного. Тогда возникает необходимость написать свой адаптер. Попробуем и мы. Создавать будем не с нуля, а используя <a href="http://developer.android.com/reference/android/widget/BaseAdapter.html" target="_blank">BaseAdapter</a>.</p>
+<p>Сделаем подобие интернет магазина. Будем выводить список товаров. Каждый пункт списка будет содержать название товара, цену и изображение. Также будет возможность отметить пункт галкой, поместив его тем самым в корзину.</p>
+<p>Внизу списка сделаем кнопку, которая будет отображать содержимое корзины. В настоящем интернет-магазине мы повесили бы на нее, например, переход к созданию заказа.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0541_CustomAdapter<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: CustomAdapter<br><b>Package name</b>: ru.startandroid.develop.p0541customadapter<br><b>Create Activity</b>: MainActivity</p>
+<p>В файл <b>strings.xml</b> добавим текстовый параметр для названия кнопки.</p>
+<pre><code class="xml">&lt;string name="box"&gt;Корзина&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ListView
+        android:id="@+id/lvMain"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"&gt;
+    &lt;/ListView&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="5dp"
+        android:onClick="showResult"
+        android:text="@string/box"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>layout для пункта списка – <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"&gt;
+    &lt;CheckBox
+        android:id="@+id/cbBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"&gt;
+    &lt;/CheckBox&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="5dp"
+        android:layout_weight="1"
+        android:orientation="vertical"&gt;
+        &lt;TextView
+            android:id="@+id/tvDescr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text=""
+            android:textSize="20sp"&gt;
+        &lt;/TextView&gt;
+        &lt;TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_marginRight="10dp"
+            android:text=""&gt;
+        &lt;/TextView&gt;
+    &lt;/LinearLayout&gt;
+    &lt;ImageView
+        android:id="@+id/ivImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher"&gt;
+    &lt;/ImageView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Чекбокс, пара текстовых полей и картинка.</p>
+<p>Теперь пишем код. Можно все написать в MainActivity.java, но тогда он получится достаточно большим и неудобным для чтения. Я раскидаю весь код по трем классам.</p>
+<p><b>Product.java</b> – класс, описывающий товар:</p>
+<pre><code class="java">package ru.startandroid.develop.p0541customadapter;
+
+public class Product {
+  
+  String name;
+  int price;
+  int image;
+  boolean box;
+  
+
+  Product(String _describe, int _price, int _image, boolean _box) {
+    name = _describe;
+    price = _price;
+    image = _image;
+    box = _box;
+  }
+}</code></pre>
+<p>Тут все просто – только конструктор и элементы класса. Не заморачиваюсь с доступом и методами Set/Get, чтобы не усложнять код.</p>
+<p><b>BoxAdapter.java</b> – созданный адаптер, который будем использовать</p>
+<pre><code class="java">package ru.startandroid.develop.p0541customadapter;
+
+import java.util.ArrayList;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+public class BoxAdapter extends BaseAdapter {
+  Context ctx;
+  LayoutInflater lInflater;
+  ArrayList&lt;Product&gt; objects;
+
+  BoxAdapter(Context context, ArrayList&lt;Product&gt; products) {
+    ctx = context;
+    objects = products;
+    lInflater = (LayoutInflater) ctx
+        .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+  }
+
+  // кол-во элементов
+  @Override
+  public int getCount() {
+    return objects.size();
+  }
+
+  // элемент по позиции
+  @Override
+  public Object getItem(int position) {
+    return objects.get(position);
+  }
+
+  // id по позиции
+  @Override
+  public long getItemId(int position) {
+    return position;
+  }
+
+  // пункт списка
+  @Override
+  public View getView(int position, View convertView, ViewGroup parent) {
+    // используем созданные, но не используемые view
+    View view = convertView;
+    if (view == null) {
+      view = lInflater.inflate(R.layout.item, parent, false);
+    }
+
+    Product p = getProduct(position);
+
+    // заполняем View в пункте списка данными из товаров: наименование, цена
+    // и картинка
+    ((TextView) view.findViewById(R.id.tvDescr)).setText(p.name);
+    ((TextView) view.findViewById(R.id.tvPrice)).setText(p.price + "");
+    ((ImageView) view.findViewById(R.id.ivImage)).setImageResource(p.image);
+
+    CheckBox cbBuy = (CheckBox) view.findViewById(R.id.cbBox);
+    // присваиваем чекбоксу обработчик
+    cbBuy.setOnCheckedChangeListener(myCheckChangeList);
+    // пишем позицию
+    cbBuy.setTag(position);
+    // заполняем данными из товаров: в корзине или нет
+    cbBuy.setChecked(p.box);
+    return view;
+  }
+
+  // товар по позиции
+  Product getProduct(int position) {
+    return ((Product) getItem(position));
+  }
+
+  // содержимое корзины
+  ArrayList&lt;Product&gt; getBox() {
+    ArrayList&lt;Product&gt; box = new ArrayList&lt;Product&gt;();
+    for (Product p : objects) {
+      // если в корзине
+      if (p.box)
+        box.add(p);
+    }
+    return box;
+  }
+
+  // обработчик для чекбоксов
+  OnCheckedChangeListener myCheckChangeList = new OnCheckedChangeListener() {
+    public void onCheckedChanged(CompoundButton buttonView,
+        boolean isChecked) {
+      // меняем данные товара (в корзине или нет)
+      getProduct((Integer) buttonView.getTag()).box = isChecked;
+    }
+  };
+}</code></pre>
+<p>На всякий случай напомню общий принцип действия <b>адаптера</b>: он получает <b>данные </b>и выдает <b>View </b>для отображения пункта списка.</p>
+<p>Смотрим код. В <b>конструкторе </b>мы заполняем наши внутренние переменные и получаем <b>LayoutInflater </b>для работы с layout-ресурсами. В <b>objects </b>у нас теперь хранится список товаров, которые надо отобразить в списке.</p>
+<p>Методы, отмеченные аннотацией<b> @Override</b>, мы обязаны реализовать при наследовании <b>BaseAdapter</b>. Эти методы используются списком и должны работать корректно.</p>
+<p>Метод <b>getCount </b>должен возвращать кол-во элементов. Мы возвращаем кол-во товаров.</p>
+<p>Метод <b>getItem </b>должен возвращать элемент по указанной позиции. Используя позицию, получаем конкретный элемент из objects.</p>
+<p>Метод <b>getItemId </b>должен возвращать id элемента. Здесь не заморачиваемся и возвращаем позицию. Кстати, также сделано в некоторых адаптерах. Поэтому мы и видели в обработчиках, что id = position.</p>
+<p>Метод <b>getView </b>должен возвращать <b>View </b>пункта списка. Для этого мы создавали layout-ресурс <b>R.layout.item</b>. В этом методе мы должны из R.layout.item создать View, заполнить его данными и отдать списку. Но перед тем как создавать, мы пробуем использовать <b>convertView</b>, который идет на вход метода. Это уже созданное ранее View, но неиспользуемое в данный момент. Например, при прокрутке списка, часть пунктов уходит за экран и их уже не надо прорисовывать. View из этих «невидимых» пунктов используются для новых пунктов. Нам остается только заполнить их данными. Это значительно ускоряет работу приложения, т.к. не надо прогонять inflate лишний раз.</p>
+<p>Если же convertView в этот раз нам не дали (null), то создаем сами view. Далее заполняем наименования, цену и картинку из данных по товарам. Для чекбокса мы присваиваем обработчик, сохраняем в Tag позицию элемента и ставим галку, если товар уже в корзине.</p>
+<p><b>Tag </b>– это некое Object-хранилище у каждого <b>View</b>, куда вы можете поместить нужные вам данные. В нашем случае я для каждого чекбокса помещаю в его Tag номер позиции пункта списка. Далее в обработчике чекбокса я смогу этот номер позиции извлечь и определить, в каком пункте списка был нажат чекбокс.</p>
+<p>В итоге, метод <b>getView </b>возвращает списку полностью заполненное <b>view</b>, и список его отобразит как очередной пункт.</p>
+<p>Далее идет пара методов, которые не обязательно было создавать при наследовании BaseAdapter. Я их создал для удобства.</p>
+<p>Метод <b>getProduct </b>– это аналог getItem, но он сразу конвертирует Object в Product. Он используется всего пару раз. И в принципе, можно было бы и без него обойтись.</p>
+<p>Метод <b>getBox </b>проверяет, какие товары отмечены галками и формирует из них коллекцию-корзину.</p>
+<p><b>myCheckChangeList </b>– обработчик для чекбоксов. Когда мы нажимаем на чекбокс в списке, он срабатывает, читает из Tag позицию пункта списка и помечает соответствующий товар, как положенный в корзину.</p>
+<p>Тут важно понимать, что без этого обработчика не работало бы помещение товаров в корзину. Да и на экране - значения чекбоксов в списке терялись бы при прокрутке. Потому что пункты списка пересоздаются, если они уйдут «за экран» и снова появятся. Это пересоздание обеспечивает метод getView, а он для заполнения View берет данные из товаров. Значит при нажатии на чекбокс, обязательно надо сохранить в данных о товаре то, что он теперь в корзине.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0541customadapter;
+
+import java.util.ArrayList;
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+  ArrayList&lt;Product&gt; products = new ArrayList&lt;Product&gt;();
+  BoxAdapter boxAdapter;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // создаем адаптер
+    fillData();
+    boxAdapter = new BoxAdapter(this, products);
+
+    // настраиваем список
+    ListView lvMain = (ListView) findViewById(R.id.lvMain);
+    lvMain.setAdapter(boxAdapter);
+  }
+
+  // генерируем данные для адаптера
+  void fillData() {
+    for (int i = 1; i &lt;= 20; i++) {
+      products.add(new Product("Product " + i, i * 1000,
+          R.drawable.ic_launcher, false));
+    }
+  }
+
+  // выводим информацию о корзине
+  public void showResult(View v) {
+    String result = "Товары в корзине:";
+    for (Product p : boxAdapter.getBox()) {
+      if (p.box)
+        result += "\n" + p.name;
+    }
+    Toast.makeText(this, result, Toast.LENGTH_LONG).show();
+  }
+}</code></pre>
+<p>Тут кода совсем мало.</p>
+<p>В <b>onCreate </b>создаем адаптер и список.</p>
+<p>В методе <b>fillData </b>генерируем данные для адаптера. В качестве картинки используем стандартную для всех пунктов. В идеале, для каждого товара своя картинка.</p>
+<p>Метод <b>showResult </b>получает из адаптера список товаров корзины и выводит их наименования. Этот метод вызывается по нажатию кнопки на экране, т.к. прописан в ее свойстве <b>onClick</b>.</p>
+<p>Все сохраняем и запускаем. Отмечаем товары и жмем кнопку для просмотра содержимого корзины.</p>
+<p><img src="images/lesson_53_0.png" alt="" width="640"></p>
+<p>Достаточно непростой получился пример из-за чекбокса.</p>
+<p>Вполне может быть, что есть другой способ реализации этого примера. Но смысл был в том, чтобы показать создание своего адаптера. Для закрепления темы посмотрите еще <a href="http://developer.android.com/resources/samples/ApiDemos/src/com/example/android/apis/view/List6.html" target="_blank">этот пример от Google</a>.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

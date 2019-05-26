@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 5. Layout-файл в Activity. XML представление. Смена ориентации экрана.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+<body><p>На прошлом уроке мы выяснили, что Activity читает layout-файл и отображает то, что в нем сконфигурировано. Теперь выясним, откуда Activity знает, какой именно layout-файл читать. А еще в этом уроке находится подсказка, как зарегиться на нашем форуме ;)</p>
+<p>Создадим приложение для этого урока. Для этого необходимо создать модуль в проекте Android lessons. Этот проект мы создали в прошлых уроках. Если вы еще не запомнили, как создавать модули, то можно просмотреть еще раз Уроки 3 и 4.</p>
+<p>И давайте сразу разберем один момент. Последующие уроки были написаны давно, и написаны они были под среду разработки Eclipse. Соответственно, все уроки содержат информацию для создания проекта в Eclipse.</p>
+<p>Но Eclipse отличается от Android Studio организацией проектов/модулей. И сейчас мы разберемся, как информацию по созданию проекта в Eclipse использовать при создании модулей в Android Studio.</p>
+<p>Инфа для создания проекта в Eclipse выглядит так:</p>
+<p><b>Project name</b>: P0051_LayoutFiles<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: LayoutFiles<br>
+<b>Package name</b>: ru.startandroid.develop.LayoutFiles<br>
+<b>Create Activity</b>: MainActivity</p>
+<p>Обычно, подобный текст есть в начале каждого урока.</p>
+<p>А для создания модуля в Android Studio нам нужна информация в таком виде</p>
+<p><b>Application/Library name</b>: LayoutFiles<br><b>Module name</b>: p0051layoutfiles<br><b>Package name</b>: ru.startandroid.p0051layoutfiles</p>
+<p>Как получить из старого новое? Рассмотрим на примере этого урока. Будем брать значения для Eclipse и подставлять их в Android Studio. </p>
+<p>Для поля <b>Application</b><b>/</b><b>Library</b> <b>name</b> берете значение <b>Application</b> <b>name</b>, без каких-либо изменений. Т.е. <em>LayoutFiles</em>.</p>
+<p>Для <b>Module</b> <b>name</b> можно брать значение <b>Project</b> <b>name</b>, но заглавные буквы надо сделать маленькими, а нижнее подчеркивание удалить. Т.е. из <em>P</em><em>0051_</em><em>LayoutFiles</em> получаем <em>p</em><em>0051</em><em>layoutfiles</em>.</p>
+<p><b>Package</b> <b>name</b> – это <em>ru</em><em>.</em><em>startandroid</em><em>.</em> плюc только что полученный <b>Module</b> <b>name</b>, т.е. ru.startandroid.p0051layoutfiles</p>
+<p>Используйте эту схему во всех последующих уроках для создания модулей.</p>
+<p><img src="images/lesson_4_0.png" alt="" width="640" height="385" border="0"></p>
+<p>Также, в информации для Eclipse есть поле <b>Create</b> <b>Activity</b>. Его будем использовать при создании модуля, когда указываем имя Activity, в поле <b>Activity</b> <b>Name</b></p>
+<p><img src="images/lesson_4_1.png" alt="" width="640" height="385" border="0"></p>
+<p>Сюда надо подставить значение из <b>Create</b> <b>Activity</b>. Обычно это всегда MainActivity.</p>
+<p>Запомните эту инструкцию и применяйте в каждом уроке, чтобы создавать модули.</p>
+<p>Возвращаемся к уроку.</p>
+<p>При разработке, каждому Activity сопоставляется одноименный java-класс (наследник класса android.app.Activity). При запуске приложения, когда система должна показать Activity и в дальнейшем работать с ним, она будет вызывать методы этого класса. И от того, что мы в этих методах накодим, зависит поведение Activity.</p>
+<p>При создании модуля мы указывали, что надо создать Activity с именем MainActivity</p>
+<p><img src="images/lesson_4_2.png" alt="" width="640" height="385" border="0"></p>
+<p>Мы попросили создать Activity и среда разработки создала нам соответствующий класс (в дальнейшем мы научимся их создавать самостоятельно).</p>
+<p>Давайте посмотрим этот класс: откроем двойным кликом файл: java\ru\startandroid\p0051layoutfiles\MainActivity.java</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_3.png" alt="" width="554" height="328" border="0"></p>
+<p>Смотрим java-код. Нас интересует метод <b>onCreate</b> – он вызывается, когда приложение создает и отображает Activity (на остальные методы пока не обращаем внимания). Посмотрим код реализации onCreate.</p>
+<p>Первая строка:</p>
+<pre><code class="java">super.onCreate(savedInstanceState);
+</code></pre>
+<p>это вызов метода родительского класса, выполняющий необходимые процедуры, его мы не трогаем.</p>
+<p>Нас сейчас очень интересует следующая строка:</p>
+<pre><code class="java">setContentView(R.layout.activity_main);
+</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/app/Activity.html#setContentView(int)" target="_blank">setContentView(int)</a> – устанавливает содержимое Activity из layout-файла. Но в качестве аргумента мы указываем не путь к layout-файлу (res/layout/activity_main.xml), а константу, которая является ID файла. Это константа генерируется автоматически в файле R.java, который мы пока трогать не будем. В этом классе будут храниться сгенерированные ID для всех ресурсов проекта (из папки res/*), чтобы мы могли к ним обращаться. Имена этих ID-констант совпадают с именами файлов ресурсов (без расширений).</p>
+<p>Файл res/layout/activity_main.xml был создан средой разработки вместе с Activity. Его название запрашивалось на том же экране, где и название Activity (скрин выше).</p>
+<p>Откроем двойным кликом res/layout/activity_main.xml</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_4.png" alt="" width="294" height="411" border="0"></p>
+<p>посмотрим, что там</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_5.png" alt="" width="426" height="727" border="0"></p>
+<p>Запустим приложение и посмотрим, что оно нам покажет</p>
+<p><img style="border: 0px;" src="images/lesson_4_6.png" alt="" width="640" height="737" border="0"></p>
+<p>Все верно - Activity отобразил то, что прописано в activity_main.xml.</p>
+<p>Попробуем отобразить содержимое другого файла. Создадим еще один layout-файл, например myscreen.xml. Для этого выделим папку res/layout в нашем модуле и нажмем на ней правую кнопку мыши. В появившемся меню выбираем New &gt; Layout resource file. Для любителей горячих клавиш есть более удобный путь: при выделенной папке res/layout нажать ALT+Insert, и там уже Enter на пункте Layout resource file.</p>
+<p>Откроется Wizard</p>
+<p><img src="images/lesson_4_7.png" alt="" width="640" height="382" border="0"></p>
+<p>Вводим имя файла myscreen, остальное пока не меняем, жмем OK.</p>
+<p>В папке layout должен появиться новый файл myscreen.xml</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_8.png" alt="" width="289" height="444" border="0"></p>
+<p>Этот новый layout-файл должен сразу открыться на редактирование. Добавим на экран элемент Plain TextView из списка слева и через Properties изменим его текст на: «new layout file myscreen for activity».</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_9.png" alt="" width="640" height="378" border="0"></p>
+<p>Обязательно сохраняем (CTRL+S).</p>
+<p>При создании нового layout-файла myscreen, среда добавила в R.java новую константу для этого файла - R.layout.myscreen. И мы теперь в коде сможем через эту константу указать на этот новый layout-файл.</p>
+<p>Настроим так, чтобы Activity использовало новый файл myscreen.xml, а не activity_main.xml, который был изначально. Откроем MainActivity.java и поменяем аргумент метода setContentView. Замените «R.layout.activity_main», на «R.layout.myscreen» (ID нового layout-файла). Должно получиться так:</p>
+<pre><code class="java">  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.myscreen);
+  }
+</code></pre>
+<p>Сохраняем код (CTRL+S) и запускаем приложение (SHIFT+F10).</p>
+<p>Теперь нам предложат подтвердить, что мы хотим запустить приложение на включенном эмуляторе.</p>
+<p><img src="images/lesson_4_10.png" alt="" width="490" height="450" border="0"></p>
+<p>Чтобы он при каждом запуске это не спрашивал, включите галку Use same device for future launches и жмите OK.</p>
+<p>Приложение запустилось</p>
+<p><img src="images/lesson_4_11.png" alt="" width="640" height="737" border="0"></p>
+<p>Видим, что теперь оно отображает содержимое из myscreen.xml, т.к. мы явно ему это указали в методе setContentView, который выполняется при создании (onCreate) Activity</p>
+<p>Layout-файл в виде XML</p>
+<p>Открыв в Android Studio layout файл activity_main или myscreen, вы видите его визуальное представление. Т.е. некий предпросмотр, как это будет выглядеть на экране. Снизу вы можете видеть две вкладки – Design и Text. Откройте вкладку Text</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_12.png" alt="" width="563" height="538" border="0"></p>
+<p>Мы видим достаточно читабельное xml-описание всех View нашего layout-файла. Названия xml-элементов - это классы View-элементов, xml-атрибуты - это параметры View-элементов, т.е. все те параметры, что мы меняем через вкладку Properties. Также вы можете вносить изменения прямо сюда и изменения будут отображаться во вкладке Design. Например, изменим текст у TextView. Вместо «new layout file myscreen for activity», напишем текст «some new text»</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_13.png" alt="" width="588" height="537" border="0"></p>
+<p>Сохраняем. Открываем Design и наблюдаем изменения.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_14.png" alt="" width="495" height="420" border="0"></p>
+<p>Обычно авторы учебников дают содержание layout-файлов именно в xml виде. Это удобно – вы можете просто скопировать фрагмент и использовать, и не надо вручную добавлять View-элементы, бегать по Properties и настраивать все руками. Я буду делать в своих проектах так же.</p>
+<p>Layout-файл при смене ориентации экрана</p>
+<p>По умолчанию мы настраиваем layout-файл под вертикальную ориентацию экрана. Но что будет если мы повернем смартфон и включится горизонтальная ориентация? Давайте смотреть.</p>
+<p>Изменим myscreen.xml. Добавим вертикальный ряд кнопок и изменим надпись.</p>
+<p>xml-код (вы можете скопировать его и заменить им содержимое вашего layout файла myscreen во вкладке Text):</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Вертикальная ориентация экрана"&gt;
+    &lt;/TextView&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"&gt;
+        &lt;Button
+            android:id="@+id/button1"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button1"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button2"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button2"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button3"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button3"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button4"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button4"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Обратите внимание - я добавил вертикальный LinearLayout и поместил в него 4 кнопки. Подробнее обсудим это на следующем уроке.</p>
+<p>Сохраним файл, запустим приложение.</p>
+<p><img src="images/lesson_4_15.png" alt="" width="640" height="737" border="0"></p>
+<p>В вертикальной ориентации все ок.</p>
+<p>Нажмем в эмуляторе CTRL+F12, ориентация сменилась на горизонтальную и наши кнопки уже не влезают в экран.</p>
+<p><img src="images/lesson_4_16.png" alt="" width="640" height="316" border="0"></p>
+<p>Т.е. нам необходим еще один layout-файл, который был бы заточен под горизонтальную ориентацию и в нашем случае вывел бы кнопки горизонтально.</p>
+<p>Но как дать знать Activity, что она в вертикальной ориентации должна использовать один layout-файл, а в горизонтальной – другой? Об этом за нас уже подумали создатели Андроид. У нас есть возможность создать layout-файл, который будет использоваться приложением, когда устройство находится в горизонтальной ориентации.</p>
+<p>Создание такого файла почти не отличается от создания обычного layout-файла. Становимся на папку res/layout и создаем новый Layout resource file. Название файла указываем то же самое: myscreen. Осталось добавить квалификатор, который даст приложению понять, что этот layout-файл надо юзать в горизонтальной ориентации. Для этого в списке квалификаторов слева снизу находим Orientation</p>
+<p><img src="images/lesson_4_17.png" alt="" width="640" height="382" border="0"></p>
+<p>И жмем кнопку со стрелкой вправо. Тем самым мы включили использование квалификатора ориентации. Нам надо указать, что нас интересует горизонтальная ориентация: Landscape. Выберите это значение из выпадающего списка.</p>
+<p>Обратите внимание, что изменилось значение поля Directory name</p>
+<p><img src="images/lesson_4_18.png" alt="" width="640" height="382" border="0"></p>
+<p>Настройкой квалификатора мы указали, что наш новый layout-файл будет создан в папке res/layout-land, а не res/layout, как обычно. Т.е. квалификатор –land указывает на то, что layout-файлы из этой папки будут использованы в горизонтальной ориентации устройства.</p>
+<p>Жмем OK</p>
+<p>Посмотрим на структуру модуля</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_19.png" alt="" width="289" height="364" border="0"></p>
+<p>Видим, что у нас теперь два файла myscreen: обычный и land. Можно это же увидеть в структуре папок. Для этого сверху поменяйте вид проекта с Android на Project</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_20.png" alt="" width="366" height="483" border="0"></p>
+<p>И вы увидите, что в модуле теперь есть папки res/layout и res/layout-land. И обе они содержат файл myscreen.</p>
+<p>Откроем двойным кликом файл res/layout-land/myscreen и поменяем его содержимое на такой xml-код:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Горизонтальная ориентация экрана"&gt;
+    &lt;/TextView&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"&gt;
+        &lt;Button
+            android:id="@+id/button1"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button1"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button2"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button2"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button3"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button3"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button4"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="Button4"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Вкладка Design покажет следующее:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_4_21.png" alt="" width="514" height="386" border="0"></p>
+<p>В этом layout файле мы расположили кнопки горизонтально, чтобы они адекватно отображались в горизонтальной ориентации.</p>
+<p>Обратите внимание на название файла сверху. Там присутствует квалификатор land, чтобы вы всегда понимали какой из двух myscreen вы сейчас редактируете.</p>
+<p>Запустим приложение.</p>
+<p><img src="images/lesson_4_22.png" alt="" width="640" height="316" border="0"></p>
+<p>Activity читает layout-файл, который мы указывали в методе setContentView, т.е. myscreen.xml и отображает его содержимое. При этом оно учитывает ориентацию устройства, и в случае горизонтальной ориентации берет myscreen из папки res/layout-land (если он, конечно, там существует).</p>
+<p>Переключим ориентацию CTRL+F12.</p>
+<p><img src="images/lesson_4_23.png" alt="" width="640" height="737" border="0"></p>
+<p>Activity понимает, что находится в вертикальной ориентации, и использует layout-файл myscreen из папки res/layout.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

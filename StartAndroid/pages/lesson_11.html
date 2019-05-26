@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 11. Папка res/values. Используем ресурсы приложения.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- узнаем, зачем нужна папка res/values, что в ней можно хранить и как использовать</p>
+<p>В <a href="http://developer.android.com/guide/topics/resources/providing-resources.html#ResourceTypes" target="_blank">подпапках</a> res хранятся различные <b>ресурсы </b>приложения. Мы уже отлично знаем про<b> layout-файлы</b> в папке <b>res/layout</b>. Я упоминал про папку<b> res/drawable</b> с density-суффиксами – в ней хранятся <b>картинки</b>. Теперь обратим внимание на папку<b> res/values</b>. Она предназначена для хранения ресурсов (констант) <a href="http://developer.android.com/guide/topics/resources/available-resources.html" target="_blank">различных типов</a>. Мы рассмотрим типы <b>String </b>и <b>Color</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0111_ResValues<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ResValues<br><b>Package name</b>: ru.startandroid.develop.resvalues<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем файл <b>res/values/strings.xml</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_0.png" alt="" width="753" height="502" border="0"></p>
+<p>Мы видим два элемента типа String:</p>
+<p><b>hello </b>– по умолчанию он использован в свойстве Text в TextView в main.xml. И соответственно TextView отображает значение этого элемента.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_1.png" alt="" width="800" height="186" border="0"></p>
+<p><b>app_name </b>– по умолчанию используется как заголовок для приложения и Activity. Это указывается в манифест-файле, который мы еще не разбирали.</p>
+<p>На эти элементы можно кликнуть и увидеть справа, что они собой представляют: <b>имя </b>(Name) и <b>значение </b>(Value)</p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_2.png" alt="" width="637" height="268" border="0"></p>
+<p><b>Name </b>– это <b>ID</b>. Оно должно быть уникальным, и для него в<b> R.java</b> создается константа, чтобы мы могли иметь доступ к этому String-элементу.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_3.png" alt="" width="424" height="329" border="0"></p>
+<p>Если мы посмотрим XML-содержимое файла strings.xml (вкладка снизу – аналогично как для main.xml), то видим, что там все прозрачно и просто. Попробуем и мы использовать ресурсы.</p>
+<p>Для начала создадим такой экран в<b> main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:id="@+id/llTop"
+        android:orientation="vertical"
+        android:layout_weight="1"
+        android:layout_height="match_parent"&gt;
+        &lt;TextView
+            android:text="TextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/tvTop"
+            android:layout_marginTop="30dp"&gt;
+        &lt;/TextView&gt;
+        &lt;Button
+            android:text="Button"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnTop"
+            android:layout_width="wrap_content"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:id="@+id/llBottom"
+        android:orientation="vertical"
+        android:layout_weight="1"
+        android:layout_height="match_parent"&gt;
+        &lt;TextView
+            android:text="TextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/tvBottom"
+            android:layout_marginTop="30dp"&gt;
+        &lt;/TextView&gt;
+        &lt;Button
+            android:text="Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnBottom"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Экран разделен на две одинаковые половины, содержащие LinearLayout, Button и TextView. Для <b>LinearLayout </b>мы укажем<b> фоновый цвет</b>, а для <b>TextView </b>и <b>Button </b>– изменим <b>текст</b>. Реализуем это с помощью ресурсов. Причем View-элементы <b>верхней </b>части мы будем настраивать вручную через <b>properties</b>, а <b>нижнюю </b>часть попробуем настроить <b>программно</b>.</p>
+<p>Давайте создадим свой файл с ресурсами в папке values, название пусть будет myres.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_4.png" alt="" width="245" height="561" border="0"></p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_5.png" alt="" width="597" height="640" border="0"></p>
+<p>После создания открылся редактор файла. Добавлять элемент просто – жмем кнопку <b>Add </b>и выбираем <b>тип</b>, а справа пишем <b>имя</b> и <b>значение</b>. Создадим 4 String-элемента и 2 Color-элемента:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="tvTopText"&gt;Верхний текст&lt;/string&gt;
+    &lt;string name="btnTopText"&gt;Верхняя кнопка&lt;/string&gt;
+    &lt;string name="tvBottomText"&gt;Нижний текст&lt;/string&gt;
+    &lt;string name="btnBottomText"&gt;Нижняя кнопка&lt;/string&gt;
+    &lt;color name="llTopColor"&gt;#336699&lt;/color&gt;
+    &lt;color name="llBottomColor"&gt;#339966&lt;/color&gt;
+&lt;/resources&gt;</code></pre>
+<p>Для практики можете создать вручную, а можете просто вставить этот текст в содержимое myres.xml. Не забудьте сохранить. Заглянем в R.java, убедимся, что здесь все появилось:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_6.png" alt="" width="450" height="474" border="0"></p>
+<p>Ок, ресурсы созданы, настроим View-элементы на их использование. Сначала верхние:</p>
+<p><b>llTop </b>– в Properties находим свойство <b>Background</b>, жмем кнопку выбора (три точки), в ветке <b>Color </b>выделяем <b>llTopColor </b>и жмем <b>OK</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_10_7.png" alt="" width="574" height="234" border="0"></p>
+<p><b>tvTop </b>– для свойства Text откройте окно выбора и найдите там <b>tvTopText</b>.</p>
+<p><b>btnTop </b>- для свойства Text откройте окно выбора и найдите там <b>btnTopText</b>.</p>
+<p>Цвет верхней части изменился и тексты поменялись на те, что мы указывали в myres.xml.</p>
+<p>Чтобы изменить нижнюю часть, будем писать код. Сначала находим элементы, потом присваиваем им значения.</p>
+<pre><code class="java">public class MainActivity extends Activity {
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    LinearLayout llBottom = (LinearLayout) findViewById(R.id.llBottom);
+    TextView tvBottom = (TextView) findViewById(R.id.tvBottom);
+    Button btnBottom = (Button) findViewById(R.id.btnBottom);
+
+    llBottom.setBackgroundResource(R.color.llBottomColor);
+    tvBottom.setText(R.string.tvBottomText);
+    btnBottom.setText(R.string.btnBottomText);
+
+  }
+}</code></pre>
+<p>Обратите внимание на то, что для смены текста используется метод <b>setText</b>. Только это не тот же setText, что мы использовали, когда задавали текст напрямую. Этот <b>на вход</b> принимает <b>ID </b>и мы используем R.java, который хранит ID всех наших ресурсов. Т.е. методы называются одинаково, но на вход принимают разные параметры. Это <a href="http://download.oracle.com/javase/tutorial/java/javaOO/methods.html" target="_blank">нормальное явление</a> в Java.</p>
+<p>Сохраняем, запускаем и проверяем. Теперь тексты и цвета взяты из файла ресурсов. Вы можете изменить содержимое myres.xml (например текст для верхней кнопки), сохранить, запустить приложение и увидите изменения.</p>
+<p>Иногда необходимо в коде получить не ID ресурса, а его значение. Это делается следующим образом:</p>
+<pre><code class="java">getResources().getString(R.string.tvBottomText);</code></pre>
+<p>Выражение вернет текст «Нижний текст», соответствующий String-ресурсу с name = <b>tvBottomText</b>.</p>
+<p>Напоследок скажу пару слов об организации файлов для хранения ресурсов. Мы сейчас создали String и Color ресурсы<b> в одном файле</b> myres.xml, но рекомендуется их разделять <b>по разным файлам</b> (например strings.xml, colors.xml ...), и в дальнейшем я буду следовать этой рекомендации. Для этого есть причины, позже мы в этом убедимся.</p>
+<p>Имена ресурсов сквозные для всех файлов в папке res/values. Т.е. вы не можете в разных файлах создать ресурс с одним именем и типом.</p>
+<p>Имена файлов ресурсов могут быть произвольными и файлов можно создавать сколько угодно. В R.java попадут все ресурсы из этих файлов.</p>
+</body>
+</html>
+		
+            </div>
+     </div>    
+</div>
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

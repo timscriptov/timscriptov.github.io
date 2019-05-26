@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 93. Service. Передача данных в сервис. Методы остановки сервиса</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- передаем данные в сервис <br> - рассматриваем методы остановки сервиса stopSelf и stopSelfResult</p>
+<p>В прошлом уроке мы использовали в коде метод <a href="http://developer.android.com/reference/android/app/Service.html#stopSelf()" target="_blank">stopSelf</a>. Он вызывается внутри сервиса и останавливает этот сервис. У этого метода есть еще пара вариаций: <a href="http://developer.android.com/reference/android/app/Service.html#stopSelf(int)" target="_blank">stopSelf(int startId)</a> и <a href="http://developer.android.com/reference/android/app/Service.html#stopSelfResult(int)" target="_blank">stopSelfResult(int startId)</a>. Как видим, на вход они требуют некий <b>startId</b>. Что это и откуда его взять? Для ответа на вопрос давайте взглянем на входящие параметры метода <a href="http://developer.android.com/reference/android/app/Service.html#onStartCommand(android.content.Intent, int, int)" target="_blank">onStartCommand</a>:</p>
+<p>Первый – это <b>Intent</b>.  Тот самый, который отправляется в путь, когда мы стартуем сервис с помощью метода startService. Соответственно вы можете использовать его для передачи данных в ваш сервис. Тут все аналогично, как при вызове другого Activity – там вы тоже можете передать данные с помощью intent.</p>
+<p>Второй параметр – <b>флаги </b>запуска. Он нам пока не нужен, пропускаем его.</p>
+<p>Третий параметр – <b>startId</b>. Простыми словами – это <b>счетчик </b>вызовов startService пока сервис запущен. Т.е. вы запустили сервис методом startService, сработал метод onStartCommand и получил на вход startId = 1. Вызываем еще раз метод startService, сработал метод onStartCommand и получил на вход startId = 2. И так далее. Счетчик сбрасывается, когда сервис будет остановлен методами stopService, stopSelf и пр. После этого вызовы снова идут с единицы.</p>
+<p>Именно этот <b>startId </b>и нужен на вход методу stopSelf(startId). Т.е. этот метод дает системе понять, что конкретный вызов сервиса был успешно <b>обработан</b>. И мне кажется логичным, что, когда все вызовы сервиса выполнили метод stopSelf(startId) и система видит, что не осталось необработанных вызовов – сервис можно останавливать. Т.е. поступила куча вызовов, они все обработались и когда последний обработанный (но при этом не обязательно последний поступивший) выполняет stopSelf(startId) – сервис останавливается.</p>
+<p>Но на самом деле алгоритм чуть другой. Сервис останавливается, когда последний полученный (а не последний обработанный) вызов выполняет метод  stopSelf(startId). А при этом могут продолжать работать ранее полученные вызовы. Почему так сделано – я не знаю.</p>
+<p>В общем, наверно сумбурно объяснил, сейчас на примерах все станет понятнее.</p>
+<p>А метод<b> stopSelfResult(startId)</b> аналогичен методу <b>stopSelf(startId)</b>, но при этом еще возвращает boolean значение – остановил он сервис или нет.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0931_ServiceStop<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceStop<br><b>Package name</b>: ru.startandroid.develop.p0931servicestop<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Только кнопка для запуска сервиса.</p>
+<p>Создаем сервис <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0931servicestop;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+
+public class MyService extends Service {
+
+  final String LOG_TAG = "myLogs";
+  ExecutorService es;
+  Object someRes;
+  
+  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "MyService onCreate");
+    es = Executors.newFixedThreadPool(1);
+    someRes = new Object();
+  }
+  
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "MyService onDestroy");
+    someRes = null;
+  }
+
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(LOG_TAG, "MyService onStartCommand");
+    int time = intent.getIntExtra("time", 1);
+    MyRun mr = new MyRun(time, startId);
+    es.execute(mr);
+    return super.onStartCommand(intent, flags, startId);
+  }
+
+  public IBinder onBind(Intent arg0) {
+    return null;
+  }
+  
+  class MyRun implements Runnable {
+    
+    int time;
+    int startId;
+    
+    public MyRun(int time, int startId) {
+      this.time = time;
+      this.startId = startId;
+      Log.d(LOG_TAG, "MyRun#" + startId + " create");
+    }
+    
+    public void run() {
+      Log.d(LOG_TAG, "MyRun#" + startId + " start, time = " + time);
+      try {
+        TimeUnit.SECONDS.sleep(time);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      try {
+        Log.d(LOG_TAG, "MyRun#" + startId + " someRes = " + someRes.getClass() );
+      } catch (NullPointerException e) {
+        Log.d(LOG_TAG, "MyRun#" + startId + " error, null pointer");
+      }
+      stop();
+    }
+    
+    void stop() {
+      Log.d(LOG_TAG, "MyRun#" + startId + " end, stopSelf(" + startId + ")");
+      stopSelf(startId);
+    }
+  }
+}</code></pre>
+<p>Скажем прямо, тут немного нетривиально получилось :) , особенно если опыт работы в Java небольшой. Но попробуем разобраться.</p>
+<p>В <b>onCreate </b>создаем некий объект someRes. Это моя выдумка, на примере этого объекта я попробую показать, какую нехорошую ситуацию с ресурсами можно получить с применением метода stopSelf(startId). Этот объект будет использоваться сервисом в обработках вызовов. Пока что на него можно особо не смотреть.</p>
+<p>Executors.newFixedThreadPool(1) – эта строка дает нам объект (я буду называть его - <b>экзекьютор</b>), который будет получать от нас <b>задачи </b>(Runnable) и запускать их по очереди в <b>одном </b>потоке (на вход ему мы передаем значение<b> 1</b>). Он сделает за нас всю работу по управлению потоками.</p>
+<p>В <b>onDestroy </b>обнуляем someRes.</p>
+<p>В <b>onStartCommand  </b>мы читаем из intent параметр time. Создаем Runnable-объект <b>MyRun</b>, передаем ему time и startId и отдаем этот объект <b>экзекьютору</b>, который его запустит в отдельном потоке.</p>
+<p><b>MyRun </b>– Runnable-объект. Он и будет обрабатывать входящие вызовы сервиса. В конструкторе он получает <b>time </b>и <b>startId</b>. Параметр <b>time </b>будет использован для кол-ва секунд <b>паузы </b>(т.е. эмуляции работы). А <b>startId </b>будет использован в методе <b>stopSelf(startId)</b>, который даст сервису понять, что вызов под номером <b>strartId </b>обработан. В лог выводим инфу о создании, старте и завершении работы. Также здесь используем объект someRes, в лог просто выводим его класс. Если же объект = null, то ловим эту ошибку и выводим ее в лог.</p>
+<p>В общем, получилась, на первый взгляд, непонятная мегамонстроконструкция, но я реально не смог придумать ничего проще, чтобы наглядно показать тему урока. Сейчас все это взлетит и станет понятнее )</p>
+<p>Почему вообще я использую потоки, я показал в прошлом уроке. Т.к. сервис работает в том же потоке, что и приложение и соответственно будет тормозить экран своей работой.</p>
+<p>Да, и не забудьте прописать сервис в манифесте!</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0931servicestop;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  public void onClickStart(View v) {
+    startService(new Intent(this, MyService.class).putExtra("time", 7));
+    startService(new Intent(this, MyService.class).putExtra("time", 2));
+    startService(new Intent(this, MyService.class).putExtra("time", 4));
+  }
+}</code></pre>
+<p>По нажатию на кнопку мы отправляем <b>вызов </b>в сервис <b>три </b>раза. И в <b>intent </b>помещаем параметр <b>time</b>.</p>
+<p>Соответственно в сервисе будет <b>три </b>раза выполнен метод <b>onStartCommand</b>. Будет создано и передано экзекьютору три <b>MyRun</b>-объекта. Он их по очереди начнет выполнять. Это займет у него соответственно 7,2 и 4 секунд (время паузы мы передаем в intent-е). В конце обработки каждого MyRun будет выполняться stopSelf(startId).</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img src="images/lesson_92_0.png" alt="" width="640" height="454"></p>
+<p>Жмем <b>Start</b>, открываем логи и ждем секунд 15. Все должно закончиться строкой <i><b>MyService onDestroy</b></i></p>
+<p>Давайте разбирать, чего получилось.</p>
+<p><i>MyService onCreate</i></p>
+<p>Сервис создан</p>
+<p><i>MyService onStartCommand<br> MyRun#1 create<br> MyService onStartCommand<br> MyRun#2 create<br> MyService onStartCommand<br> MyRun#3 create</i></p>
+<p>Три раза выполнился метод <b>onStartCommand</b>, т.к. мы в приложении три раза вызвали <b>startService</b>. В каждом вызове создалось по одному объекту MyRun. После символа # идет значение <b>startId</b>. Т.е. видим, что счетчик вызовов работает и startId увеличивается на единицу при каждом вызове.</p>
+<p>Все MyRun объекты были переданы экзекьютору, и он начинает их обрабатывать по очереди в одном потоке.</p>
+<p><i>MyRun#1 start, time = 7<br> MyRun#1 someRes = class java.lang.Object<br> MyRun#1 end, stopSelf(1)</i></p>
+<p>Первый готов. Метод stopSelf(1) вызван, сервис продолжает жить.</p>
+<p><i>MyRun#2 start, time = 2<br>MyRun#2 someRes = class java.lang.Object<br>MyRun#2 end, stopSelf(2)</i></p>
+<p>Второй готов. Метод stopSelf(2) вызван, сервис продолжает жить.</p>
+<p><i>MyRun#3 start, time = 4<br> MyRun#3 someRes = class java.lang.Object<br> MyRun#3 end, stopSelf(3)<br> MyService onDestroy</i></p>
+<p>Третий готов. Метод stopSelf(3) вызван и сервис после этого остановлен (<i><b>MyService onDestroy</b></i>), т.к. для последнего поступившего вызова (номер 3 в нашем случае) был вызван stopSelf(startId).</p>
+<p>Но, как я написал в начале урока, мне кажется странным останавливать сервис, если закончена обработка последнего поступившего вызова. В этом примере у нас вызовы обрабатывались по очереди и проблем не возникло. Т.е. последний поступивший вызов обрабатывался последним и его stopSelf(startId) останавливал сервис. Но, что если вызовы будут обрабатываться параллельно? И последний поступивший вызов выполнит stopSelf(startId), а первый поступивший еще будет работать? Проверим.</p>
+<p>В <b>MyService.java</b> в методе <b>onCreate </b>в строке создания экзекьютора поменяйте 1 на 3. Должно получиться так:</p>
+<pre><code class="java">  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "MyService onCreate");
+    es = Executors.newFixedThreadPool(3);
+    someRes = new Object();
+  }</code></pre>
+<p>Теперь наш экзекьютор будет выполнять поступающие ему задачи не в одном, а в <b>трех </b>разных потоках. Как говорил один полосатый кошак из Простоквашино: «я и так счастливый был, а теперь в три раза счастливее стал, потому что у меня теперь три потока есть» :)  Соответственно, три наших вызова будут теперь обработаны параллельно, а не по очереди. И пришло время обратить внимание на <b>someRes</b>.</p>
+<p>Все сохраним и запустим, жмем <b>Start</b>. На этот раз все заняло не 15 сек, а 7. Последняя строка логов должна быть такой: <i><b>MyRun#1 end, stopSelf(1)</b></i></p>
+<p>Разбираемся в логах.</p>
+<p><i>MyService onCreate</i></p>
+<p>Сервис создан</p>
+<p><i>MyService onStartCommand<br> MyRun#1 create<br> MyService onStartCommand<br> MyRun#2 create<br> MyRun#1 start, time = 7<br> MyService onStartCommand<br> MyRun#3 create<br> MyRun#2 start, time = 2<br> MyRun#3 start, time = 4</i><br> (у вас может быть немного иной порядок строк)</p>
+<p>Три раза выполнился метод <b>onStartCommand</b>, т.к. мы в приложении три раза вызвали startService. В каждом вызове создалось по одному объекту MyRun и все они сразу начали работать, потому что экзекьютор теперь раскидал их по трем потокам и им не надо ждать друг друга.</p>
+<p>Судя по параметру time, который мы используем для паузы, MyRun#2 закончит работать первым (через 2 сек.), MyRun#3 – вторым (через 4 сек.), MyRun#1 – третьим (через 7 сек.).  Так и происходит.</p>
+<p><i>MyRun#2 someRes = class java.lang.Object<br> MyRun#2 end, stopSelf(2)</i></p>
+<p>Объект <b>someRes доступен</b>. Вызов с startId = 2 обработан.  stopSelf(2) вызван – сервис продолжает жить.</p>
+<p><i>MyRun#3 someRes = class java.lang.Object<br> MyRun#3 end, stopSelf(3)<br> MyService onDestroy</i></p>
+<p><b>someRes доступен</b>. Вызов с startId = 3 обработан.  stopSelf(3) вызван – сервис остановлен (MyService onDestroy). Тут все верно - последний поступивший вызов имеет startId = 3, следовательно, вызов метода stopSelf(3) останавливает сервис. Следовательно, выполнился метод onDestroy, а в нем <b>обнулился someRes</b>. </p>
+<p><i>MyRun#1 error, null pointer<br> MyRun#1 end, stopSelf(1)</i></p>
+<p><b>someRes недоступен</b>, т.к. он был обнулен чуть раньше в <b>onDestroy</b>. Ну и вызов метода stopSelf(1) уже бесполезен. Сервис был официально остановлен ранее.</p>
+<p>Т.е. получилась неприятная ситуация, когда мы в onDestroy <b>освободили</b> объект, а он был еще <b>нужен</b>. А ведь вместо someRes мог быть объект по работе с БД. Здесь надо быть аккуратным, понимать механизм работы stopSelf(startId) и, когда именно этот метод остановит сервис.</p>
+<p>Ну и напоследок рассмотрим метод stopSelfResult(startId). Напомню, что он полностью аналогичен методу stopSelf(startId), и при этом возвращает boolean-значение, остановлен сервис или нет после вызова этого метода.</p>
+<p>В <b>MyService.java</b> в классе <b>MyRun</b> перепишем метод <b>stop</b>:</p>
+<pre><code class="java">    void stop() {
+      Log.d(LOG_TAG, "MyRun#" + startId + " end, stopSelfResult("
+          + startId + ") = " + stopSelfResult(startId));
+    }</code></pre>
+<p>Мы выводим в лог результат вызова метода <b>stopSelfResult</b>.</p>
+<p>Сохраняем, запускаем и жмем <b>Start</b>.</p>
+<p>Смотрим логи:</p>
+<p><i>MyService onCreate<br> MyService onStartCommand<br> MyRun#1 create<br> MyService onStartCommand<br> MyRun#2 create<br> MyRun#1 start, time = 7<br> MyService onStartCommand<br> MyRun#3 create<br> MyRun#2 start, time = 2<br> MyRun#3 start, time = 4<br> MyRun#2 someRes = class java.lang.Object<br> MyRun#2 end, stopSelfResult(2) = false<br> MyRun#3 someRes = class java.lang.Object<br> MyService onDestroy<br> MyRun#3 end, stopSelfResult(3) = true<br> MyRun#1 error, null pointer<br> MyRun#1 end, stopSelfResult(1) = false</i></p>
+<p>Видим, что stopSelfResult(3) вернул true, и тем самым сообщил нам, что именно он остановил сервис. А stopSelfResult(1) и stopSelfResult(2) вернули false – их вызов не привел к остановке сервиса.</p>
+<p>Понимаю, что сложно это все, но надеюсь, что у меня получилось тему раскрыть. Если остаются сомнения, попробуйте поиграться экзекьютором, кол-вом потоков и вызовов, и параметром time – должно стать понятнее.</p>
+<p>А вообще, до тех пор, пока вам это все не понадобится в боевых условиях, вполне можно понимать это не до конца.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

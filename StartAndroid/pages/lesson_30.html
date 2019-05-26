@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 30. Подробнее про onActivityResult. Зачем нужны requestCode и resultCode</title>
+	
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- разбираемся, зачем нужны requestCode и resultCode в onActivityResult</p>
+<p>На прошлом уроке мы поверхностно рассмотрели, как вызвать <b>Activity</b>, и как сделать так, чтобы она <b>вернула результат</b>. Рассмотрим немного подробней этот механизм. Создадим приложение, которое будет вызывать два разных Activity и получать от них результат. Как мы помним, результат приходит в метод <a href="http://developer.android.com/reference/android/app/Activity.html#onActivityResult(int, int, android.content.Intent)" target="_blank">onActivityResult</a>. И <b>requestCode </b>используется, чтобы отличать друг от друга пришедшие результаты. А <b>resultCode </b>– позволяет определить успешно прошел вызов или нет.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0301_ActivityResult<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ActivityResult<br><b>Package name</b>: ru.startandroid.develop.p0301activityresult<br><b>Create Activity</b>: MainActivity</p>
+<p>Нарисуем экран в <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center_horizontal"
+        android:text="Hello World"
+        android:textSize="20sp"&gt;
+    &lt;/TextView&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:orientation="horizontal"&gt;
+        &lt;Button
+            android:id="@+id/btnColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="5dp"
+            android:layout_weight="1"
+            android:text="Color"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/btnAlign"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1"
+            android:text="Alignment"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране <b>TextView</b> с текстом. И<b> две кнопки</b> для <b>выбора цвета </b>шрифта и <b>выравнивания </b>текста в TextView. Нажатие на кнопку будет <b>вызывать </b>Activity для выбора и получать обратно <b>результат</b>.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0301activityresult;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainActivity extends Activity implements OnClickListener {
+  
+  TextView tvText;
+  Button btnColor;
+  Button btnAlign;
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        tvText = (TextView) findViewById(R.id.tvText);
+        
+        btnColor = (Button) findViewById(R.id.btnColor);
+        btnAlign = (Button) findViewById(R.id.btnAlign);
+        
+        btnColor.setOnClickListener(this);
+        btnAlign.setOnClickListener(this);
+        
+    }
+
+  @Override
+  public void onClick(View v) {
+    // TODO Auto-generated method stub
+    
+  }
+}</code></pre>
+<p>Определили экранные элементы, прописали обработчик кнопкам и пока остановимся на этом.</p>
+<p>Создадим два других Activity. Начнем с <b>Activity </b>для <b>выбора</b> <b>цвета</b>. Создадим layout-файл <b>color.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/btnRed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Red"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnGreen"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Green"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnBlue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Blue"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Создаем класс ColorActivity. <b>ColorActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0301activityresult;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class ColorActivity extends Activity implements OnClickListener {
+  
+  Button btnRed;
+  Button btnGreen;
+  Button btnBlue;
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.color);
+    
+    btnRed = (Button) findViewById(R.id.btnRed);
+    btnGreen = (Button) findViewById(R.id.btnGreen);
+    btnBlue = (Button) findViewById(R.id.btnBlue);
+    
+    btnRed.setOnClickListener(this);
+    btnGreen.setOnClickListener(this);
+    btnBlue.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    Intent intent = new Intent();
+    switch (v.getId()) {
+    case R.id.btnRed:
+      intent.putExtra("color", Color.RED);
+      break;
+    case R.id.btnGreen:
+      intent.putExtra("color", Color.GREEN);
+      break;
+    case R.id.btnBlue:
+      intent.putExtra("color", Color.BLUE);
+      break;
+    }
+    setResult(RESULT_OK, intent);
+    finish();
+  }
+}</code></pre>
+<p>Как обычно определяем элементы, присваиваем обработчик кнопкам и реализуем onClick. В onClick мы создаем <b>Intent</b>, затем <b>определяем</b>, <b>кнопка </b>с каким цветом была нажата и помещаем в Intent объект с именем <i>color </i>и <b>значением </b>цвета. Ставим статус <b>RESULT_OK</b>, указываем, что надо вернуть объект <b>intent</b> в качестве результата и <b>закрываем </b>Activity. Для значения цветов используем системные константы.</p>
+<p>Аналогично создаем Activity для выбора выравнивания.</p>
+<p>Layout-файл <b>align.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/btnLeft"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Left"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnCenter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Center"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnRight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:text="Right"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>AlignActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0301activityresult;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class AlignActivity extends Activity implements OnClickListener {
+  
+  Button btnLeft;
+  Button btnCenter;
+  Button btnRight;
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.align);
+    
+    btnLeft = (Button) findViewById(R.id.btnLeft);
+    btnCenter = (Button) findViewById(R.id.btnCenter);
+    btnRight = (Button) findViewById(R.id.btnRight);
+    
+    btnLeft.setOnClickListener(this);
+    btnCenter.setOnClickListener(this);
+    btnRight.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    Intent intent = new Intent();
+    switch (v.getId()) {
+    case R.id.btnLeft:
+      intent.putExtra("alignment", Gravity.LEFT);
+      break;
+    case R.id.btnCenter:
+      intent.putExtra("alignment", Gravity.CENTER);
+      break;
+    case R.id.btnRight:
+      intent.putExtra("alignment", Gravity.RIGHT);
+      break;
+    }
+    setResult(RESULT_OK, intent);
+    finish();
+  }
+}</code></pre>
+<p>Здесь все аналогично, как и в ColorActivity. Только работаем не с цветами, а с <b>выравниванием</b>. Не забудьте прописать оба Activity в манифесте.</p>
+<p>Теперь можем завершить код в MainActivity.java. Добавим пару своих <b>констант </b>в класс для удобства:</p>
+<pre><code class="java">  final int REQUEST_CODE_COLOR = 1;
+  final int REQUEST_CODE_ALIGN = 2;</code></pre>
+<p>Эти константы далее будем использовать в качестве requestCode.</p>
+<p>Допишем метод onClick:</p>
+<pre><code class="java">  @Override
+  public void onClick(View v) {
+    Intent intent;
+    switch (v.getId()) {
+    case R.id.btnColor:
+      intent = new Intent(this, ColorActivity.class);
+      startActivityForResult(intent, REQUEST_CODE_COLOR);
+      break;
+    case R.id.btnAlign:
+      intent = new Intent(this, AlignActivity.class);
+      startActivityForResult(intent, REQUEST_CODE_ALIGN);
+      break;
+    }
+  }</code></pre>
+<p>Мы определяем, какая <b>кнопка </b>была нажата и посылаем <b>Intent </b>с ожиданием возврата результата. Два вызова отличаются <b>классом </b>вызываемого Activity и параметром <b>requestCode </b>в методе <b>startActivityForResult</b>. При вызове <b>ColorActivity </b>используем константу <b>REQUEST_CODE_COLOR</b>, а при вызове <b>AlignActivity </b>- <b>REQUEST_CODE_ALIGN</b>. Эту константу мы обратно получим в методе обработки результата – <b>onActivityResult</b>, и по ней сможем определить из <b>какого </b>именно <b>Activity </b>пришел <b>результат</b>.</p>
+<p>Давайте реализуем метод onActivityResult в MainActivity.java:</p>
+<pre><code class="java">  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    // запишем в лог значения requestCode и resultCode
+    Log.d("myLogs", "requestCode = " + requestCode + ", resultCode = " + resultCode);
+    // если пришло ОК
+    if (resultCode == RESULT_OK) {
+      switch (requestCode) {
+      case REQUEST_CODE_COLOR:
+        int color = data.getIntExtra("color", Color.WHITE);
+        tvText.setTextColor(color);
+        break;
+      case REQUEST_CODE_ALIGN:
+        int align = data.getIntExtra("alignment", Gravity.LEFT);
+        tvText.setGravity(align);
+        break;
+      }
+    // если вернулось не ОК
+    } else {
+      Toast.makeText(this, "Wrong result", Toast.LENGTH_SHORT).show();
+    }
+  }</code></pre>
+<p>Для наглядности пишем в лог значения переменных.</p>
+<p>Вспоминаем, что в ColorActivity и AlignActivity в методе setResult мы ставили статус <b>RESULT_OK </b>при отправке результата. Значит в <b>onActivityResult </b>нам надо ожидать этот статус, как обозначение успешного окончания вызова.</p>
+<p>Если вызов прошел успешно (resultCode = RESULT_OK), то мы смотрим значение <b>requestCode</b>. Если оно равно константе <b>REQUEST_CODE_COLOR</b>, то вспоминаем, что мы использовали эту константу в методе <b>startActivityForResult</b>, когда отправляли запрос на <b>выбор цвета</b>. Значит, нам пришел <b>результат </b>этого <b>выбора</b>. Мы берем <b>Intent </b>(data) и <b>извлекаем </b>из него значение объекта с именем <i>color </i>и присваиваем это значение <b>цвету </b>текста в TextView. Константа <b>Color.WHITE</b> в методе <b>getIntExtra </b>означает значение по умолчанию. Т.е. если в Intent не найдется объекта с именем <i>color</i>, то метод вернет белый (white) цвет.</p>
+<p>Аналогично для <b>REQUEST_CODE_ALIGN</b>. Эту константу мы использовали для запроса выбора <b>выравнивания</b>. И если в методе <b>onActivityResult </b>параметр <b>requestCode </b>= этой константе, значит пришел ответ на запрос выравнивания. И мы считываем это значение из Intent и присваиваем его атрибуту Gravity для TextView.</p>
+<p>Если <b>resultCode </b>не равен <b>RESULT_OK</b>, значит что-то пошло не так. Выводим на экран соответствующее сообщение. Этот случай может наступить, например, если на экране выбора не делать выбор, а нажать кнопку Назад.</p>
+<p>Давайте все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_29_0.png" alt="" width="640" height="454"></p>
+<p>Нажмем Color</p>
+<p><img src="images/lesson_29_1.png" alt="" width="640" height="454"></p>
+<p>и выберем, например Red</p>
+<p>Цвет изменился</p>
+<p><img src="images/lesson_29_2.png" alt="" width="640" height="454"></p>
+<p>смотрим лог:</p>
+<p><i>requestCode = 1, resultCode = -1</i></p>
+<p><b>requestCode </b>пришедший в метод <b>onActivityResult</b> равен 1. Все верно, это значение константы <b>REQUEST_CODE_COLOR</b>, которое мы использовали при вызове.</p>
+<p><b>resultCode </b>= -1 – это значение системной константы <a href="http://developer.android.com/reference/android/app/Activity.html#RESULT_OK" target="_blank">RESULT_OK</a> </p>
+<p>Т.е. все верно, пришел ответ на запрос цвета, и его статус = <b>RESULT_OK</b>.</p>
+<p>Теперь жмем Alignment и выбираем Right, получаем выравнивание вправо:</p>
+<p><img src="images/lesson_29_3.png" alt="" width="640" height="454"></p>
+<p>Смотрим лог:</p>
+<p><i>requestCode = 2, resultCode = -1</i></p>
+<p><b>requestCode </b>= 2, что равно константе <b>REQUEST_CODE_ALIGN</b>. Значит пришел ответ на запрос выравнивания.</p>
+<p><b>resultCode </b>= -1, т.е. RESULT_OK.</p>
+<p>Теперь снова жмем Color</p>
+<p><img src="images/lesson_29_4.png" alt="" width="640" height="454"></p>
+<p>но вместо того, чтобы выбрать цвет нажмем кнопку назад</p>
+<p><img src="images/lesson_29_5.png" alt="" width="640" height="454"></p>
+<p>Отобразилось наше сообщение об ошибке. Смотрим логи:</p>
+<p><i>requestCode = 1, resultCode = 0</i></p>
+<p><b>requestCode </b>= 1 – все верно, мы запрашивали цвет (<b>REQUEST_CODE_COLOR</b>)</p>
+<p><b>resultCode </b>= 0, это значение константы <a href="http://developer.android.com/reference/android/app/Activity.html#RESULT_CANCELED" target="_blank">RESULT_CANCELED</a>, значит вызов прошел неудачно</p>
+<p>Ограничений на значение статуса в методе setResult нет. RESULT_OK и RESULT_CANCELED – системные общепринятые константы. Но вы можете свободно использовать свои значения, если в этом есть необходимость.</p>
+<p>Итак, подведем итог.</p>
+<p><b>requestCode </b>– это в некотором роде ID запроса. Задается в методе <b>startActivityForResult</b>, и проверяется потом в <b>onActivityResult</b>, чтобы точно знать, на какой вызов пришел ответ.</p>
+<p><b>resultCode </b>– статус вызова. Задается в методе <b>setResult</b>, и проверяется в <b>onActivityResult</b>, чтобы понять насколько успешно прошел вызов. Если при вызове что-то пошло не так, то вернется системная константа <b>RESULT_CANCELED</b>.</p>
+<p>Полный код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0301activityresult;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  final int REQUEST_CODE_COLOR = 1;
+  final int REQUEST_CODE_ALIGN = 2;
+
+  TextView tvText;
+  Button btnColor;
+  Button btnAlign;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvText = (TextView) findViewById(R.id.tvText);
+
+    btnColor = (Button) findViewById(R.id.btnColor);
+    btnAlign = (Button) findViewById(R.id.btnAlign);
+
+    btnColor.setOnClickListener(this);
+    btnAlign.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    Intent intent;
+    switch (v.getId()) {
+    case R.id.btnColor:
+      intent = new Intent(this, ColorActivity.class);
+      startActivityForResult(intent, REQUEST_CODE_COLOR);
+      break;
+    case R.id.btnAlign:
+      intent = new Intent(this, AlignActivity.class);
+      startActivityForResult(intent, REQUEST_CODE_ALIGN);
+      break;
+    }
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    // запишем в лог значения requestCode и resultCode
+    Log.d("myLogs", "requestCode = " + requestCode + ", resultCode = " + resultCode);
+    // если пришло ОК
+    if (resultCode == RESULT_OK) {
+      switch (requestCode) {
+      case REQUEST_CODE_COLOR:
+        int color = data.getIntExtra("color", Color.WHITE);
+        tvText.setTextColor(color);
+        break;
+      case REQUEST_CODE_ALIGN:
+        int align = data.getIntExtra("alignment", Gravity.LEFT);
+        tvText.setGravity(align);
+        break;
+      }
+      // если вернулось не ОК
+    } else {
+      Toast.makeText(this, "Wrong result", Toast.LENGTH_SHORT).show();
+    }
+  }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div> 
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 186. Notifications. Группировка уведомлений</title>
+ <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+          <p>В Android Oreo (API 26) появилась возможность создавать каналы для уведомлений. В этом уроке разберемся, как это делать и зачем это нужно.</p>
+<p>Для каждого приложения пользователь может настроить уведомления. Для этого надо зайти в настройки системы, там выбрать Apps, найти в списке и открыть нужное приложение и выбрать раздел Notifications.</p>
+<p>По умолчанию настройки выглядят так:</p>
+<p><img src="images/lesson187/lesson1.webp" alt="" width="640" height="454" border="0"></p>
+<p>Настроек немного, и они затронут все уведомления от данного приложения.</p>
+<p>Каналы позволяют расширить эти настройки и применять их выборочно. Разработчик приложения создает канал и указывает его ID при создании уведомлений. Пользователь в системных настройках приложения видит этот канал и может настроить его: важность, звук, вибру и пр. В итоге все уведомления, которые принадлежат этому каналу, будут отображаться с этими настройками.</p>
+<p>Т.е. создавая канал, разработчик дает пользователю возможность настроить поведение определенной группы уведомлений.</p>
+<p>Давайте создадим канал:</p>
+<pre><code class="java">NotificationManager notificationManager =
+       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+if (android.os.Build.VERSION.SDK_INT &gt;= android.os.Build.VERSION_CODES.O) {
+   NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "My channel",
+           NotificationManager.IMPORTANCE_HIGH);
+   channel.setDescription("My channel description");
+   channel.enableLights(true);
+   channel.setLightColor(Color.RED);
+   channel.enableVibration(false);
+   notificationManager.createNotificationChannel(channel);
+}
+</code></pre>
+<p><em>Каналы актуальны только для Android Oreo и выше, поэтому используется проверка версии Android. Далее я не буду включать эту проверку в примеры, чтобы не загромождать код.</em></p>
+<p>В конструкторе <a href="https://developer.android.com/reference/android/app/NotificationChannel.html#NotificationChannel(java.lang.String, java.lang.CharSequence, int)" target="_blank" rel="noopener noreferrer">NotificationChannel</a> указываем ID, имя и важность. Далее указываем прочие данные и настройки. По названию методов все понятно.</p>
+<p>Методом <a href="https://developer.android.com/reference/android/app/NotificationManager.html#createNotificationChannel(android.app.NotificationChannel)" target="_blank" rel="noopener noreferrer">createNotificationChannel</a> создаем канал.</p>
+<p>Теперь Notifications настройки приложения выглядят так:</p>
+<p><img src="images/lesson187/lesson2.webp" alt="" width="640" height="454" border="0"></p>
+<p>Появились два канала: дефолтный и наш созданный My channel. Настройки дефолтного будут использованы для уведомлений, для которых не был указан канал.</p>
+<p>Откроем настройки My channel:</p>
+<p><img src="images/lesson187/lesson3.webp" alt="" width="640" height="454" border="0"></p>
+<p>Обратите внимание, что пункт Vibrate выключен. Мы явно указали это при создании канала, используя метод enableVibration(false).</p>
+<p>Теперь при создании уведомлений вы можете указать ID канала, и уведомления будут отображены в соответствии с настройками этого канала.</p>
+<pre><code class="java">NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this, CHANNEL_ID)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text");
+</code></pre>
+<p>ID канала указывается в конструкторе билдера уведомления. И теперь этот конструктор не будет зачеркнут как Deprecated, если вы используете библиотеку appCompat версии 26 и выше.</p>
+<p>В какой момент создавать канал? Можно при старте приложения. Даже если канал уже был ранее создан, то просто ничего не произойдет. Но судя по тому, что пользователь не может удалять каналы, я думаю, можно использовать какой-нить флаг, который мы установим в true после первого создания каналов, и в дальнейшем он будет говорить нам о том, что каналы уже созданы.</p>
+<h2>Группа</h2>
+<p>Рассмотрим пример почтового приложения. Предположим, что оно умеет работать не только с почтой, но и с календарем. Т.е. оно может нам присылать уведомления двух типов: письма и события.</p>
+<p>Соответственно, мы можем создать два канала - один для уведомлений о письмах, другой - для событий. В результате, пользователь сам сможет настроить под себя отдельно уведомления о письмах и отдельно о событиях. Это удобно.</p>
+<p>Но наше приложение поддерживает несколько учетных записей. И под каждую учетную запись нам необходимо создавать два канала для уведомлений.</p>
+<p>При создании 4-х каналов настройки будут выглядеть так:</p>
+<p><img src="images/lesson187/lesson4.webp" alt="" width="640" height="454" border="0"></p>
+<p>Можно это улучшить, используя группы. Группа - это просто способ визуально разделить каналы в настройках.</p>
+<p>Создается группа так:</p>
+<pre><code class="java">NotificationManager notificationManager =
+       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+notificationManager.createNotificationChannelGroup(
+       new NotificationChannelGroup(GROUP_ID, "Group 1"));
+</code></pre>
+<p>В <a href="https://developer.android.com/reference/android/app/NotificationChannelGroup.html#NotificationChannelGroup(java.lang.String, java.lang.CharSequence)" target="_blank" rel="noopener noreferrer">конструкторе</a> указываем ID и имя.</p>
+<p>Далее, при создании канала используем метод <a href="https://developer.android.com/reference/android/app/NotificationChannel.html#setGroup(java.lang.String)" target="_blank" rel="noopener noreferrer">setGroup</a>, чтобы указать какой группе будет принадлежать канал.</p>
+<pre><code class="java">NotificationChannel channel = new NotificationChannel(...);
+// ...
+channel.setGroup(GROUP_ID);
+notificationManager.createNotificationChannel(channel);
+</code></pre>
+<p>Таким образом для каждой учетной записи нашего приложения мы можем создать группу, и указать ее при создании каналов уведомлений этой учетной записи:</p>
+<p>User A (group)<br/>    Mail (channel)<br/>    Events (channel)<br/>User B (group)<br/>    Mail (channel)<br/>    Events (channel)</p>
+<p>Теперь настройки выглядят лучше:</p>
+<p><img src="images/lesson187/lesson5.webp" alt="" width="640" height="454" border="0"></p>
+<p>Каналы сгруппированы по учетным записям.</p>
+<h2>Получение информации о канале</h2>
+<p>В любой момент после создания канала, вы можете получить информацию о нем.</p>
+<pre><code class="java">NotificationChannel channel = notificationManager.getNotificationChannel(CHANNEL_ID);
+</code></pre>
+<p>Метод <a href="https://developer.android.com/reference/android/app/NotificationManager.html#getNotificationChannel(java.lang.String)" target="_blank" rel="noopener noreferrer">getNotificationChannel</a> вернет вам объект NotificationChannel или null, если канал с указанным ID не был найден. Используя различные get-методы канала, вы сможете узнать, как пользователь настроил ваш канал. Но вы не сможете перенастроить его, set-методы просто не будут работать.</p>
+<p>Единственное, что вы можете поменять - это имя канала и его описание (description). Для этого необходимо просто пересоздать канал с новыми параметрами и тем же ID.</p>
+<p>Если вы считали настройки канала и по каким-то причинам решили, что пользователь не прав, то вы можете попросить его поменять настройки.</p>
+<p>Например, если пользователь выключил отображение уведомлений для канала, открываем настройки этого канала.</p>
+<pre><code class="java">NotificationChannel channel = notificationManager.getNotificationChannel(CHANNEL_ID);
+
+if (channel.getImportance() == NotificationManager.IMPORTANCE_NONE) {
+   Intent intent = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+   intent.putExtra(Settings.EXTRA_CHANNEL_ID, channel.getId());
+   intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+   startActivity(intent);
+}
+</code></pre>
+<p>Если <a href="https://developer.android.com/reference/android/app/NotificationManager.html#getImportance()" target="_blank" rel="noopener noreferrer">getImportance</a> равен IMPORTANCE_NONE, это значит, что канал был выключен пользователем. Создаем Intent с указанием ID канала и package приложения и запускаем Activity.</p>
+<p>Разумеется, в реальном приложении надо действовать не так топорно, а сначала поинтересовать мнением пользователя и объяснить, почему вы хотите, чтобы он поменял настройки канала.</p>
+<h2>Удаление канала</h2>
+<p>Чтобы удалить канал, используйте метод <a href="https://developer.android.com/reference/android/app/NotificationManager.html#deleteNotificationChannel(java.lang.String)" target="_blank" rel="noopener noreferrer">deleteNotificationChannel</a></p>
+<pre><code class="java">notificationManager.deleteNotificationChannel(CHANNEL_ID);
+</code></pre>
+<p>Технически вы конечно, можете использовать удаление, а затем создание канала, чтобы восстановить ваши настройки. Но так делать не рекомендуется. К тому же в настройках, в самом низу, пользователь будет видеть, сколько каналов было удалено.</p>
+<p><img src="images/lesson187/lesson6.webp" alt="" width="640" height="454" border="0"></p>
+<p>И он поймет, что вы просто пересоздаете канал и сбрасываете его настройки.</p>
+<p>Importance vs Priority</p>
+<p>Если вы помните, при создании уведомления, мы можем в билдере указать приоритет. Начиная с Android Oreo приоритеты уведомлений были объявлены устаревшими и заменены параметром канала - важность.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

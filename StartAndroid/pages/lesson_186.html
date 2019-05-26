@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 186. Notifications. Группировка уведомлений</title>
+ <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+          <p>В Android 7 (API 24) появилась возможность группировать уведомления. Даже если вы это явно не реализуете, система сама создаст группу, если у вас 4 и более уведомлений.</p>
+<p>Выглядит это так:</p>
+<p><img src="images/lesson186/lesson1.gif" alt="" width="640" height="454" border="0"></p>
+<p>Вы можете развернуть/свернуть/удалить группу. На отдельное уведомление вы также можете нажать или удалить его. Если уведомлений в группе становится меньше 4, то уведомления становятся отдельными от группы.</p>
+<p>Все ваши уведомления будут попадать в одну безымянную группу. По умолчанию, нажатие на эту группу откроет приложение.</p>
+<p>Рассмотрим, какие возможности управления группами нам даны.</p>
+<p>Мы можем:</p>
+<p>1) создавать несколько групп и сами решать, в какую из них пойдет новое уведомление. Группа будет отображаться, когда в ней есть хотя бы два уведомления.</p>
+<p>2) добавить к группе текстовое описание</p>
+<p>3) добавить к группе PendingIntent, который сработает по нажатию на группу</p>
+<p><br/>В качестве примера можно рассмотреть почтовое приложение. У пользователя есть несколько аккаунтов и в них приходят новые письма. Будет разумно создавать отдельную группу для каждого аккаунта. Каждая такая группа будет отображать только те письма, которые находятся в определенном аккаунте.</p>
+<p>Рассмотрим на практике. Создаем уведомление:</p>
+<pre><code class="java">NotificationCompat.Builder mBuilder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Sender " + 1)
+               .setContentText("Subject text " + 1)
+               .setGroup(GROUP_KEY);
+
+Notification notification = mBuilder.build();
+
+NotificationManager notificationManager =
+       (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+notificationManager.notify(1, notification);
+</code></pre>
+<p>Уведомление создается так же, как обычно. Добавлен только метод <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setGroup(java.lang.String)" target="_blank" rel="noopener noreferrer">setGroup</a>. В нем нам нужно указать String ключ группы, чтобы система знала, в какую группу помещать это уведомление.</p>
+<p> </p>
+<p>Создаем группу:</p>
+<pre><code class="java">NotificationCompat.Builder mBuilder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentInfo("user_mail.com")
+               .setGroup(GROUP_KEY)
+               .setGroupSummary(true);
+
+Notification notification = mBuilder.build();
+
+NotificationManager notificationManager =
+       (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+notificationManager.notify(-100, notification);
+</code></pre>
+<p>Группа создается так же, как и уведомление. Но тексты, которые мы обычно передаем в setContentTitle и setContentTitle, в группе не отображаются, поэтому я в примере их не использую. Правда, в следующих версиях Android отображение групп может измениться, и они вдруг начнут отображать titile и text. Может и имеет смысл передавать туда что-нибудь.</p>
+<p>А вот текст из метода <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setContentInfo(java.lang.CharSequence)" target="_blank" rel="noopener noreferrer">setContentInfo</a> будет отображен, и это позволяет нам дать какое-то текстовое описание для группы, чтобы пользователь понимал, о чем она. Т.к. мы рассматриваем пример почтового приложения, то можно использовать имя аккаунта пользователя. Пользователь будет видеть в какой группе, содержимое какого аккаунта отображается.</p>
+<p>В setGroup передаем String ключ группы. Его же мы используем при создании уведомлений, которые должны попадать в эту группу.</p>
+<p>В <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setGroupSummary(boolean)" target="_blank" rel="noopener noreferrer">setGroupSummary</a> указываем true. Это означает, что уведомление является группой.</p>
+<p>В методе notify, так же, как и для обычного уведомления, необходимо указывать id. Тут будьте внимательны и следите, чтобы у уведомления и у группы не совпали id. Группа все-таки является обычным уведомлением. А при совпадении id, одно уведомление заменит другое.</p>
+<p>Как вариант, для уведомлений о новом письме можно брать id письма, а для групп - отрицательное значение id аккаунта. Тогда они точно не пересекутся.</p>
+<p>В итоге вы получите такую картину</p>
+<p><img src="images/lesson186/lesson2.webp" alt="" width="640" height="454" border="0"></p>
+<p>Три новых письма собрались в одну группу. И в описании группы видно, что она отображает письма аккаунта <span id="cloake33ab382fbed11450619746e8b37f00a">Этот адрес электронной почты защищён от спам-ботов. У вас должен быть включен JavaScript для просмотра.</span></p>
+<h2>Когда создавать группу</h2>
+<p>Группу имеет смысл отображать каждый раз после создания уведомления, которое входит в эту группу. Если группа уже существует и отображается, то просто ничего не произойдет (если вы не меняли параметры группы).</p>
+<p>А если мы отобразим группу только один раз, и пользователь в какой-то момент удалит ее из уведомлений, то все наши новые уведомления останутся без группы.</p>
+<h2>Сортировка в группе</h2>
+<p>Вы можете сортировать уведомления в группе используя метод <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setSortKey(java.lang.String)" target="_blank" rel="noopener noreferrer">setSortKey</a> в билдере каждого уведомления. Передаете в него строковое значение, и по нему будет выполнятся сортировка.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

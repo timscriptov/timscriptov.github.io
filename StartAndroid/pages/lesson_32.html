@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 32. Пишем простой браузер</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- пишем простой браузер</p>
+<p>На прошлом уроке мы увидели, что если вызвать <b>Intent </b>с <b>action </b>= <b>ACTION_VIEW </b>и <b>data </b>= <b>Uri-</b>объект с <b>http</b>-адресом, то запускается <b>браузер </b>и отображает содержимое страницы по этому http-адресу. Мы можем самостоятельно сделать простейший браузер, который будет реагировать на такой Intent и просто отобразит страницу. Для этого надо настроить<b> Intent Filter</b> и использовать компонент <b>WebView</b>.</p>
+<p>На первом экране приложения у нас будет кнопка, отправляющая Intent. На втором экране будет WebView.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0321_SimpleBrowser<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleBrowser<br><b>Package name</b>: ru.startandroid.develop.p0321simplebrowser<br><b>Create Activity</b>: MainActivity</p>
+<p>Рисуем <b>main.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+        &lt;Button
+            android:id="@+id/btnWeb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="web"&gt;
+        &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране просто кнопка </p>
+<p>Кодим <b>MainActivity.java:</b></p>
+<pre><code class="java">package ru.startandroid.develop.p0321simplebrowser;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+
+public class MainActivity extends Activity {
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    (findViewById(R.id.btnWeb)).setOnClickListener(new OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.ya.ru")));
+      }
+    });
+  }
+}</code></pre>
+<p>Код немного непривычен. Обратите внимание я нигде не описываю объект класса <b>Button</b>. Метод <b>findViewById </b>возвращает <b>View</b>, и это <b>View </b>поддерживает метод <b>setOnClickListener</b>, который я вызываю. А в методе <b>setOnClickListener</b> я создаю объект, реализующий интерфейс <b>OnClickListener </b>и в нем пишу код в <b>onClick</b>. Также я создаю объект <b>Intent </b>не отдельно, а прямо в методе <b>startActivity</b>.  Кода меньше получилось, чем обычно. Может быть вам подойдет такой вариант.</p>
+<p>Итак, мы по <b>нажатию </b>на кнопку запускаем <b>Intent</b>, который означает, что мы хотим просмотреть сайт <a href="http://www.ya.ru/">http://www.ya.ru</a>.</p>
+<p>Создадим второе Activity. Сначала layout-файл <b>browser.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+        &lt;WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"&gt;
+        &lt;/WebView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране компонент <b>WebView</b>.</p>
+<p>Создаем <b>BrowserActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0321simplebrowser;
+
+import android.app.Activity;
+import android.net.Uri;
+import android.os.Bundle;
+import android.webkit.WebView;
+
+public class BrowserActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.browser);
+
+    WebView webView = (WebView) findViewById(R.id.webView);
+    Uri data = getIntent().getData();
+    webView.loadUrl(data.toString());
+  }
+}</code></pre>
+<p>Определяем <b>WebView</b>, читаем <b>data </b>из <b>Intent </b>и передаем <b>строку </b>в <b>WebView</b>.</p>
+<p>Теперь пропишем <b>Activity </b>в <b>манифесте</b>. К нему нам надо будет добавить <b>Intent</b> <b>Filter</b>, в нем указать <b>action</b> = <b>ACTION_VIEW</b>. А для <b>data </b>мы видим несколько параметров, используем <b>Scheme </b>= <i>http</i>.</p>
+<p><img src="images/lesson_31_0.png" alt="" width="595" height="305"></p>
+<p>Это значит, что <b>Uri </b>объект в <b>Intent </b>должен содержать http-адрес.</p>
+<p>Не забываем про <b>Category </b>= <b>Default</b>. <b>Label </b>для BrowserActivity укажите, например, <i>MyBrowser</i>.</p>
+<p>Также в манифесте надо добавить <b>Uses Permission</b> = <b>android.permission.INTERNET</b> на вкладке <b>Permissions</b>. Чтобы система дала приложению доступ в интернет.</p>
+<p><img src="images/lesson_31_1.png" alt="" width="644" height="314"></p>
+<p>Все сохраним и запустим приложение. Жмем кнопку и видим выбор: система предлагает нам на выбор <b>системный браузер </b>и <b>наш</b>,<b> </b>только что сделанный. Т.е. <b>Intent </b>c запросом на просмотр http-адреса нашел в системе <b>два </b>Activity, которые в своих <b>Intent</b> <b>Filter </b>заявили, что умеют отображать http-адреса.</p>
+<p><img src="images/lesson_31_2.png" alt="" width="640" height="454"></p>
+<p>Выбираем наше MyBrowser и видим страницу.</p>
+<p><img src="images/lesson_31_3.png" alt="" width="640" height="454"></p>
+<p>Мы увидели, что <b>Activity </b>в наших приложениях могут <b>обрабатывать </b>не только <b>наши </b>придуманные action, но и <b>системные</b>. И, тем самым, создавать альтернативу системным приложениям.</p>
+<p>Но, как вы понимаете, мы запросто могли в нашем Activity не использовать WebView и не показывать страницу. Можно было использовать TextView и в нем просто отобразить в виде текста адрес из data. Или написать http-запрос, который скачал бы эту страницу и отобразил ее html-содержимое. Мы могли вообще забить на http-адрес и показать какую-нибудь картинку левую или просто темный экран.</p>
+<p>Т.е. для Activity можно создать Intent Filter, который будет сообщать системе, что приложение умеет что-то, но, при этом, внутри Activity будет какая-нибудь ерунда. Это уже вопросы программерской этики, здравого смысла и адекватности )</p>
+<p>Полный код манифест-файла:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android" package="ru.startandroid.develop.p0321simplebrowser" android:versionCode="1" android:versionName="1.0"&gt;
+        &lt;uses-sdk android:minSdkVersion="10"&gt;&lt;/uses-sdk&gt;
+        &lt;uses-permission android:name="android.permission.INTERNET"&gt;&lt;/uses-permission&gt;
+        &lt;application android:icon="@drawable/ic_launcher" android:label="@string/app_name"&gt;
+                &lt;activity android:label="@string/app_name" android:name=".MainActivity"&gt;
+                        &lt;intent-filter&gt;
+                                &lt;action android:name="android.intent.action.MAIN"&gt;&lt;/action&gt;
+                                &lt;category android:name="android.intent.category.LAUNCHER"&gt;&lt;/category&gt;
+                        &lt;/intent-filter&gt;
+                &lt;/activity&gt;
+                &lt;activity android:label="MyBrowser" android:name="BrowserActivity"&gt;
+                        &lt;intent-filter&gt;
+                                &lt;action android:name="android.intent.action.VIEW"&gt;&lt;/action&gt;
+                                &lt;data android:scheme="http"&gt;&lt;/data&gt;
+                                &lt;category android:name="android.intent.category.DEFAULT"&gt;&lt;/category&gt;
+                        &lt;/intent-filter&gt;
+                &lt;/activity&gt;
+        &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

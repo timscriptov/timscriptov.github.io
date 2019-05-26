@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 52. SimpleCursorAdapter, пример использования</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем SimpleCursorAdapter для построения списка<br> - добавляем и удаляем записи в списке</p>
+<p><b>Важное замечание!</b> Урок более не актуален, т.к. в нем используются методы, которые Google объявил устаревшими. Если вы просто зашли посмотреть, как использовать SimpleCursorAdapter, то вместо этого урока рекомендую прочитать Урок 136. Если же вы идете последовательно по урокам, то вполне можно прочесть и понять этот урок, а потом просто акутализируете свои знания в Уроке 136.</p>
+<p>После нескольких уроков посвященных <b>SimpleAdapter </b>мы знаем про него достаточно и представляем схему его работы. И теперь нам будет нетрудно усвоить <b>SimpleCursorAdapter</b>. Он отличается тем, что в качестве данных используется не коллекция Map, а Cursor с данными из БД. И в массиве from, соответственно, мы указываем не ключи Map-атрибутов, а наименования полей (столбца) курсора. Значения из этих полей будут сопоставлены указанным View-компонентам из массива to.</p>
+<p>Также немного отличается от SimpleAdapter стандартный биндинг и внешний ViewBinder. SimpleCursorAdapter умеет работать с TextView и ImageView компонентами и их производными, а Checkable-производные не воспримет . А при использовании ViewBinder, необходимо реализовать его метод <a href="http://developer.android.com/reference/android/widget/SimpleCursorAdapter.ViewBinder.html#setViewValue(android.view.View, android.database.Cursor, int)" target="_blank">boolean setViewValue (View view, Cursor cursor, int columnIndex)</a>. На вход он принимает <b>View</b>-компонент для биндинга, <b>cursor </b>с данными и <b>номер столбца</b>, из которого надо взять данные. Позиция курсора уже установлена в соответствии с позицией пункта списка. Не буду снова расписывать примеры использования, т.к. они будут очень похожи на примеры из предыдущих уроков по SimpleAdapter. Если там все было понятно, то и здесь проблем не должно возникнуть.</p>
+<p>Итак, давайте накидаем пример использования <b>SimpleCursorAdapter</b>. Список будет отображать картинку и текст. Также реализуем возможность <b>добавления </b>и <b>удаления </b>данных из списка. Добавлять будем кнопкой, а удалять с помощью контекстного меню.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0521_SimpleCursorAdapter<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleCursorAdapter<br><b>Package name</b>: ru.startandroid.develop.p0521simplecursoradapter<br><b>Create Activity</b>: MainActivity</p>
+<p>Обычно в уроках я тексты для кнопок и прочего указывал напрямую. Делал я это не со зла, а чтобы не перегружать урок лишней информацией. Но с последними обновлениями Eclipse стал ругаться примерно так: <b><i>[I18N] Hardcoded string "какой-то текст", should use @string resource</i></b>. Ошибка не критична и запуску приложения никак не помешает, но некоторых она смущает. Да и действительно, хардкод – это плохо. С этого урока постараюсь следовать правилам хорошего тона и использовать файлы <b>ресурсов</b>. На нашем текущем уровне знаний это не должно стать помехой в понимании и усвоении уроков.</p>
+<p>Заполняем <b>res/values/string.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;SimpleCursorAdapter&lt;/string&gt;
+    &lt;string name="add_record"&gt;Добавить запись&lt;/string&gt;
+    &lt;string name="delete_record"&gt;Удалить запись&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>Тут кроме названия приложения я записал тексты для кнопки и контекстного меню</p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onButtonClick"
+        android:text="@string/add_record"&gt;
+    &lt;/Button&gt;
+    &lt;ListView
+        android:id="@+id/lvData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка для добавления записи и список.</p>
+<p>Layout для пункта списка <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"&gt;
+    &lt;ImageView
+        android:id="@+id/ivImg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher"&gt;
+    &lt;/ImageView&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:text=""
+        android:textSize="18sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Картинка и текст.</p>
+<p>Т.к. <b>SimpleCursorAdapter </b>– это адаптер для работы с данными из <b>БД</b>, то нам нужно эту БД организовать. Чтобы не загромождать <b>MainActivity.java</b>, я вынесу код по работе с БД в отдельный класс <b>DB</b>. Создаем класс <b>DB.java </b>в том же пакете, где и MainActivity.java</p>
+<p>Код <b>DB.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0521simplecursoradapter;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DB {
+  
+  private static final String DB_NAME = "mydb";
+  private static final int DB_VERSION = 1;
+  private static final String DB_TABLE = "mytab";
+  
+  public static final String COLUMN_ID = "_id";
+  public static final String COLUMN_IMG = "img";
+  public static final String COLUMN_TXT = "txt";
+  
+  private static final String DB_CREATE = 
+    "create table " + DB_TABLE + "(" +
+      COLUMN_ID + " integer primary key autoincrement, " +
+      COLUMN_IMG + " integer, " +
+      COLUMN_TXT + " text" +
+    ");";
+  
+  private final Context mCtx;
+  
+  
+  private DBHelper mDBHelper;
+  private SQLiteDatabase mDB;
+  
+  public DB(Context ctx) {
+    mCtx = ctx;
+  }
+  
+  // открыть подключение
+  public void open() {
+    mDBHelper = new DBHelper(mCtx, DB_NAME, null, DB_VERSION);
+    mDB = mDBHelper.getWritableDatabase();
+  }
+  
+  // закрыть подключение
+  public void close() {
+    if (mDBHelper!=null) mDBHelper.close();
+  }
+  
+  // получить все данные из таблицы DB_TABLE
+  public Cursor getAllData() {
+    return mDB.query(DB_TABLE, null, null, null, null, null, null);
+  }
+  
+  // добавить запись в DB_TABLE
+  public void addRec(String txt, int img) {
+    ContentValues cv = new ContentValues();
+    cv.put(COLUMN_TXT, txt);
+    cv.put(COLUMN_IMG, img);
+    mDB.insert(DB_TABLE, null, cv);
+  }
+  
+  // удалить запись из DB_TABLE
+  public void delRec(long id) {
+    mDB.delete(DB_TABLE, COLUMN_ID + " = " + id, null);
+  }
+  
+  // класс по созданию и управлению БД
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context, String name, CursorFactory factory,
+        int version) {
+      super(context, name, factory, version);
+    }
+
+    // создаем и заполняем БД
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt; 5; i++) {
+        cv.put(COLUMN_TXT, "sometext " + i);
+        cv.put(COLUMN_IMG, R.drawable.ic_launcher);
+        db.insert(DB_TABLE, null, cv);
+      }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+<p>Здесь все нам знакомо по прошлым урокам <b>SQLite</b>.</p>
+<p>Мы создаем несколько public методов, чтобы Activity могла через них работать с данными:</p>
+<p><b>open </b>– установить соединение<br><b> close </b>– закрыть соединение<br><b> getAllData </b>– получить курсор со всеми данными из таблицы<br><b> addRec </b>– добавить запись<br><b> delRec </b>– удалить запись</p>
+<p>Это методы-оболочки для работы с БД, которые предоставят MainActivity только те возможности, какие ей нужны.</p>
+<p>Вложенный класс <b>DBHelper </b>– для создания и управления БД. В методе <b>onCreate </b>мы создаем таблицу и заполняем ее сгенерированными данными. Метод <b>onUpgrade </b>я оставил пустым, т.к. в этом примере не планирую обновлять версию БД.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0521simplecursoradapter;
+
+import android.app.Activity;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
+
+public class MainActivity extends Activity {
+
+  private static final int CM_DELETE_ID = 1;
+  ListView lvData;
+  DB db;
+  SimpleCursorAdapter scAdapter;
+  Cursor cursor;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // открываем подключение к БД
+    db = new DB(this);
+    db.open();
+
+    // получаем курсор
+    cursor = db.getAllData();
+    startManagingCursor(cursor);
+    
+    // формируем столбцы сопоставления
+    String[] from = new String[] { DB.COLUMN_IMG, DB.COLUMN_TXT };
+    int[] to = new int[] { R.id.ivImg, R.id.tvText };
+
+    // создааем адаптер и настраиваем список
+    scAdapter = new SimpleCursorAdapter(this, R.layout.item, cursor, from, to);
+    lvData = (ListView) findViewById(R.id.lvData);
+    lvData.setAdapter(scAdapter);
+
+    // добавляем контекстное меню к списку
+    registerForContextMenu(lvData);
+  }
+
+  // обработка нажатия кнопки
+  public void onButtonClick(View view) {
+    // добавляем запись
+    db.addRec("sometext " + (cursor.getCount() + 1), R.drawable.ic_launcher);
+    // обновляем курсор
+    cursor.requery();
+  }
+
+  public void onCreateContextMenu(ContextMenu menu, View v,
+      ContextMenuInfo menuInfo) {
+    super.onCreateContextMenu(menu, v, menuInfo);
+    menu.add(0, CM_DELETE_ID, 0, R.string.delete_record);
+  }
+  
+  public boolean onContextItemSelected(MenuItem item) {
+    if (item.getItemId() == CM_DELETE_ID) {
+      // получаем из пункта контекстного меню данные по пункту списка 
+      AdapterContextMenuInfo acmi = (AdapterContextMenuInfo) item.getMenuInfo();
+      // извлекаем id записи и удаляем соответствующую запись в БД
+      db.delRec(acmi.id);
+      // обновляем курсор
+      cursor.requery();
+      return true;
+    }
+    return super.onContextItemSelected(item);
+  }
+  
+  protected void onDestroy() {
+    super.onDestroy();
+    // закрываем подключение при выходе
+    db.close();
+  }
+
+}</code></pre>
+<p>Хорошо, что мы создали DB.java. Благодаря ему в MainActivity.java все красиво, прозрачно и удобно. Смотрим код.</p>
+<p>В <b>onCreate </b>мы организуем подключение к БД, получаем курсор и просим Activity присмотреть за ним. Теперь при смене Lifecycle-состояний Activity, оно будет менять соответствующим образом состояния курсора. Затем настраиваем биндинг – формируем массивы, которые укажут адаптеру, как сопоставлять данные из курсора и View-компоненты. В R.id.ivImg пойдет значение из поля img, а в R.id.tvText – значение из поля txt. Имена полей мы здесь указываем public-константами класса DB.  Далее мы создаем адаптер и настраиваем список на его использование. В конце добавляем контекстное меню к списку.</p>
+<p>В методе <b>onButtonClick </b>мы генерируем и добавляем запись в БД и обновляем курсор методом <a href="http://developer.android.com/reference/android/database/Cursor.html#requery()" target="_blank">requery</a>, чтобы получить свежие данные из БД.</p>
+<p>При создании контекстного меню, в методе <b>onCreateContextMenu</b>, мы добавляем пункт для удаления.</p>
+<p>В методе <b>onContextItemSelected </b>мы обрабатываем нажатие пункта контекстного меню. Чтобы получить данные по пункту списка, для  которого был совершен вызов контекстного меню, мы используем метод <a href="http://developer.android.com/reference/android/view/MenuItem.html#getMenuInfo()" target="_blank">getMenuInfo</a>. Объект <b><a href="http://developer.android.com/reference/android/widget/AdapterView.AdapterContextMenuInfo.html" target="_blank">AdapterContextMenuInfo</a> </b>содержит данные о View, id и позиции пункта списка. Нам нужно <b>id</b>. Этот <b>id</b> равен значению поля <b>_id</b> для соответствующей записи в курсоре. Мы вызываем метод удаления записи и обновляем курсор.</p>
+<p>В методе <b>onDestroy </b>мы закрываем подключение к БД. Это будет происходить при закрытии Activity.</p>
+<p>Все сохраняем и запускаем.</p>
+<p><img src="images/lesson_51_0.png" alt="" width="640"></p>
+<p>Нажав на кнопку, мы добавляем запись. А вызвав контекстное меню (долгое нажатие) для пункта списка можно его удалить.</p>
+<p>Мы рассмотрели возможность добавления и удаления записей в списке при использовании SimpleCursorAdapter. Возможность редактирования я рассматривать не стал. Это не особо усложнило бы урок, но сделало бы его больше и размыло бы тему. А я стараюсь делать уроки максимально заточенными под конкретную тему. Для тех, кому интересно редактирование – Google любезно создал такой пример на официальном сайте - <a href="http://developer.android.com/resources/tutorials/notepad/index.html">http://developer.android.com/resources/tutorials/notepad/index.html</a>. Мой пример похож на него, так что будет проще разобраться.</p>
+<p>Кстати, в этом уроке мы встретили список, в котором id пункта может не совпадать с позицией. Для теста попробуйте повесить обработку нажатия на пункт списка и посмотреть, что позиция – это будет позиция пункта в списке, а id – это идентификатор записи из БД (поле _id). Чтобы это работало, необходимо поле-идентификатор в таблице называть _id,  т.к. курсор будет использовать его, как id.  Иначе получим ошибку.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

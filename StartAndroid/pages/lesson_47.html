@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 47. Обзор адаптеров</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- разбираемся в адаптерах</p>
+<p>На последних уроках мы использовали <b>адаптеры</b> и сейчас вполне можем сформулировать, что это такое. Адаптер – <b>мост</b> между набором <b>данных</b> и <b>объектом</b>, использующим эти данные. Также адаптер отвечает за создание <b>View</b>-компонента для каждой единицы данных из набора.</p>
+<p>Я по себе помню, что новичку непросто разобраться в адаптерах. Кажется, что их куча и абсолютно непонятно какой и где используется. И рассказывать об этом без практики – бессмысленно. Поэтому в своих уроках я сначала рассмотрел пару примеров, чтобы в голове сложилась схема использования: набор данных – адаптер – объект. И теперь проще будет разобрать, какие еще адаптеры есть и чем они отличаются.</p>
+<p>В рассмотренных нами примерах были: <br>- адаптер <b>ArrayAdapter</b> и объект для отображения данных <b>ListView</b><br>- адаптер <b>SimpleExpandableListAdapter</b> и объект <b>ExpandableListView</b>.</p>
+<p>Я попробую в этом материале сделать обзор адаптеров и показать, чем они отличаются друг от друга. Материал будет периодически обновляться и пополняться. А пока я накидал схему java-иерархии интерфейсов и классов адаптеров. В скобках указываю тип: I – это интерфейс, AC – абстрактный класс, C – класс. Линии – это наследование. Читать следует сверху вниз.</p>
+<p><img src="images/lesson_46_0.png" alt="" border="0"></p>
+<p>Давайте по порядку смотреть, зачем оно все нужно.</p>
+<p>Интерфейс <a href="http://developer.android.com/reference/android/widget/Adapter.html" target="_blank">Adapter</a>. Описывает базовые методы, которые должны содержать адаптеры: getCount, getItem, getView и пр.</p>
+<p>Интерфейс <a href="http://developer.android.com/reference/android/widget/ListAdapter.html">ListAdapter</a>. Этот интерфейс должен быть реализован адаптером, который будет использован в ListView (метод <a href="http://developer.android.com/reference/android/widget/ListView.html#setAdapter(android.widget.ListAdapter)" target="_blank">setAdapter</a>). Содержит описание методов для работы с разделителями(separator) списка.</p>
+<p>Интерфейс <a href="http://developer.android.com/reference/android/widget/SpinnerAdapter.html" target="_blank">SpinnerAdapter</a>. Адаптеры, реализующие этот интерфейс, используются для построения <a href="http://developer.android.com/reference/android/widget/Spinner.html">Spinner</a>(выпадающий список или drop-down). Содержит метод getDropDownView, который возвращает элемент выпадающего списка. На офиц.сайте есть <a href="http://developer.android.com/resources/tutorials/views/hello-spinner.html" target="_blank">пример</a> использования.</p>
+<p>Интерфейс <a href="http://developer.android.com/reference/android/widget/WrapperListAdapter.html" target="_blank">WrapperListAdapter</a>. Адаптеры, наследующие этот интерфейс используются для работы с вложенными адаптерами. Содержит метод getWrappedAdapter, который позволяет вытащить из основного адаптера вложенный. Чуть дальше поясню.</p>
+<p>Класс <a href="http://developer.android.com/reference/android/widget/HeaderViewListAdapter.html" target="_blank">HeaderViewListAdapter</a>. Готовый адаптер для работы с Header и Footer. Внутри себя содержит еще один адаптер (ListAdapter), который можно достать с помощью выше рассмотренного метода getWrappedAdapter из интерфейса WrapperListAdapter.</p>
+<p>Абстрактный класс <a href="http://developer.android.com/reference/android/widget/BaseAdapter.html" target="_blank">BaseAdapter</a>. Содержит немного своих методов и реализует методы интерфейсов, которые наследует, но не все. Своим наследникам оставляет на обязательную реализацию методы: getView, getItemId, getItem, getCount из ListAdapter. Т.е. если хотите создать свой адаптер – это класс вам подходит.</p>
+<p>Класс <a href="http://developer.android.com/reference/android/widget/ArrayAdapter.html" target="_blank">ArrayAdapter&lt;T&gt;</a>. Готовый адаптер, который мы уже использовали. Принимает на вход список или массив объектов, перебирает его и вставляет строковое значение в указанный TextView. Кроме наследуемых методов содержит методы по работе с коллекцией данных – add, insert, remove, sort, clear и метод setDropDownViewResource для задания layout-ресурса для отображения пунктов выпадающего списка.</p>
+<p>Класс <a href="http://developer.android.com/reference/android/widget/SimpleAdapter.html" target="_blank">SimpleAdapter</a>. Также готовый к использованию адаптер. Принимает на вход список Map-объектов, где каждый Map-объект – это список атрибутов. Кроме этого на вход принимает два массива – from[] и to[]. В to указываем id экранных элементов, а в from имена(key) из объектов Map, значения которых будут вставлены в соответствующие (из from) экранные элементы.</p>
+<p>Т.е. SimpleAdapter – это расширенный ArrayAdapter. Если вы делаете ListView и у вас каждый пункт списка содержит не один TextView, а несколько, то вы используете SimpleAdapter. Кроме наследуемых методов SimpleAdapter содержит методы по наполнению View-элементов значениями из Map – setViewImage, setViewText, setViewBinder. Т.е. видим, что он умеет работать не только с текстом, но и с изображениями. Метод setViewBinder – отличная штука, позволяет вам написать свой парсер значений из Map в View-элементы и адаптер будет использовать его. Это мы еще детально обсудим в дальнейших уроках.</p>
+<p>Также содержит реализацию метода setDropDownViewResource.</p>
+<p>Абстрактный класс <a href="http://developer.android.com/reference/android/widget/CursorAdapter.html" target="_blank">CursorAdapter</a>. Реализует абстрактные методы класса BaseAdapter, содержит свои методы по работе с курсором и оставляет наследникам методы по созданию и наполнению View: newView, bindView.</p>
+<p>Абстрактный класс <a href="http://developer.android.com/reference/android/widget/ResourceCursorAdapter.html" target="_blank">ResourceCursorAdapter</a>. Содержит методы по настройке используемых адаптером layout-ресурсов. Реализует метод newView из CursorAdapter.</p>
+<p>Класс <a href="http://developer.android.com/reference/android/widget/SimpleCursorAdapter.html" target="_blank">SimpleCursorAdapter</a>. Готовый адаптер, похож, на SimpleAdapter. Только использует не набор объектов Map, а Cursor, т.е. набор строк с полями. Соответственно в массив from[] вы заносите наименования полей, значения которых хотите вытащить в соответствующие View из массива to.</p>
+<p>Содержит метод convertToString, который возвращает строковое значение столбца, который задается методом setStringConversionColumn. Либо можно задать свой конвертер методом setCursorToStringConverter и адаптер будет использовать его при вызове convertToString. В этом конвертере вы уже сами реализуете, что он будет возвращать.</p>
+<p>Итого мы получили 4 готовых адаптера: HeaderViewListAdapter, ArrayAdapter&lt;T&gt;, SimpleAdapter, SimpleCursorAdapter. Какой из них использовать - решать вам. Если у вас есть массив строк - то, не раздумывая, берете ArrayAdapter. Если работаете с БД и есть курсор, данные из которого надо вывести в список - используете SimpleCursorAdapter.</p>
+<p>Если же эти адаптеры вам не подходят, есть набор абстрактных классов и интерфейсов, которые можем наследовать и реализовать в своих классах для создания своего адаптера. Да и готовые адаптеры всегда можно наследовать и сделать свою реализацию методов.</p>
+<p>Кроме этой иерархии есть почти аналогичная ей. В ней содержатся адаптеры для работы с деревом – <b>ExpandableListView</b>. Я не буду здесь их расписывать, в целом они похожи на, уже рассмотренные, нами объекты. Но есть разница в том, что здесь данные не одноуровневые, а делятся на группы и элементы.</p>
+<p><img src="images/lesson_46_1.png" alt="" border="0"></p>
+<p>Здесь мы видим один готовый адаптер. SimpleExpandableListAdapter - работает с коллекциями Map.</p>
+<p>Если вам интересны примеры работы того или иного адаптера – пишите на форуме в ветке этого урока (ссылка внизу страницы). Ближайшие несколько уроков будут посвящены этой теме.</p></body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

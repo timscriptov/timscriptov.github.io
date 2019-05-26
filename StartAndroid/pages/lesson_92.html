@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 92. Service. Простой пример</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем, запускаем и останавливаем простой сервис</p>
+<p>Для начала надо определиться, как по-русски называть <b>Service</b>. Общепринятый перевод – служба. Наиболее популярный пример – службы в Windows. Но для системы Android мне привычнее использовать слово <b>сервис</b>. Его я и буду использовать в своих уроках для обозначения Service.</p>
+<p>И еще один момент надо сразу прояснить. Service прописывается в манифесте рядом с Activity, и получается, что приложение (Application) содержит в себе и Activity и сервис. Предлагаю для упрощения изложения материала под словом приложение понимать все таки только Activity, которые можно запустить и увидеть на экране. Т.е. то, что мы раньше и называли приложением. А сервис считать отдельной от приложения вещью. А если надо будет обозначить приложение, как контейнер для Activity и сервиса, буду использовать слово Application.</p>
+<p>Т.е. приложение – это набор Activity, сервис – Service. Приложение + сервис = Application. Как то так.</p>
+<p>Итак, сервис – это некая задача, которая работает в фоне и не использует UI. Запускать и останавливать сервис можно из приложений и других сервисов. Также можно подключиться к уже работающему сервису и взаимодействовать с ним.</p>
+<p>В качестве примера можно рассмотреть алгоритм почтовой программы. Она состоит из приложения и сервиса. Сервис работает в фоне и периодически проверяет наличие новой почты, скачивает ее и выводит уведомления. А когда вы запускаете приложение, оно отображает вам эти загруженные сервисом письма. Также приложение может подключиться к сервису и поменять в нем, например, период проверки почты или совсем закрыть сервис, если постоянная проверка почты больше не нужна.</p>
+<p>Т.е. сервис нужен, чтобы ваша задача продолжала работать, даже когда приложение закрыто. В ближайших уроках мы разберемся, какие способы взаимодействия существуют между приложением и сервисом. В этом же уроке создадим простейший сервис, который будет выводить что-нибудь в лог. А приложение будет запускать и останавливать сервис.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0921_ServiceSimple<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceSimple<br><b>Package name</b>: ru.startandroid.develop.p0921servicesimple<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start service&lt;/string&gt;
+&lt;string name="stop"&gt;Stop service&lt;/string&gt;	</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnStop"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStop"
+		android:text="@string/stop"&gt;
+	&lt;/Button&gt;
+	&lt;ProgressBar
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:indeterminate="true"&gt;
+	&lt;/ProgressBar&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Две кнопки – для запуска и остановки сервиса. И ProgressBar.</p>
+<p>Рядом с <b>MainActivity </b>создайте класс <b>MyService</b>, наследующий <b>android.app.Service</b></p>
+<p><img src="images/lesson_91_0.png" alt="" width="542" height="637"></p>
+<p>Содержимое <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0921servicesimple;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+
+public class MyService extends Service {
+  
+  final String LOG_TAG = "myLogs";
+
+  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "onCreate");
+  }
+  
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(LOG_TAG, "onStartCommand");
+    someTask();
+    return super.onStartCommand(intent, flags, startId);
+  }
+
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(LOG_TAG, "onDestroy");
+  }
+
+  public IBinder onBind(Intent intent) {
+    Log.d(LOG_TAG, "onBind");
+    return null;
+  }
+  
+  void someTask() {
+  }
+}</code></pre>
+<p>У сервиса так же, как и у Activity есть методы <b>onCreate </b>и <b>onDestroy </b>– которые срабатывают при создании и уничтожении сервиса.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/app/Service.html#onStartCommand(android.content.Intent, int, int)" target="_blank">onStartCommand</a> – срабатывает, когда сервис запущен методом <a href="http://developer.android.com/reference/android/content/ContextWrapper.html#startService(android.content.Intent)" target="_blank">startService</a>. В нем мы запускаем наш метод <b>someTask</b>, который пока пуст. У <b>onStartCommand </b>на вход и на выход идут параметры, мы их пока не используем.</p>
+<p>Метод <b>onBind </b>нам пока не интересен. Но реализовать его мы обязаны, возвращаем null.</p>
+<p><b>someTask </b>– здесь будем писать работу для сервиса</p>
+<p>Сервис, как и новые, создаваемые Activity необходимо прописать в манифесте. Делается это полностью аналогично. Жмете <b>Add</b>, выбираете <b>Service</b>. И в поле <b>Name </b>выбираете <b>MyService</b>.</p>
+<p><img src="images/lesson_91_1.png" alt="" width="640" height="191"></p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0921servicesimple;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+  
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+    }
+    
+    public void onClickStart(View v) {
+      startService(new Intent(this, MyService.class));
+    }
+    
+    public void onClickStop(View v) {
+      stopService(new Intent(this, MyService.class));
+    }
+}</code></pre>
+<p>Здесь у нас два метода, которые срабатывают при нажатии на кнопки <b>Start service</b> и <b>Stop service</b>. В них мы соответственно запускаем или останавливаем сервис методами <b>startService</b> и <a href="http://developer.android.com/reference/android/content/Context.html#stopService(android.content.Intent)" target="_blank">stopService</a>. На вход передаем Intent, указывающий на сервис. Это очень похоже на то, как мы вызываем Activity методом startActivity.</p>
+<p>Давайте все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_91_2.png" alt="" width="640" height="454"></p>
+<p>Нажмем <b>Start service</b> и смотрим лог:</p>
+<p><i>onCreate<br> onStartCommand</i></p>
+<p>Выполнился метод <b>onCreate </b>– сервис создался, и <b>onStartCommand </b>– сервис выполняет содержимое метода onStartCommand.</p>
+<p>Если мы теперь еще раз нажмем <b>Start service</b>:</p>
+<p><i>onStartCommand</i></p>
+<p>Сервис уже создан, <b>onCreate </b>не вызывается, выполняется только метод <b>onStartCommand</b>.</p>
+<p>Жмем<b> Stop service</b></p>
+<p><i>onDestroy</i></p>
+<p>Сервис уничтожился.</p>
+<p>Убедимся, что сервис не зависит от приложения. Жмем <b>Start service</b>.</p>
+<p><i>onCreate<br></i><i>onStartCommand</i></p>
+<p>Сервис запущен. Закрываем приложение кнопкой Назад. В логах тишина, <b>onDestroy</b> в сервисе не выполнился, сервис продолжает жить. Ему все равно, работает приложение, его запустившее или не работает.</p>
+<p>Долгим удержанием клавиши Домой выведем список последних приложений</p>
+<p><img src="images/lesson_91_3.png" alt="" width="640" height="454"></p>
+<p>снова откроем наше приложение и нажмем <b>Stop service</b>. В логах:</p>
+<p><i>onDestroy</i></p>
+<p>Сервис уничтожен.</p>
+<p>Теперь попробуем выполнять что-нибудь осмысленное в <b>onStartCommand</b>. Перепишем метод <b>someTask</b> в MyService.java:</p>
+<pre><code class="java">  void someTask() {
+    for (int i = 1; i&lt;=5; i++) {
+      Log.d(LOG_TAG, "i = " + i);
+      try {
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+  }</code></pre>
+<p>Будем с интервалом в 1 секунду выводить в лог записи из сервиса.</p>
+<p>Все сохраним, запустим и нажмем <b>Start service</b>:</p>
+<p>ProgressBar замер, экран стал недоступен. А логи идут:</p>
+<p><i>onCreate<br></i><i>onStartCommand<br></i><i>i = 1<br></i><i>i = 2<br></i><i>i = 3<br></i><i>i = 4<br></i><i>i = 5</i></p>
+<p>Вывод – сервис работает в основном потоке и блокирует экран.</p>
+<p>Вынесем цикл с паузами в отдельный поток. И чтобы два раза не бегать, давайте заодно узнаем, что делает метод <a href="http://developer.android.com/reference/android/app/Service.html#stopSelf()" target="_blank">stopSelf</a>.</p>
+<p>Перепишем метод <b>someTask</b>:</p>
+<pre><code class="java">  void someTask() {
+    new Thread(new Runnable() {
+      public void run() {
+        for (int i = 1; i&lt;=5; i++) {
+          Log.d(LOG_TAG, "i = " + i);
+          try {
+            TimeUnit.SECONDS.sleep(1);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
+        stopSelf();
+      }
+    }).start();
+  }</code></pre>
+<p>Мы вынесли код в отдельный поток и добавили вызов метода <b>stopSelf </b>– этот метод аналогичен методу <b>stopService</b>, он останавливает сервис, в котором был вызван.</p>
+<p>Все сохраняем, запускаем и жмем <b>Start service</b>. ProgressBar крутится, экран не блокирован, логи идут:</p>
+<p><i>onCreate<br></i><i>onStartCommand<br></i><i>i = 1<br></i><i>i = 2<br></i><i>i = 3<br></i><i>i = 4<br></i><i>i = 5<br></i><i>onDestroy</i></p>
+<p>Сервис создался, выполнил работу и сам остановился методом <b>stopSelf</b>.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

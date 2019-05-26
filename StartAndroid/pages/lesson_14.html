@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 14. Меню, группы, порядок. MenuInflater и xml-меню.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- создаем пункты меню c ID<br>- группируем и сортируем пункты меню</p>
+<p>На прошлом уроке мы рассмотрели простейший способ создания меню методом <a href="http://developer.android.com/reference/android/view/Menu.html#add(java.lang.CharSequence)" target="_blank">add(CharSequence title)</a>, на вход мы подавали только текст. Рассмотрим другую реализацию этого метода - <a href="http://developer.android.com/reference/android/view/Menu.html#add(int, int, int, java.lang.CharSequence)" target="_blank">add(int groupId, int itemId, int order, CharSequence title)</a>. У этого метода <b>4 параметра</b> на вход: </p>
+<p>- <b>groupId </b>- идентификатор группы, частью которой является пункт меню<br>- <b>itemId </b>- ID пункта меню<br>- <b>order </b>- для задания последовательности показа пунктов меню<br>- <b>title </b>- текст, который будет отображен</p>
+<p>Чтоб показать как используются все эти параметры, создадим приложение. На экране будет <b>TextView </b>и <b>CheckBox</b>:<br>- TextView будет отображать какой пункт меню был выбран<br>- CheckBox будет определять показывать обычное меню или расширенное. Это будет реализовано с помощью групп меню.</p>
+<p>Сразу уточню, понятия "обычное" и "расширенное" - это не Андроид-понятия, а просто мои названия. Т.е. когда запущено приложение и пользователь жмет кнопку меню, он видит "обычное" меню. Если же он включит CheckBox, то будет отображаться "расширенное" меню, в котором больше пунктов.</p>
+<p>Создаем проект:</p>
+<p><b>Project name</b>: P0141_MenuAdv<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: MenuAdv<br><b>Package name</b>: ru.startandroid.develop.menuadv<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем <b>main.xml</b>, присвоим <b>ID</b> существующему <b>TextView</b>, сотрем его текст и создадим <b>CheckBox</b>. Код:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"&gt;
+    &lt;CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/chbExtMenu"
+        android:text="расширенное меню"&gt;
+    &lt;/CheckBox&gt;
+    &lt;TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Открываем <b>MainActivity.java</b> и класс <b>MainActivity</b> заполняем следующим кодом:</p>
+<pre><code class="java">public class MainActivity extends Activity {
+  
+  // Элементы экрана
+  TextView tv;
+  CheckBox chb;
+  
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        // находим элементы
+        tv = (TextView) findViewById(R.id.textView);
+        chb = (CheckBox) findViewById(R.id.chbExtMenu);
+        
+    }
+    
+    // создание меню
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+      // TODO Auto-generated method stub
+      // добавляем пункты меню
+      menu.add(0, 1, 0, "add");
+      menu.add(0, 2, 0, "edit");
+      menu.add(0, 3, 3, "delete");
+      menu.add(1, 4, 1, "copy");
+      menu.add(1, 5, 2, "paste");
+      menu.add(1, 6, 4, "exit");
+      
+      return super.onCreateOptionsMenu(menu);
+    }
+    
+    // обновление меню
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+      // TODO Auto-generated method stub
+      // пункты меню с ID группы = 1 видны, если в CheckBox стоит галка
+      menu.setGroupVisible(1, chb.isChecked());
+      return super.onPrepareOptionsMenu(menu);
+    }
+
+    // обработка нажатий
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+      // TODO Auto-generated method stub
+      StringBuilder sb = new StringBuilder();
+
+      // Выведем в TextView информацию о нажатом пункте меню 
+      sb.append("Item Menu");
+      sb.append("\r\n groupId: " + String.valueOf(item.getGroupId()));
+      sb.append("\r\n itemId: " + String.valueOf(item.getItemId()));
+      sb.append("\r\n order: " + String.valueOf(item.getOrder()));
+      sb.append("\r\n title: " + item.getTitle());
+      tv.setText(sb.toString());
+      
+      return super.onOptionsItemSelected(item);
+    }
+}</code></pre>
+<p>Не забудьте <b>обновить импорт</b> (CTRL+SHIFT+O).</p>
+<p>Давайте разбирать написанное. Мы используем следующие <b>методы</b>:</p>
+<p><a href="http://developer.android.com/reference/android/app/Activity.html#onCreateOptionsMenu(android.view.Menu)" target="_blank">onCreateOptionsMenu</a> - вызывается только <b>при первом показе</b> меню. Создает меню и более не используется. Здесь мы добавляем к меню пункты.</p>
+<p><a href="http://developer.android.com/reference/android/app/Activity.html#onPrepareOptionsMenu(android.view.Menu)" target="_blank">onPrepareOptionsMenu</a> - вызывается <b>каждый раз </b>перед отображением меню. Здесь мы вносим изменения в уже созданное меню, если это необходимо</p>
+<p><a href="http://developer.android.com/reference/android/app/Activity.html#onOptionsItemSelected(android.view.MenuItem)" target="_blank">onOptionsItemSelected</a> - вызывается <b>при нажатии</b> пункта меню. Здесь мы определяем какой пункт меню был нажат.</p>
+<p>В методе <b>onCreateOptionsMenu</b> мы добавляем 6 пунктов меню. Обратим внимание на параметры метода <b>Add</b>.</p>
+<p>Первый параметр – <b>ID группы</b>. В первых трех пунктах он равен нулю, в оставшихся трех – 1. Т.е. пункты меню <b>copy</b>, <b>paste</b> и <b>exit</b> объединены в группу с ID = <b>1</b>. Визуально это никак не проявляется - они не отличаются цветом или еще чем-либо. ID группы мы будем использовать в реализации <b>onPrepareOptionsMenu</b>.</p>
+<p>Второй параметр – <b>ID пункта меню</b>. В обработчике используется для определения какой пункт меню был нажат. Будем использовать его в <b>onOptionsItemSelected</b>.</p>
+<p>Третий параметр – определяет <b>позицию пункта</b> меню. Этот параметр используется для определения порядка пунктов при отображении меню. Используется <b>сортировка по возрастанию</b>, т.е. от меньшего <b>order</b> к большему.</p>
+<p>Четвертый параметр – <b>текст</b>, который будет отображаться на пункте меню. Тут все понятно.</p>
+<p>В метод <b>onPrepareOptionsMenu</b> передается объект <b>Menu</b> и мы можем работать с ним. В данном примере вызываем <a href="http://developer.android.com/reference/android/view/Menu.html#setGroupVisible(int, boolean)" target="_blank">setGroupVisible</a>. Этот метод позволяет <b>скрывать\отображать</b> пункты меню. На вход подается два параметра – <b>ID группы</b> и <b>boolean</b>-значение. В качестве ID группы мы пишем – <b>1</b> (та самая группа с ID = 1, в которой находятся пункты copy, paste и exit), а в качестве boolean параметра используем состояние <b>CheckBox</b>. Если он включен, то пункты меню (из <b>группы с ID = 1</b>) будут отображаться, если выключен – не будут.</p>
+<p>Сохраним все и запустим приложение.</p>
+<p>"<b>Обычное</b>" меню:</p>
+<p><img src="images/lesson_13_0.png" alt="" width="640" height="454" border="0"></p>
+<p>"<b>Расширенное</b>" меню</p>
+<p><img src="images/lesson_13_1.png" alt="" width="640" height="454" border="0"></p>
+<p>В зависимости от состояния <b>CheckBox </b>в меню видно <b>3 </b>или <b>6 </b>пунктов.</p>
+<p>Обратите внимание на <b>порядок </b>пунктов. Они отсортированы по параметру <b>order </b>по <b>возрастанию</b>. Если <b>order </b>у нескольких пунктов <b>совпадает</b>, то эти пункты размещаются <b>в порядке их создания</b> в методе onCreateOptionsMenu.</p>
+<p>При нажатии на какой-либо пункт меню срабатывает метод <b>onOptionsItemSelected</b>. В нем мы выводим в <b>TextView </b>информацию о нажатом пункте. Можете сверить эту информацию с тем, что мы кодили при создании пунктов меню. Все параметры должны совпадать. Порядок, для удобства, я сделал такой же как и в методе add: <b>groupId</b>, <b>itemId</b>, <b>order</b>, <b>title</b>.</p>
+<p>Попробуйте добавить еще несколько пунктов в меню, чтобы их стало <b>больше шести</b>. И обратите внимание, как они отобразятся.</p>
+<p>Для упрощения кода я использовал напрямую цифры для ID групп и ID пунктов меню. А вообще рекомендуется использовать константы, в дальнейшем буду использовать их.</p>
+<h3>XML-меню</h3>
+<p>Есть еще один, более удобный и предпочтительный способ создания меню - с использованием xml-файлов, аналогично layout-файлам при создании экрана. Чтобы получить меню, которые мы создавали программно на этом уроке, надо создать в папке res/menu файл <b>mymenu.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+    xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;item
+        android:id="@+id/menu_add"
+        android:title="add"&gt;
+    &lt;/item&gt;
+    &lt;item
+        android:id="@+id/menu_edit"
+        android:title="edit"&gt;
+    &lt;/item&gt;
+    &lt;item
+        android:id="@+id/menu_delete"
+        android:orderInCategory="3"
+        android:title="delete"&gt;
+    &lt;/item&gt;
+    &lt;group
+        android:id="@+id/group1"&gt;
+        &lt;item
+            android:id="@+id/menu_copy"
+            android:orderInCategory="1"
+            android:title="copy"&gt;
+        &lt;/item&gt;
+        &lt;item
+            android:id="@+id/menu_paste"
+            android:orderInCategory="2"
+            android:title="paste"&gt;
+        &lt;/item&gt;
+        &lt;item
+            android:id="@+id/menu_exit"
+            android:orderInCategory="4"
+            android:title="exit"&gt;
+        &lt;/item&gt;
+    &lt;/group&gt;
+&lt;/menu&gt;</code></pre>
+<p><b>item </b>- это пункт меню, <b>group </b>- группа. В атрибутах <b>ID </b>используем ту же схему, что и в ID экранных компонентов, т.е. пишем @+id/&lt;your_ID&gt; и Eclipse сам создаст эти ID в R.java. Атрибут <b>orderInCategory </b>- это порядок пунктов, а <b>title </b>- текст.</p>
+<p>В методе <b>onCreateOptionsMenu</b> нам теперь не надо вручную писать создание каждого пункта, мы просто свяжем menu, который нам дается на вход и наш xml-файл. </p>
+<pre><code class="java">  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.mymenu, menu);
+    return super.onCreateOptionsMenu(menu);
+  }</code></pre>
+<p>С помощью метода <b>getMenuInflater </b>мы получаем <a href="http://developer.android.com/reference/android/view/MenuInflater.html" target="_blank">MenuInflater </a>и вызываем его метод inflate. На вход передаем наш файл <b>mymenu.xml</b> из папки res/menu и объект <b>menu</b>. MenuInflater берет объект menu и наполняет его пунктами согласно файлу mymenu.xml.</p>
+<p>Если захотите скрыть группу, выполняете тот же метод setGroupVisible и передаете туда R.id.group1 в качестве ID группы.</p>
+<p>Подробно атрибуты для xml-файла меню можно посмотреть <a href="http://developer.android.com/guide/topics/resources/menu-resource.html" target="_blank">здесь</a>. </p>
+<p>Я вам рекомендую опробовать и потестить оба способа созданию меню. Программное создание гибче, а xml сокращает код.</p>
+</body>
+</html>
+
+            </div>
+     </div>    
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

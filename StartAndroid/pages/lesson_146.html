@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 146. Рисование. Canvas-преобразования. Методы save и restore.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем матрицу канвы для преобразований</p>
+ 
+<p>Канва имеет свою матрицу, которая будет срабатывать для любого объекта, который вы собираетесь нарисовать. Методы настройки этой матрицы нам уже известны из Урока 144:</p>
+<p><b>- translate </b>(перемещение)<br/><b>- scale </b>(изменение размера)<br/><b>- rotate</b> (поворот)<br/><b>- skew</b> (наклон)</p>
+<p>У канвы эти методы являются pre-методами. Т.е. помещают преобразование в начало матрицы, сохраняя остальные.</p>
+<p>Рассмотрим это на примере.</p>
+<h3>Преобразования</h3>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1461_CanvasTransform<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CanvasTransform<br/> <b>Package name</b>: ru.startandroid.develop.p1461canvastransform<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1461canvastransform;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint p;
+    Matrix matrix;
+    RectF rectf;
+    Path path;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+      rectf = new RectF(100, 100, 200, 200);
+      matrix = new Matrix();
+      path = new Path();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // квадрат
+      path.reset();
+      path.addRect(rectf, Path.Direction.CW);
+      p.setColor(Color.BLACK);
+      canvas.drawPath(path, p);
+      
+      // преобразованный квадрат
+      matrix.reset();
+      matrix.preRotate(30);
+      matrix.preTranslate(500, 0);
+      path.transform(matrix);
+      p.setColor(Color.BLUE);
+      canvas.drawPath(path, p);
+    }
+  }
+}</code></pre>
+<p>Рисуем черным цветом path с прямоугольником. Затем настраиваем матрицу на поворот на 30 градусов относительно точки (0,0) (т.к. не указана иная) и на перемещение на 500 вправо. Т.к. используем методы pre, то сначала будет перемещение, потом поворот. Преобразуем path и выводим синим цветом.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3338718733" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Попробуем сделать то же самое, с помощью канвы.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // квадрат
+      p.setColor(Color.BLACK);
+      canvas.drawRect(rectf, p);
+      
+      // квадрат на канве с преобразованиями
+      canvas.rotate(30);
+      canvas.translate(500, 000);
+      p.setColor(Color.GREEN);
+      canvas.drawRect(rectf, p);
+      
+    }</code></pre>
+<p>Сначала выводим прямоугольник rectf черным цветом. Затем настраиваем матрицу канвы. Задаем те же преобразования, в том же порядке. Т.к. эти методы являются аналогами pre-методов, то сначала выполнится перемещение, затем поворот.</p>
+<p>Матрица канвы настроена, теперь все объекты, которые мы будем рисовать на канве, будут преобразованы согласно ее матрице. Нарисуем тот же прямоугольник rectf зеленым цветом.</p>
+<p>Заметьте, что мы никак не преобразуем rectf. Он остается с теми же координатами. Канва сама преобразует его при рисовании.</p>
+<p> </p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3263502720" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Зеленый прямоугольник находится там же, где в прошлый раз был синий. Т.е. преобразования с помощью отдельной матрицы идентичны преобразованиям матрицы канвы.</p>
+<h3>Сохранение и возврат состояния </h3>
+<p>Мы можем запоминать состояние матрицы канвы и потом восстанавливать его.</p>
+<p>Рассмотрим это на примерах. Перепишем <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    RectF rectf1;
+    RectF rectf2;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+      rectf1 = new RectF(50,50,100,100);
+      rectf2 = new RectF(50,150,100,200);
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // зеленый квадрат
+      p.setColor(Color.GREEN);    
+      canvas.drawRect(rectf1, p);
+
+      // синий квадрат
+      p.setColor(Color.BLUE);
+      canvas.drawRect(rectf2, p);
+      
+    }
+  }</code></pre>
+<p>Нарисуем пару квадратов, первый - зеленым цветом, а второй - синим.</p>
+<p>Без всяких преобразований они выглядят так:</p>
+<p><img src="data:image/webp;base64,UklGRoQFAABXRUJQVlA4THgFAAAvf8JjAMfnKJIk1Wp4DHf0b+OfnovvhGF2PxlgG9lWlXPuYyAzsghz7L8DGvLLOrKtJu8Gc7YBf+0C7L8lwPlX5LZtA5/SSX8DRPC7Afh/ChGAgUI2LnmdU4iCQuEll7gkUBSKitdUNHvKnh+EcwnwKQnQ/ybCY9eMoGhGwSUPQjZJt6RxBCR9A0Khts8okVA5qjISVNhpMoNgrNAwfuN7K+xM4zHUzlqdSZWREAnWsFU3fpe/uP7Vdr0kAah3IwFAVT0ABI5Htq9w4HOeyenMzjPZV1BQw7bteCO9s+XYtu31jm0rTqYx6o5t27Zte2Zt27b3L5Iv0+Tokcy7eJ7nfSL6D4eRJEVSxtFzPbN5jvgXm0SN+yN8/gWFJNcQFqn/cBfk+pQoKOmtL77ht0jINS0Nburfz+CmloJe/O6HHxW+SPTSh/TRu4Je/eSDkAkyS9eeD3YfhOqhXl0FvfDdj8z4AhERvffmy68kPf918ASSWVLb+Yd1U+xvlxKm196n198Q9HevvS+5bl2qTW8LqjalEsP08StEFBy/QpJL+cEdCJWgMH1JGiFJL6VNXIaC+vb7H4iD+krQ2+8E95WQXhLr1kMiInr+888+/Uw9L+QbRJKgHpN+pkk/k4kmTmCeNDm8STx+nAqzZ9K4sciTpZOJiJkety9r3ITxzKw07o/HZDis9nQeryYoZmbFnOtfMVtNGM+sQsZMlELGIvL1S6fdiF6fx+nyBnx+t8vjV+RaevG5i8ucbg4aRF4P2+ZeybUzkZfZgegO5IyVQpRSu1cO3pu39dxS/+Ej26Zu9Rwbd+qIc8rpA/Z+CX3W7lsYMki//cyc87fHrcfV3iMHN+w8u+bsDG9OrgySxXx07jCLceWsm/Ynhj3rvDNjd96sk/P2bFrsG/BnuHl0yCC6M33a7F3OGyPvTHjavWfJui0LDtkys2SQdKLdy/vvmHVt6R3Lrc5P6o+eHbd78+k5eatu5PVP6L1nvjtkkGPJ7v1zOPNC52szbvfcM33h6gnHDIF0GcSnVM7186eyHt/zjOd236fs89WQPecvrFh36mrm0ITB+xcFQgblXT6+bcH+YecunHDfGbR//oqNM0+YvT4ZxENk0fOokaYRI0cYRzGiQenMw5WyGkxGs87EOnPQIOMonXWk3oQ6G7EZWYfI1tFujwziYnakoR0xDdGOhESIaWhPsyMSIZHGoLS/Tgkx6OEIEZGIpRCSfpzSz+/wAeAf8A/499uv+YByjLovH6RZERn0H93A/+4BAv8rSIH//Xq3fpFnyb7/e/8fMcA/4B/w74+f8uF3OYYL5YM0KyKD/qMb+N89QOB/BSnwP75bP8uzZN//vce5gH/AP+Af8A/4B/wD/gH/gH/AP+Af8A/4B/wD/gH/gH/AP+Af8A/4B/wD/gH/gH/AP+Af8A/4B/wD/gH/gH/AP+Af8A/4B/wD/gn5C/iXWkOxvLlSmDapF/3llds50zMcj1ZCESUprR7Q0lTETs0fqUjxgMQ2gYpR3l2utS57QKOiqtEAHNWqbGJ06thbw1CriJ0Gj61L8YCGeXWKaSgchTdbNSTP0KIUCiJCxfrcQXVEpBUtpklRDQvFTlVqlaA4QPGMKZlafD2KU6RZ21dKFhpUpXYRf7tNNGVpPdtsia1Vr1NSxAMa5WieVOrfO+IXLTUoDBX5PLVZQxV30O6Yaci4+OCGxLaB8qShUnaJgldNoaFCjK3R/eVEXCCxcW3SUDWzWEGvVKNY+iVXqRSKHyRWrKKUqtZA34kiXpMqYWAUaqY01PeImKpfZm2KH6QMCSCi39I28j+9HpgeCIM44o3SHE76GHtNx+XqIo6QnKKUUolR2htGcpSHE9iPCA==" alt="" data-pagespeed-url-hash="3188286707" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // зеленый квадрат
+      p.setColor(Color.GREEN);    
+      canvas.drawRect(rectf1, p);
+      
+      // преобразования канвы
+      // и рисование зеленых квадратов
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сброс канвы
+      canvas.restore();
+      
+      // синий квадрат
+      p.setColor(Color.BLUE);
+      canvas.drawRect(rectf2, p);
+      
+    }</code></pre>
+<p>Несколько раз настраиваем перемещение на 100 вправо и каждый раз рисуем первый квадрат зеленым цветом. Затем сбрасываем матрицу канвы методом <a href="http://developer.android.com/reference/android/graphics/Canvas.html#restore()" target="_blank">restore</a> в изначальное состояние. И рисуем второй квадрат синим цветом.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3113070694" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что первый (зеленый) квадрат рисовался со смещением согласно настройкам канвы, а метод restore все эти настройки преобразования сбросил и второй (синий) квадрат был нарисован без преобразований.</p>
+<p>Можно настроить канву так, что метод restore будет сбрасывать ее настройки не в изначальное, а в промежуточное, сохраненное нами, состояние.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // зеленый квадрат
+      p.setColor(Color.GREEN);
+      canvas.drawRect(rectf1, p);
+
+      // преобразования канвы
+      // и рисование зеленых квадратов
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      canvas.save();
+
+      // преобразования канвы
+      // и рисование красных квадратов
+      p.setColor(Color.RED);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // возврат канвы к предыдущему сохранению 
+      canvas.restore();
+
+      // синий квадрат
+      p.setColor(Color.BLUE);
+      canvas.drawRect(rectf2, p);
+
+    }</code></pre>
+<p>Снова несколько раз настраиваем перемещение на 100 вправо и каждый раз рисуем первый квадрат зеленым цветом. Затем для канвы выполняем метод <a href="http://developer.android.com/reference/android/graphics/Canvas.html#save()" target="_blank">save</a>. Он запомнит текущие настройки матрицы. Далее еще пару раз перемещаем вправо на 100 и рисуем первый квадрат, но уже красным цветом, чтобы визуально отличить вывод до и после сохранения канвы.</p>
+<p>Затем выполняем метод restore, который сбросит канву в состояние, которые было сохранено методом save. И рисуем второй квадрат синим цветом.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3037854681" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что второй (синий) квадрат нарисован с тем состоянием канвы, которое было сохранено методом save. Метод restore вернул нас к нему из текущего состояния.</p>
+<p>Сохранение методом save не затирает предыдущее сохраненное состояние. Т.е. вы можете несколько раз вызывать save и все эти состояния будут хранится в некоем стеке. А методом restore состояния из этого стека вытаскивать.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // зеленый квадрат
+      p.setColor(Color.GREEN);
+      canvas.drawRect(rectf1, p);
+
+      // преобразования канвы
+      // и рисование зеленых квадратов
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      canvas.save();
+
+      // преобразования канвы
+      // и рисование желтых квадратов
+      p.setColor(Color.YELLOW);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      canvas.save();
+
+      // преобразования канвы
+      // и рисование красных квадратов
+      p.setColor(Color.RED);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // возврат канвы к предыдущему сохранению
+      canvas.restore();
+
+      // синий квадрат
+      p.setColor(Color.BLUE);
+      canvas.drawRect(rectf2, p);
+
+      // возврат канвы к предыдущему сохранению
+      canvas.restore();
+
+      // черный квадрат
+      p.setColor(Color.BLACK);
+      canvas.drawRect(rectf2, p);
+
+      // возврат канвы в изначальное состояние
+      canvas.restore();
+
+      // пурпурный квадрат
+      p.setColor(Color.MAGENTA);
+      canvas.drawRect(rectf2, p);
+    }</code></pre>
+<p>Мы несколько раз применяем перемещение на 100, рисуя первый квадрат. При этом периодически сохраняем состояние матрицы методом save, при этом меняя цвет для более удобного визуального восприятия.</p>
+<p>Далее, мы несколько раз вызываем метод restore, который возвращает канву в сохраненные ранее состояния и рисуем второй квадрат. В итоге мы приходим к изначальному состоянию канвы.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2962638668" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Метод save возвращает нам int значение. Это значение мы можем передать в метод <a href="http://developer.android.com/reference/android/graphics/Canvas.html#restoreToCount(int)" target="_blank">restoreToCount</a> и матрица вернется к указанному состоянию, минуя остальные.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // сохраняем настройки матрицы канвы
+      // в initSave получаем значение для восстановления этого состояния
+      int initSave = canvas.save();
+
+      // зеленый квадрат
+      p.setColor(Color.GREEN);
+      canvas.drawRect(rectf1, p);
+
+      // преобразования канвы
+      // и рисование зеленых квадратов
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      canvas.save();
+
+      // преобразования канвы
+      // и рисование желтых квадратов
+      p.setColor(Color.YELLOW);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      // в needSave получаем значение для восстановления этого состояния
+      int needSave = canvas.save();
+
+      // преобразования канвы
+      // и рисование красных квадратов
+      p.setColor(Color.RED);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // сохраняем настройки матрицы канвы
+      canvas.save();
+
+      // преобразования канвы
+      // и рисование синих квадратов
+      p.setColor(Color.BLUE);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+      canvas.translate(100, 0);
+      canvas.drawRect(rectf1, p);
+
+      // возврат канвы к указанному сохранению
+      canvas.restoreToCount(needSave);
+
+      // черный квадрат
+      p.setColor(Color.BLACK);
+      canvas.drawRect(rectf2, p);
+
+      // возврат канвы к указанному сохранению
+      canvas.restoreToCount(initSave);
+
+      // пурпурный квадрат
+      p.setColor(Color.MAGENTA);
+      canvas.drawRect(rectf2, p);
+
+    }</code></pre>
+<p>Мы запоминаем состояние в самом начале и сохраняем значение метода save в переменную initSave. Далее мы выполняем перемещения, несколько раз сохраняем канву, и один раз пишем значение сохранения в needSave.</p>
+<p>Затем мы возвращаемся к сохраненным состояниям, используя метод restoreToCount и переменные initSave и needSave.</p>
+<p>В прошлом примере мы методом restore перебирали все сохраненные состояния. А здесь метод restoreToCount позволил нам вернуться сразу к необходимому состоянию.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2887422655" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>И напоследок еще три метода канвы</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#setMatrix(android.graphics.Matrix)">setMatrix(Matrix matrix)</a> – меняет матрицу канвы на указанную матрицу</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#getMatrix()" target="_blank">getMatrix()</a> – позволяет получить копию матрицы канвы</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Canvas.html#concat(android.graphics.Matrix)" target="_blank">concat(Matrix matrix)</a> – добавляем в начало текущей матрицы преобразования из указанной матрицы</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

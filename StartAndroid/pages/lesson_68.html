@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 68. Немного о Parcel</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- знакомимся с Parcel</p>
+<p>Сам по себе <a href="http://developer.android.com/reference/android/os/Parcel.html" target="_blank">Parcel</a> мне никогда еще использовать не приходилось и не знаю, придется ли. Меня он заинтересовал, когда я начал разбираться с интерфейсом <a href="http://developer.android.com/reference/android/os/Parcelable.html" target="_blank">Parcelable</a>. Этот интерфейс используется при передаче объектов через Intent и мне стало интересно, как создавать свои объекты с поддержкой такой передачи. В итоге я немного разобрался в Parcel и Parcelable, хотя понял далеко не все. Попробую теперь рассказать об этом.</p>
+<p>Parcel – это контейнер для передачи данных. У него есть куча методов для помещения и извлечения данных. В этом уроке рассмотрим самые простейшие из них.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0681_Parcel<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Parcel<br><b>Package name</b>: ru.startandroid.develop.p0681parcel<br><b>Create Activity</b>: MainActivity</p>
+<p>В этом уроке экран нам не понадобится, main.xml оставляем без изменений. Работать будем с логом.</p>
+<p>Кодим в <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0681parcel;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  Parcel p;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    writeParcel();
+    readParcel();
+  }
+
+  void writeParcel() {
+    p = Parcel.obtain();
+
+    byte b = 1;
+    int i = 2;
+    long l = 3;
+    float f = 4;
+    double d = 5;
+    String s = "abcdefgh";
+
+    logWriteInfo("before writing");
+    p.writeByte(b);
+    logWriteInfo("byte");
+    p.writeInt(i);
+    logWriteInfo("int");
+    p.writeLong(l);
+    logWriteInfo("long");
+    p.writeFloat(f);
+    logWriteInfo("float");
+    p.writeDouble(d);
+    logWriteInfo("double");
+    p.writeString(s);
+    logWriteInfo("String");
+  }
+
+  void logWriteInfo(String txt) {
+    Log.d(LOG_TAG, txt + ": " + "dataSize = " + p.dataSize());
+  }
+
+  void readParcel() {
+  }
+
+  void logReadInfo(String txt) {
+  }
+
+}</code></pre>
+<p>Метод <b>writeParcel </b>– получаем экземпляр Parcel, описываем набор переменных и пишем их в Parcel, используя для этого соответствующие методы. После каждой записи выводим в лог информацию о Parcel, используя метод logWriteInfo.</p>
+<p>Метод <b>logWriteInfo </b>пишет в лог данные о Parcel. <a href="http://developer.android.com/reference/android/os/Parcel.html#dataSize()" target="_blank">dataSize</a> – это объем записанных данных. </p>
+<p>Методы <b>readParcel </b>и <b>logReadInfo </b>– пока пустые. Позже заполним.</p>
+<p>Все сохраняем и запускаем приложение. Смотрим лог.</p>
+<p><em>before writing: dataSize = 0<br> byte: dataSize = 4<br> int: dataSize = 8<br> long: dataSize = 16<br> float: dataSize = 20<br> double: dataSize = 28<br> String: dataSize = 52</em></p>
+<p>Разбираем по порядку.</p>
+<p><b><i>before writing</i></b>: перед записью у нас размер данных равен 0. Записали <b><i>byte</i></b>:  dataSize = 4 (для записи данных типа byte использовались 4 байта). Записали <i><b>int</b></i>:  dataSize = 8 (для записи данных типа int использовались еще 4 байта в дополнение к ранее заполненным 4 байтам для byte). Записали <i><b>long</b></i>:  dataSize = 16 (для записи long использовались еще 8 байтов в дополнение к ранее заполненным 8 байтам для byte и int). И т.д. В итоге видим, что <b>dataSize</b> показывает, сколько всего занято байт.</p>
+<p>Обратите внимание, что типы <b>int</b>, <b>long</b>, <b>float </b>и <b>double </b>заняли столько байт, сколько они действительно занимают в Java – соответственно 4, 8, 4 и 8.  <b>byte </b>– вместо одного байта почему-то занял целых 4. А <b>String </b>под каждый символ использует два байта, но пишет еще служебную информацию, поэтому получается больше.</p>
+<p>Теперь попробуем прочесть то, что записали. Заполним пустые методы чтения:</p>
+<pre><code class="java">  void readParcel() {
+    logReadInfo("before reading");
+    p.setDataPosition(0);
+    logReadInfo("byte = " + p.readByte());
+    logReadInfo("int = " + p.readInt());
+    logReadInfo("long = " + p.readLong());
+    logReadInfo("float = " + p.readFloat());
+    logReadInfo("double = " + p.readDouble());
+    logReadInfo("string = " + p.readString());
+  }
+
+  void logReadInfo(String txt) {
+    Log.d(LOG_TAG, txt + ": " + "dataPosition = " + p.dataPosition());
+  } </code></pre>
+<p>В методе <b>readParcel </b>мы устанавливаем (метод <a href="http://developer.android.com/reference/android/os/Parcel.html#setDataPosition(int)" target="_blank">setDataPosition</a>) позицию в 0, т.к. нам нужно читать с начала. Читаем данные в том же порядке, как и записывали: byte, int, long, float, double, String. В лог выводим результат чтения и текущую позицию (<a href="http://developer.android.com/reference/android/os/Parcel.html#dataPosition()" target="_blank">dataPosition</a>).</p>
+<p>Все сохраним, запустим приложение и смотрим лог.</p>
+<p>Первые строки лога про запись нам уже знакомы. Нас интересуют строки чтения.</p>
+<p><em> before reading: dataPosition = 52<br> byte = 1: dataPosition = 4<br> int = 2: dataPosition = 8<br> long = 3: dataPosition = 16<br> float = 4.0: dataPosition = 20<br> double = 5.0: dataPosition = 28<br> string = abcdefgh: dataPosition = 52</em></p>
+<p>Перед тем, как мы установим позицию в 0 (<em><b>before reading</b></em>), видим, что она равна 52. Там она находится после записи. Каждая запись данных перемещает позицию на кол-во, равное размеру записываемых данных. Размер всех последовательно записанных данных у нас составил 52, и позиция соответственно переместилась в 52. Вы можете в качестве эксперимента выводить в лог позицию после каждой записи данных. Я же вывожу только для процедур чтения.</p>
+<p>Итак, мы устанавливаем позицию в 0 и начинаем читать данные. Прочли значение <i><b>byte</b></i>, оно равно 1, как мы и записывали. Позиция сместилась на размер прочтенного значения, и теперь мы будем читать с позиции 4. Читаем <i><b>int</b></i>, оно равно 2, позиция сместилась и равна 8. И т.д.</p>
+<p>Все значения, которые мы последовательно записывали, мы в том же порядке считали. Здесь надо понимать, что если вы записали <b>int</b>, а читать потом будете <b>double</b>, то результат получится не тот, что нужен. Т.к. <b>int </b>пишет 4 байта, а <b>double </b>считывает 8. Тем самым он залезет на следующий записанный тип и возьмет из него недостающие 4 байта. Получится каша. Поэтому тут надо быть аккуратным.</p>
+<p>Вы всегда можете установить нужную вам позицию и считать хранимое значение. Главное – знать, какой тип там хранится. Например, у нас сейчас при записи double пишется с позиции 20. Поэтому мы можем перевести позицию в 20 и выполнить readDouble. Мы успешно получим записанный туда double, а позиция станет равна 28.</p>
+<p>Если вы хотите глянуть содержимое Parcel можно использовать его метод marshall(), он вернет массив записанных в Parcel байтов.</p>
+<p>Вот такой краткий экскурс. Эти знания понадобятся для понимания следующего урока.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

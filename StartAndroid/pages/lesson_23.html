@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 23. Activity Lifecycle. В каких состояниях может быть Activity</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- Activity LifeCycle – поведение Activity при создании, вызове, закрытии</p>
+<h3>Теория</h3>
+<p>При работе приложения, мы <b>создаем </b>новые <b>Activity </b>и <b>закрываем </b>старые, <b>сворачиваем </b>приложение, снова <b>открываем </b>и т.д. Activity умеет обрабатывать все эти движения. Это необходимо, например, для освобождения ресурсов или сохранения данных. В <a href="http://developer.android.com/guide/topics/fundamentals/activities.html#Lifecycle" target="_blank">документацие</a> достаточно подробно это описано.</p>
+<p>Созданное при работе приложения <b>Activity </b>может быть в одном из <b>трех состояний</b>:</p>
+<p><b>Resumed </b>- Activity видно на экране, оно находится в фокусе, пользователь может с ним взаимодействовать. Это состояние также иногда называют Running.<br><b>Paused </b>- Activity не в фокусе, пользователь не может с ним взаимодействовать, но его видно (оно перекрыто другим Activity, которое занимает не весь экран или полупрозрачно).<br><b>Stopped </b>- Activity не видно (полностью перекрывается другим Activity), соответственно оно не в фокусе и пользователь не может с ним взаимодействовать.</p>
+<p>Когда Activity переходит из одного <b>состояния </b>в другое, система вызывает различные его <b>методы</b>, которые мы можем заполнять своим кодом. Схематично это можно изобразить так:</p>
+<p><img src="images/lesson_22_0.png" alt="" width="352" height="564" border="0"></p>
+<p> Для упрощения понимания я дал краткое описание состояний в скобках под названиями. А крестом обозначил отсутствие Activity.</p>
+<p>Итак, мы имеем следующие методы Activity, которые вызывает система:</p>
+<p><b>onCreate</b>() – вызывается при первом создании Activity<br><b>onStart</b>() – вызывается перед тем, как Activity будет видно пользователю<br><b>onResume</b>() – вызывается перед тем как будет доступно для активности пользователя (взаимодействие)</p>
+<p><b>onPause</b>() – вызывается перед тем, как будет показано другое Activity<br><b>onStop</b>() – вызывается когда Activity становится не видно пользователю<br><b>onDestroy</b>() – вызывается перед тем, как Activity будет уничтожено</p>
+<p>Т.е. эти методы <b>НЕ</b> вызывают смену состояния. Наоборот, смена состояния Activity является триггером, который вызывает эти методы. Тем самым нас уведомляют о смене, и мы можем реагировать соответственно. Посмотрим на практике, когда и в каком порядке вызываются эти методы.</p>
+<h3>Практика</h3>
+<p>В этом уроке нам надо будет эмулировать событие смены ориентации экрана.</p>
+<p><img src="images/lesson_22_1.png" alt="" width="404" height="640" border="0"></p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0231_OneActivityState<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: OneActivityState<br><b>Package name</b>: ru.startandroid.develop.p0231oneactivitystate<br><b>Create Activity</b>: MainActivity</p>
+<p>Layout не меняем, нам он сейчас не важен. Открываем <b>MainActivity.java</b>, там как обычно код по умолчанию:</p>
+<pre><code class="java">package ru.startandroid.develop.p0231oneactivitystate;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+public class MainActivity extends Activity {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+    }
+}</code></pre>
+<p>Мы видим, что реализован уже знакомый нам по схеме метод <b>onCreate</b>. Повторюсь, важно понимать, что этот метод <b>НЕ создает </b>Activity. Создание – это дело системы. Т.е. система сама создает Activity, а нам дает возможность немного поучаствовать и выполнить свой код в методе onCreate(). Мы этой возможностью пользуемся и говорим системе, что Activity должна отобразить экран из R.layout.main.</p>
+<p>Добавим все остальные <b>методы </b>из схемы, и в каждый добавим запись в <b>лог</b>.</p>
+<pre><code class="java">package ru.startandroid.develop.p0231oneactivitystate;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+  
+  final String TAG = "States";
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        Log.d(TAG, "MainActivity: onCreate()");
+    }
+    
+  @Override
+  protected void onStart() {
+    super.onStart();
+    Log.d(TAG, "MainActivity: onStart()");
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    Log.d(TAG, "MainActivity: onResume()");
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    Log.d(TAG, "MainActivity: onPause()");
+  }
+
+  @Override
+  protected void onStop() {
+    super.onStop();
+    Log.d(TAG, "MainActivity: onStop()");
+  }
+    
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    Log.d(TAG, "MainActivity: onDestroy()");
+  }
+}</code></pre>
+<p>В каментах подсказали важное замечание! При реализации этих методов обязательно вызывайте соответствующие методы супер-класса и обязательно перед вашим кодом. См. код выше. Каждый метод содержит вызов метода супер-класса и свой код расположен после этих вызовов.</p>
+<p>Теперь, когда методы будут вызываться, мы будем видеть это в логах. Настроим фильтр на тег «States», чтобы не искать свои сообщения в общей куче логов. Как это делается мы проходили в <a href="/ru/uroki/vse-uroki-spiskom/19-urok-12-logi-i-vsplyvajuschie-soobschenija.html">уроке 12</a></p>
+<p><img src="images/lesson_22_2.png" alt="" width="410" height="270" border="0"></p>
+<p>Все сохраним и запустим приложение. После того, как запустилось, смотрим лог:</p>
+<p><em>MainActivity: onCreate()<br>MainActivity: onStart()<br>MainActivity: onResume()</em></p>
+<p>Activity создалось, прошло два состояния (Stopped, Paused) и теперь находится в третьем состоянии - Resumed. Т.е. оно создалось (onCreate), отобразилось (onStart) и получило возможность взаимодействовать с пользователем (onResume).</p>
+<p>Теперь нажмем кнопку Back на эмуляторе. Activity закрылось. Смотрим лог:</p>
+<p><em>MainActivity: onPause()<br>MainActivity: onStop()<br>MainActivity: onDestroy()</em></p>
+<p>Activity проделывает путь, обратный созданию. Сначала теряет фокус (onPause), затем исчезает с экрана (onStop), затем полностью уничтожается (onDestroy).</p>
+<h3>Смена ориентации экрана</h3>
+<p>Посмотрим, как ведет себя Activity, когда происходит смена ориентации экрана. Запустите снова приложение (либо найдите его в списке приложений в системе на эмуляторе, либо снова нажмите CTRL+F11 в Eclipse ). В логах снова отобразились три метода, вызванные при создании. Теперь в эмуляторе нажмите CTRL+F12, ориентация сменилась. Кажется, что ничего особенного не произошло, но смотрим логи и видим:</p>
+<p><em>MainActivity: onPause()<br>MainActivity: onStop()<br>MainActivity: onDestroy()<br>MainActivity: onCreate()<br>MainActivity: onStart()<br>MainActivity: onResume()</em></p>
+<p>Activity полностью уничтожается и снова создается. При этом обычно выполняются процедуры сохранения и восстановления данных, чтобы не потерялись данные, и приложение сохранило свой вид. Про то, как это делается, мы будем говорить в последующих уроках.</p>
+<p>Также есть еще метод <b>onRestart</b>. Он вызывается перед методом <b>onStart</b>, если Activity не создается с нуля, а восстанавливается из состояния <b>Stoped</b>. Его мы рассмотрим в следующем уроке.</p>
+<p>Обычно в учебниках эта тема дается по-другому. Но мне это шаблонное объяснение кажется недостаточно понятным, поэтому я написал свое. Как всегда, надеюсь, что у меня получилось раскрыть тему )</p>
+<p>Советую вам после этого урока прочитать документацию, ссылку на который я дал в самом начале урока. Там все очень хорошо написано. И знания лучше усвоятся. Пока что, главное – это понять в какой момент, какой метод вызывается. А уже дальше мы будем разбираться, как это можно использовать и что там писать.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

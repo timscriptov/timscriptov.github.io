@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 112. Android 3. ActionBar. Динамическое размещение элементов</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- программно размещаем элементы в ActionBar<br> - используем элементы из фрагментов</p>
+<p>Недавно на форуме был вопрос о том, как во время работы программы менять содержимое ActionBar. Тема действительно интересная, и незаслуженно мною пропущенная. В этом уроке будем с ней разбираться.</p>
+<p>Опробуем три способа работы с элементами:</p>
+<p>1) Добавление/удаление MenuItem в объект Menu</p>
+<p>2) Показ/скрытие группы в Menu</p>
+<p>3) Элементы, относящиеся к фрагментам</p>
+<p>С первыми двумя пунктами все понятно, эти механизмы мы рассматривали еще в Уроке 14.</p>
+<p>Более интересен третий пункт. Фрагмент может реализовать в себе метод <a href="http://developer.android.com/reference/android/app/Fragment.html#onCreateOptionsMenu(android.view.Menu, android.view.MenuInflater)" target="_blank">onCreateOptionsMenu</a> и, тем самым, создать свои элементы для ActionBar. Как только фрагмент будет добавлен на экран, эти элементы добавятся в ActionBar. А когда фрагмент с экрана уберут, элементы исчезнут.</p>
+<p>Создадим приложение, которое реализует три этих варианта.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1121_DynamicActionBar<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: DynamicActionBar<br><b>Package name</b>: ru.startandroid.develop.p1121dynamicactionbar<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="add_del"&gt;Добавить/удалить&lt;/string&gt;
+&lt;string name="visible"&gt;Показать/скрыть&lt;/string&gt;
+&lt;string name="fragment"&gt;Фрагмент&lt;/string&gt;
+&lt;string name="frag1_text"&gt;Fragment 1&lt;/string&gt;
+&lt;string name="frag2_text"&gt;Fragment 2&lt;/string&gt;
+&lt;string name="menu_item1"&gt;Item 1&lt;/string&gt;
+&lt;string name="menu_item2"&gt;Item 2&lt;/string&gt;
+&lt;string name="menu_item31"&gt;Item 31&lt;/string&gt;
+&lt;string name="menu_item32"&gt;Item 32&lt;/string&gt;</code></pre>
+<p>Создадим два фрагмента. Начнем с layout-файлов.</p>
+<p><b>fragment1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#77ff0000"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag1_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>fragment2.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#7700ff00"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag2_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Файлы с пунктами меню (они же - элементы ActionBar):</p>
+<p><b>res/menu/fragment1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:id="@+id/frag1_item"
+		android:icon="@android:drawable/ic_dialog_info"
+		android:showAsAction="ifRoom|withText"
+		android:title="@string/menu_item31"&gt;
+	&lt;/item&gt;
+&lt;/menu&gt;</code></pre>
+<p><b>res/menu/fragment2.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:id="@+id/frag2_item"
+		android:icon="@android:drawable/ic_dialog_email"
+		android:showAsAction="ifRoom|withText"
+		android:title="@string/menu_item32"&gt;
+	&lt;/item&gt;
+&lt;/menu&gt;</code></pre>
+<p>По одному элементу для каждого фрагмента. Эти элементы будут появляться в ActionBar при выводе фрагмента на экран.</p>
+<p>Классы.</p>
+<p><b>Fragment1.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1121dynamicactionbar;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment1 extends Fragment {
+
+  public void onCreate(Bundle savedInstanceState) {
+    setHasOptionsMenu(true);
+    super.onCreate(savedInstanceState);
+  }
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment1, null);
+  }
+
+  public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    inflater.inflate(R.menu.fragment1, menu);
+    super.onCreateOptionsMenu(menu, inflater);
+  }
+
+}</code></pre>
+<p><b>Fragment2.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1121dynamicactionbar;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment2 extends Fragment {
+  
+  public void onCreate(Bundle savedInstanceState) {
+    setHasOptionsMenu(true);
+    super.onCreate(savedInstanceState);
+  }
+  
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment2, null);
+  }
+  
+  public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    inflater.inflate(R.menu.fragment2, menu);
+    super.onCreateOptionsMenu(menu, inflater);
+  }
+
+}</code></pre>
+<p>В <b>onCreate </b>с помощью <a href="http://developer.android.com/reference/android/app/Fragment.html#setHasOptionsMenu(boolean)" target="_blank">setHasOptionsMenu</a> включаем режим вывода элементов фрагмента в ActionBar.</p>
+<p>В <b>onCreateView </b>создаем View, в <b>onCreateOptionsMenu </b>– меню. Все как обычно.</p>
+<p>Фрагменты готовы.</p>
+<p>Теперь займемся Activity. Перепишем <b>res/layout/main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;CheckBox
+		android:id="@+id/chbAddDel"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/add_del"&gt;
+	&lt;/CheckBox&gt;
+	&lt;CheckBox
+		android:id="@+id/chbVisible"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/visible"&gt;
+	&lt;/CheckBox&gt;
+	&lt;Button
+		android:id="@+id/btnFrag"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/fragment"&gt;
+	&lt;/Button&gt;
+	&lt;FrameLayout
+		android:id="@+id/cont"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/FrameLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Два чекбокса и кнопка. Чекбоксы отвечают за работу с элементами с помощью первого и второго способов. Кнопка будет показывать поочередно два фрагмента в контейнере cont.</p>
+<p><b>res/menu/main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;group
+		android:id="@+id/groupVsbl"&gt;
+		&lt;item
+			android:id="@+id/item2"
+			android:icon="@android:drawable/ic_menu_call"
+			android:showAsAction="always|withText"
+			android:title="@string/menu_item2"&gt;
+		&lt;/item&gt;
+	&lt;/group&gt;
+&lt;/menu&gt;</code></pre>
+<p>Создаем группу, а в ней элемент. Эту группу будем скрывать и показывать.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1121dynamicactionbar;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
+
+public class MainActivity extends Activity {
+
+  final int MENU_ID = 1;
+
+  CheckBox chbAddDel;
+  CheckBox chbVisible;
+
+  Fragment frag1;
+  Fragment frag2;
+  Fragment frag;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    chbAddDel = (CheckBox) findViewById(R.id.chbAddDel);
+    chbVisible = (CheckBox) findViewById(R.id.chbVisible);
+
+    frag = frag1 = new Fragment1();
+    frag2 = new Fragment2();
+
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    menu.setGroupVisible(R.id.groupVsbl, chbVisible.isChecked());
+    if (chbAddDel.isChecked()) {
+      menu.add(0, MENU_ID, 0, R.string.menu_item1)
+          .setIcon(android.R.drawable.ic_delete)
+          .setShowAsAction(
+              MenuItem.SHOW_AS_ACTION_ALWAYS
+                  | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+    } else {
+      menu.removeItem(MENU_ID);
+    }
+    return true;
+  }
+
+  public void onClick(View view) {
+    switch (view.getId()) {
+    case R.id.chbAddDel:
+    case R.id.chbVisible:
+      invalidateOptionsMenu();
+      break;
+    case R.id.btnFrag:
+      frag = (frag == frag1) ? frag2 : frag1;
+      getFragmentManager().beginTransaction().replace(R.id.cont, frag)
+          .commit();
+      break;
+    default:
+      break;
+    }
+
+  }
+}</code></pre>
+<p>В <b>onCreateOptionsMenu </b>настраиваем видимость группы groupVsbl в зависимости от значения чекбокса chbVisible.</p>
+<p>В зависимости от значения чекбокса chbAddDel создаем или удаляем элемент.</p>
+<p>В <b>onСlick </b>для чекбоксов вызываем метод <a href="http://developer.android.com/reference/android/app/Activity.html#invalidateOptionsMenu()" target="_blank">invalidateOptionsMenu</a> - перерисовка меню/ActionBar. А по нажатию на кнопку поочередно выводим на экран Fragment1 или Fragment2.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_111_0.png" alt="" width="640" height="384"></p>
+<p>Жмем галку <b>Добавить/удалить</b>. Появляется элемент. Мы добавили MenuItem в Menu.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_111_1.png" alt="" width="640" height="384"></p>
+<p>Жмем галку <b>Показать/скрыть</b>. Появляется элемент. Мы показали группу меню, в которой один пункт.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_111_2.png" alt="" width="640" height="384"></p>
+<p>Соответственно, убирая галки - убираете элементы.</p>
+<p>Понажимаем кнопку <b>Фрагмент</b>. Появляется элемент то одного, то другого фрагмента.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_111_3.png" alt="" width="640" height="384"></p>
+<p><img style="border: 1px solid black;" src="images/lesson_111_4.png" alt="" width="640" height="384"></p>
+<p>Еще, как вариант, можно играться с видимостью не всей группы, а конкретного элемента - метод <a href="http://developer.android.com/reference/android/view/MenuItem.html#setVisible(boolean)" target="_blank">setVisible</a>.</p>
+<p>Если в ActionBar нажать на overflow-кнопку, будет вызван метод onPrepareOptionsMenu для Activity и для фрагмента, который сейчас отображен. </p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

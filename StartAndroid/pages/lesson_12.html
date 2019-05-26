@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 12. Логи и всплывающие сообщения</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- рассмотрим логи приложения и всплывающие сообщения</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0121_LogAndMess<br><b> Build Target</b>: Android 4.0<br><b> Application name</b>: LogAndMess<br><b> Package name</b>: ru.startandroid.develop.logandmess<br><b> Create Activity</b>: MainActivity</p>
+<p>Создадим в <b>main.xml</b> экран, знакомый нам по прошлым урокам про обработчики:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_margin="30dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:text="TextView"
+            android:layout_height="wrap_content"
+            android:id="@+id/tvOut"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="50dp"&gt;
+        &lt;/TextView&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnOk"
+            android:text="OK"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnCancel"
+            android:text="Cancel"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Алгоритм приложения будет тот же. По нажатию кнопок меняется текст. Обработчик  - Activity.</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener {
+
+  TextView tvOut;
+  Button btnOk;
+  Button btnCancel;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // найдем View-элементы
+    tvOut = (TextView) findViewById(R.id.tvOut);
+    btnOk = (Button) findViewById(R.id.btnOk);
+    btnCancel = (Button) findViewById(R.id.btnCancel);
+
+    // присваиваем обработчик кнопкам
+    btnOk.setOnClickListener(this);
+    btnCancel.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    // по id определяем кнопку, вызвавшую этот обработчик
+    switch (v.getId()) {
+    case R.id.btnOk:
+      // кнопка ОК
+      tvOut.setText("Нажата кнопка ОК");
+      break;
+    case R.id.btnCancel:
+      // кнопка Cancel
+      tvOut.setText("Нажата кнопка Cancel");
+      break;
+    }
+  }
+
+}</code></pre>
+<p>Сохраним, запустим. Убедимся, что все работает.</p>
+<h3>Логи приложения</h3>
+<p>Когда вы тестируете работу приложения, вы можете видеть <b>логи </b>работы. Они отображаются в окне <b>LogCat</b>. Чтобы отобразить окно откройте меню <b>Window &gt; Show View &gt; Other</b> … В появившемся окне выберите <b>Android &gt; LogCat</b></p>
+<p><img src="images/lesson_11_0.png" alt="" width="311" height="438" border="0"></p>
+<p>Должна появится вкладка LogCat</p>
+<p><img style="border: 1px solid black;" src="images/lesson_11_1.png" alt="" width="800" height="217" border="0"></p>
+<p>Рассмотрим эту вкладку подробней. <a href="http://developer.android.com/reference/android/util/Log.html" target="_blank">Логи</a> имеют разные уровни важности: <b>ERROR</b>, <b>WARN</b>, <b>INFO</b>, <b>DEBUG</b>, <b>VERBOSE </b>(по убыванию). Кнопки V D I W E (в кружках) – это фильтры и соответствуют типам логов. Опробуйте их и обратите внимание, что фильтр показывает логи не только своего уровня, но и уровней более высокой важности. Также вы можете создавать, редактировать и удалять свои фильтры – это мы рассмотрим чуть дальше.</p>
+<p>Давайте смотреть, как самим писать логи. Делается это совсем несложно с помощью класса <a href="http://developer.android.com/reference/android/util/Log.html" target="_blank">Log</a> и его методов Log.v() Log.d() Log.i() Log.w() and Log.e(). Названия методов соответствуют уровню логов, которые они запишут.</p>
+<p>Изменим код <b>MainActivity.java</b>. Возьмем все каменты из кода и добавим в DEBUG-логи с помощью метода Log.d. Метод требует на вход <b>тэг </b>и <b>текст </b>сообщения. Тэг – это что-то типа метки, чтобы легче было потом в куче системных логов найти именно наше сообщение. Добавим описание тега (TAG) и запишем все тексты каментов в лог.</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener {
+
+  TextView tvOut;
+  Button btnOk;
+  Button btnCancel;
+
+  private static final String TAG = "myLogs";
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // найдем View-элементы
+    Log.d(TAG, "найдем View-элементы");
+    tvOut = (TextView) findViewById(R.id.tvOut);
+    btnOk = (Button) findViewById(R.id.btnOk);
+    btnCancel = (Button) findViewById(R.id.btnCancel);
+
+    // присваиваем обработчик кнопкам
+    Log.d(TAG, "присваиваем обработчик кнопкам");
+    btnOk.setOnClickListener(this);
+    btnCancel.setOnClickListener(this);
+  }
+
+  @Override
+  public void onClick(View v) {
+    // по id определяем кнопку, вызвавшую этот обработчик
+    Log.d(TAG, "по id определяем кнопку, вызвавшую этот обработчик");
+    switch (v.getId()) {
+    case R.id.btnOk:
+      // кнопка ОК
+      Log.d(TAG, "кнопка ОК");
+      tvOut.setText("Нажата кнопка ОК");
+      break;
+    case R.id.btnCancel:
+      // кнопка Cancel
+      Log.d(TAG, "кнопка Cancel");
+      tvOut.setText("Нажата кнопка Cancel");
+      break;
+    }
+  }
+
+}</code></pre>
+<p>Eclipse ругнется, что не знает класс Log. Обновите импорт (CTRL+SHIFT+O) и, если спросит, выберите<b> android.util.Log</b>. Запустим приложение, понажимаем кнопки и посмотрим логи</p>
+<p><img style="border: 1px solid black;" src="images/lesson_11_2.png" alt="" width="800" height="246" border="0"></p>
+<p>Видно, что все отлично записалось. Чтобы сделать просмотр удобней, создадим свой фильтр. Жмем значок <b>+</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_11_3.png" alt="" width="629" height="192" border="0"></p>
+<p><b>Имя фильтра</b> произвольное, например, «<b>My logs</b>». <b> Log Tag</b> – это как раз значение константы TAG, которая описана в нашем коде и использовалась в методе Log.d, т.е. - "<b>myLogs</b>". <b>Pid</b> оставляем <b>пустым</b>, это id процесса. <b>Уровень </b>поставим <b>Debug</b></p>
+<p><img src="images/lesson_11_4.png" alt="" width="410" height="270" border="0"></p>
+<p>и жмем OK. Появилась новая вкладка My logs, на которой отображаются логи, соответствующие только что созданному фильтру.</p>
+<p>Мы помещали в лог текст, но разумеется, вы можете писать, например, значения интересующих вас переменных (приведенные к типу String).</p>
+<p>Иногда бывает, что логи не отображаются во вкладке LogCat, хотя AVD запущен, приложение работает без проблем. В таком случае должно помочь следующее: в Eclipse идем в меню Window &gt; Open Perspective &gt; Other &gt; DDMS. Откроется немного другой набор окон чем обычно. Там найдите вкладку Devices и в ней должно быть видно ваше AVD-устройство, кликните на него и логи должны появиться. Чтобы вернуться в разработку: Window &gt; Open Perspective &gt; Java.</p>
+<h3>Всплывающие сообщения</h3>
+<p>Приложение может показывать <b>всплывающие сообщения</b> с помощью класса <b>Toast</b>. Давайте подредактируем метод onClick. Сделаем так, чтобы всплывало сообщение о том, какая кнопка была нажата.</p>
+<pre><code class="java">  public void onClick(View v) {
+    // по id определяем кнопку, вызвавшую этот обработчик
+    Log.d(TAG, "по id определяем кнопку, вызвавшую этот обработчик");
+    switch (v.getId()) {
+    case R.id.btnOk:
+      // кнопка ОК
+      Log.d(TAG, "кнопка ОК");
+      tvOut.setText("Нажата кнопка ОК");
+      Toast.makeText(this, "Нажата кнопка ОК", Toast.LENGTH_LONG).show();
+      break;
+    case R.id.btnCancel:
+      // кнопка Cancel
+      Log.d(TAG, "кнопка Cancel");
+      tvOut.setText("Нажата кнопка Cancel");
+      Toast.makeText(this, "Нажата кнопка Cancel", Toast.LENGTH_LONG).show();
+      break;
+    }
+  }</code></pre>
+<p>Разберем синтаксис вызова. Статический метод <a href="http://developer.android.com/reference/android/widget/Toast.html#makeText(android.content.Context, java.lang.CharSequence, int)" target="_blank">makeText</a> создает View-элемент <a href="http://developer.android.com/reference/android/widget/Toast.html" target="_blank">Toast</a>. Параметры метода:</p>
+<p>- <b>context</b> – пока не будем вдаваться в подробности, что это такое и используем текущую Activity, т.е. this.<br> - <b>text </b>– текст, который надо показать<br> - <b>duration </b>– продолжительность показа (<span style="font-family: arial, sans-serif; line-height: normal; text-align: left; background-color: #f6f6f6;"><a href="http://developer.android.com/reference/android/widget/Toast.html#LENGTH_LONG" target="_blank">Toast.LENGTH_LONG</a> - длинная, <a href="http://developer.android.com/reference/android/widget/Toast.html#LENGTH_SHORT" target="_blank">Toast.LENGTH_SHORT</a> - короткая</span>)</p>
+<p>Toast создан и чтобы он отобразился на экране, вызывается метод <b>show</b>(). Сохраняем, запускаем, проверяем.</p>
+<p><img src="images/lesson_11_5.png" alt="" width="640" height="454" border="0"></p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

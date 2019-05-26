@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 4. Элементы экрана и их свойства</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+<body><p>Давайте посмотрим, как в Андроид приложениях формируется то, что мы видим на экране.</p>
+<p>Если проводить аналогию с Windows, то приложение состоит из окон, называемых Activity. В конкретный момент времени обычно отображается одно Activity и занимает весь экран, а приложение переключается между ними. В качестве примера можно рассмотреть почтовое приложение. В нем одно Activity – список писем, другое – просмотр письма, третье – настройки ящика. При работе вы перемещаетесь по ним.</p>
+<p>Содержимое Activity формируется из различных компонентов, называемых View. Самые распространенные View - это кнопка, поле ввода, чекбокс и т.д.</p>
+<p>Примерно это можно изобразить так:</p>
+<p><img src="images/lesson_3_0.png" alt="" width="611" height="303"></p>
+<p>Необходимо заметить, что View обычно размещаются в ViewGroup. Самый распространенный пример ViewGroup – это Layout. Layout бывает различных типов и отвечает за то, как будут расположены его дочерние View на экране (таблицей, строкой, столбцом …)</p>
+<p>Подробней об этом можно почитать в <a href="http://developer.android.com/guide/topics/ui/declaring-layout.html" target="_blank">Документацми</a></p>
+<p><i>Также, в версии 3.0 в Android появилась новая сущность – Fragment. Но тему фрагментов мы рассмотрим в более поздних уроках, чтобы сейчас не усложнять материал.</i></p>
+<p>Наверно уже запутал новыми словами и терминами, давайте посмотрим это все на практике.</p>
+<p>Создадим приложение к этому уроку. Для этого запускайте Android Studio и открывайте проект Android lessons, который мы создали на прошлом уроке. Скорее всего, этот проект сразу откроется у вас по умолчанию.</p>
+<p><img src="images/lesson_3_1.png" alt="" width="640" height="377"></p>
+<p>Напомню, что мы решили создавать в этом проекте все модули (приложения) для уроков. А не создавать отдельный проект под каждый урок.</p>
+<p>Создадим модуль. В меню <b>File </b>&gt; <b>New Module</b>. Все шаги аналогичны тем, что мы проделывали на прошлом уроке, только будут другие названия приложения и модуля</p>
+<p><img src="images/lesson_3_2.png" alt="" width="640" height="385"></p>
+<p><b>Application/Library name</b>: BasicViews<br><b> Module name</b>: p0041basicviews<br><b> Package name</b>: ru.startandroid.p0041basicviews</p>
+<p>Модуль <b>p0041basicviews</b> создан и виден в списке модулей слева:</p>
+<p><img src="images/lesson_3_3.png" alt="" width="640" height="377"></p>
+<p>В нашем модуле нам интересен файл: <b>res </b>&gt; <b>layout</b> &gt; <b>activity_main.xml</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_4.png" alt="" width="250" height="287"></p>
+<p>Это layout-файл. В нем мы определяем набор и расположение элементов View, которые хотим видеть на экране. При запуске приложения, Activity читает этот файл и отображает нам то, что мы настроили. Скорее всего, он у вас уже открыт на редактирование, но на всякий случай давайте еще раз откроем его двойным кликом и посмотрим, какой набор View он содержит по умолчанию.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_5.png" alt="" width="640" height="599"></p>
+<p>Слева видим список View, разделенный на группы. Здесь отображены все View-элементы, которые вы можете использовать в своих приложениях.</p>
+<p>Обратим внимание на белый экран. Мы видим, что на экране сейчас присутствует элемент с текстом <b>Hello world</b>! Чтобы узнать, что это за View нажмите на этот текст.</p>
+<p>Справа во вкладке <b>Component Tree</b> вы видите все элементы, которые описаны в этом layout-файле.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_6.png" alt="" width="392" height="206"></p>
+<p>Видим, что выделенный нами элемент – это <b>TextView</b>. Это элемент, который умеет отображать текст. Обратите внимание, что он вложен в элемент <b>RelativeLayout </b>– это один из видов <b>ViewGroup</b>, про которые я писал выше.</p>
+<p>Добавим еще элементов на экран, пусть это будут <b>Button</b> и <b>CheckBox</b>. Для этого просто найдите в списке слева и перетащите на экран вашего будущего приложения. Также можно перетащить их на RelativeLayout во вкладке Component Tree, результат будет почти тот же. Кроме Button и CheckBox, добавим еще на экран <b>Plain Text</b> из группы <b>Text Fields</b>.</p>
+<p>После этих манипуляций ваш экран будет выглядеть примерно так:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_7.png" alt="" width="344" height="659"></p>
+<p>В Component Tree они появятся под названиями <b>button</b>, <b>checkBox </b>и <b>editText</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_8.png" alt="" width="388" height="184"></p>
+<p>Это ID, которые им были присвоены автоматически. Пока оставим их такими, позднее научимся их менять и будем делать более осмысленными.</p>
+<p>Теперь давайте изменим надписи на компонентах нашего экрана. Во вкладке Component Tree жмем на textView. Теперь нам нужна вкладка <b>Properties</b>. Она отображает свойства выделенного в Component Tree или на экране View-элемента. Располагается она обычно сразу под Component Tree.</p>
+<p>Найдем во вкладке Properties свойство text. Сейчас там стоит ссылка на текстовую константу. Где создаются эти константы мы рассмотрим в следующих уроках, а пока просто давайте напишем сюда свой текст: «Some text»</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_9.png" alt="" width="391" height="574"></p>
+<p>Аналогично измените свойство text для элементов button, checkBox и editText на свои придуманные тексты (можно на русском языке).</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_10.png" alt="" width="640" height="657"></p>
+<p>Вся эта конфигурация экрана сохранится в файле activity_main.xml.</p>
+<p>Теперь давайте запустим приложение. Для этого надо выбрать ваш модуль в списке доступных и нажать чуть правее на зеленый треугольник.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_11.png" alt="" width="675" height="198"></p>
+<p>Студия спросит вас, запускать ли эмулятор</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_12.png" alt="" width="490" height="450"></p>
+<p>жмите <b>OK</b></p>
+<p>После этого можно откинуться на спинку кресла и отдохнуть. Потому что минуты 2 будет запускаться эмулятор, потом еще минут 5 он будет грузиться. Если хотите быстрее, то напоминаю, что существует альтернатива – Genymotion.</p>
+<p>Эмулятор запустился, снимаем блокировку и видим:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_3_13.png" alt="" width="640" height="737"></p>
+<p>Приложение отображает нам <b>MainActivity</b>, а оно в свою очередь читает файл <b>activity_main.xml</b> и отображает все View, которые мы в нем создавали и настраивали.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

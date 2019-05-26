@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 153. Рисование. ColorFilter, ColorMatrix</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- меняем цвет кисти с помощью ColorFilter</p>
+<p>Сначала немного разъяснений по поводу цвета. Думаю, все уже в курсе, что в Android цвет мы обычно получаем путем сочетания трех цветов – красного (Red), зеленого (Green) и синего (Blue). Зовется это RGB. К этому набору можно еще добавить уровень прозрачности (Alpha). Получится ARGB.</p>
+<p>Значения этих компонентов мы указываем от 0 до 255. Например, фон экрана, который я использую во всех уроках образуется так (80, 102, 204, 255). Соответственно значения: прозрачность – 80, красный – 102, зеленый – 204, синий – 255.</p>
+<p>Если мы все RGB компоненты установим равными 0, то получим черный цвет. Если же все будут 255, то получим белый цвет.</p>
+<p>Частенько значения указываются не в десятичной форме, а в шестнадцатеричной. Т.е. от 00 до FF, вместо 0 и 255. В этом случае обычно пишут не ARGB, а AARRGGBB. Например, красный цвет: FFFF0000. Если разбивать на AARRGGBB компоненты, получим AA = FF, RR = FF, GG = 00, BB = 00.</p>
+<p>Существуют int-константы для указания цвета. Например Color.RED. Как получить такую int-константу из ARGB компонентов? Есть методы <a href="http://developer.android.com/reference/android/graphics/Color.html#rgb(int, int, int)">Color.rgb</a> и <a href="http://developer.android.com/reference/android/graphics/Color.html#argb(int, int, int, int)" target="_blank" rel="noopener noreferrer">Color.argb</a>, куда вы передаете RGB или ARGB компоненты, а метод вернет вам int-значение цвета.</p>
+<p>А метод <a href="http://developer.android.com/reference/android/graphics/Color.html#parseColor(java.lang.String)" target="_blank" rel="noopener noreferrer">Color.parseColor</a> позволит получить вам int-значение из шестнадцатеричной формы: #RRGGBB или #AARRGGBB.</p>
+<p>Наследники ColorFilter позволяют нам оказывать влияние на цвет, используемый при рисовании объектов. </p>
+<h3>ColorMatrixColorFilter</h3>
+<p>Начнем с <a href="http://developer.android.com/reference/android/graphics/ColorMatrixColorFilter.html" target="_blank" rel="noopener noreferrer">ColorMatrixColorFilter</a>. Этот вид фильтра влияет на цвет, используя значения 4х5 матрицы, которую мы ему выдадим.</p>
+<p>Алгоритм немного нетривиальный, если вы незнакомы с матрицами из алгебры.</p>
+<p>Мы задаем матрицу такого вида</p>
+<p>rR, rG, rB, rA, rT<br/> gR, gG, gB, gA, gT<br/> bR, bG, bB, bA, bT<br/> aR, aG, aB, aA, aT</p>
+<p>4 строки, в каждой по 5 значений.</p>
+<p>И пусть у нас есть некий цвет ARGB, к которому будем фильтр применять. Фильтр возьмет текущие значение цвета и из них, используя матрицу, вычислит новые. Например, новое значение красного (Rn) он посчитает так:</p>
+<p>Rn = R * rR + G * rG + B * rB + A * rA + rT</p>
+<p>Т.е. значения исходного цвета (R,G,B,A) перемножаем на первые 4 значения (rR, rG, rB, rA) из первой строки матрицы и прибавляем пятое значение (rT) из этой же строки.</p>
+<p>Разумеется, нам ничего такого писать не придется, фильтр сам все рассчитает. От нас требуется только матрицу ему предоставить. Здесь я просто показываю, как оно все внутри работает.</p>
+<p>Новое значение зеленого (Gn) получается аналогично, используя исходные RGBA и вторую строку матрицы.</p>
+<p>Gn = R * gR + G * gG + B * gB + A * gA + gT</p>
+<p>Синий (Bn) и прозрачность (An) – третья и четвертая строки</p>
+<p>Bn = R * bR + G * bG + B * bB + A * bA + bT</p>
+<p>An = R * aR + G * aG + B * aB + A * aA + aT</p>
+<p>Давайте рассмотрим это на примерах.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1531_ColorFilter<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: ColorFilter<br/> <b>Package name</b>: ru.startandroid.develop.p1531colorfilter<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1531colorfilter;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(new DrawView(this));
+    }
+    
+    class DrawView extends View {
+      
+      Paint paint;
+      Bitmap bitmap;
+      Rect rect;
+      
+        float[] cmData = new float[]{
+                1, 0, 0, 0, 0, 
+                0, 1, 0, 0, 0, 
+                0, 0, 1, 0, 0, 
+                0, 0, 0, 1, 0};
+        
+        ColorMatrix cm;
+        ColorFilter filter;
+        Bitmap icon;
+      
+      public DrawView(Context context) {
+        super(context);
+        
+        rect  = new Rect(0,0,200,200);
+        
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        
+        icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
+        
+        cm = new ColorMatrix(cmData);
+        filter = new ColorMatrixColorFilter(cm);
+        
+      }
+      
+      @Override
+      protected void onDraw(Canvas canvas) {
+        canvas.drawARGB(80, 102, 204, 255);
+        
+        canvas.translate(100, 100);
+        drawObjects(canvas);
+        
+        paint.setColorFilter(filter);
+        canvas.translate(0, 300);
+        drawObjects(canvas);
+      }
+      
+      void drawObjects(Canvas canvas) {
+        canvas.save();
+        
+        paint.setColor(Color.RED);
+        canvas.drawRect(rect, paint);
+        
+        paint.setColor(Color.GREEN);
+        canvas.translate(220, 0);
+        canvas.drawRect(rect, paint);
+        
+        paint.setColor(Color.BLUE);
+        canvas.translate(220, 0);
+        canvas.drawRect(rect, paint);
+        
+        paint.setColor(Color.WHITE);
+        canvas.translate(220, 0);
+        canvas.drawRect(rect, paint);
+        
+        canvas.translate(220, 0);
+        canvas.drawBitmap(icon, null, rect, paint);
+        canvas.restore();
+      }
+      
+    }
+}</code></pre>
+</div>
+<p><b>cmData </b>– массив float, сюда пишем значения для матрицы.</p>
+<p>Переменная <b>cm </b>– это и есть матрица – <a href="http://developer.android.com/reference/android/graphics/ColorMatrix.html" target="_blank" rel="noopener noreferrer">ColorMatrix</a>. Ей мы даем массив cmData.</p>
+<p>Эту матрицу мы указываем при создании фильтра <b>filter</b>. Теперь у фильтра есть матрица и он знает какие преобразования цвета ему необходимо будет произвести.</p>
+<p>В методе <b>drawObjects</b> рисуем 4 квадрата – красный, зеленый, синий, белый, и выводим андроид-иконку. На этих объектах мы будет тестировать изменения цвета. Используем кисть paint.</p>
+<p>В <b>onDraw</b> рисуем объекты метолом drawObjects, затем для кисти paint применяем фильтр методом <a href="http://developer.android.com/reference/android/graphics/Paint.html#setColorFilter(android.graphics.ColorFilter)" target="_blank" rel="noopener noreferrer">setColorFilter</a> и снова выводим объекты. Т.к. при рисовании объектов используется кисть paint, то применение фильтра к кисти повлияет на цвета рисуемых фигур.</p>
+<p>Сейчас наша матрица выглядит следующим образом</p>
+<p>1, 0, 0, 0, 0, <br/> 0, 1, 0, 0, 0, <br/> 0, 0, 1, 0, 0, <br/> 0, 0, 0, 1, 0</p>
+<p>Если мы возьмем RGBA и применим матрицу, получим</p>
+<p>Rn = R * 1 + G * 0 + B * 0 + A * 0 + 0 = R</p>
+<p>Gn = R * 0 + G * 1 + B * 0 + A * 0 + 0 = G</p>
+<p>Bn = R *0 + G * 0 + B * 1 + A * 0 + 0 = B</p>
+<p>An = R * 0 + G * 0 + B * 0 + A * 1 + 0 = A</p>
+<p>Новые значения равны исходным. Т.е. матрица настроена так, что RGBA значения любого цвета вообще не изменятся. Убедимся в этом. Запускаем приложение</p>
+<p>Результат:</p>
+<p><img src="images/lesson153/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Сверху (оригинал) и снизу (после применения фильтра) цвета одинаковы. Фильтр хоть и применился, но ничего не изменил в значениях цветов.</p>
+<p>Поменяем матрицу:</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                1, 0, 0, 0, 0, 
+                0, 0, 0, 0, 0, 
+                0, 0, 0, 0, 0, 
+                0, 0, 0, 1, 0};</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson153/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Теперь явно что-то поменялось. Давайте смотреть, что именно</p>
+<p>Был красный цвет c RGBA = (255,0,0,255). Применим фильтр:</p>
+<p>Rn = 255 * 1 + 0 * 0 + 0 * 0 + 255 * 0 + 0 = 255</p>
+<p>Gn =  255 * 0 + 0 * 0 + 0 * 0 + 255 * 0 + 0 = 0</p>
+<p>Bn =  255 * 0 + 0 * 0 + 0 * 0 + 255 * 0 + 0 = 0</p>
+<p>An =  255 * 0 + 0 * 0 + 0 * 0 + 255 * 1 + 0 = 255</p>
+<p>Новые RGBA значения получились такими (255,0,0,255). Т.е. для красного цвета ничего не поменялось. Это видно и на скриншоте, красный квадрат на месте.</p>
+<p>А вот зеленый стал черным, смотрим почему</p>
+<p>RGBA зеленого = (0,255,0,255). Применяем фильтр.</p>
+<p>Rn = 0 * 1 + 255 * 0 + 0 * 0 + 255 * 0 + 0 = 0</p>
+<p>Gn =  0 * 0 + 255 * 0 + 0 * 0 + 255 * 0 + 0 = 0</p>
+<p>Bn =  0 * 0 + 255 * 0 + 0 * 0 + 255 * 0 + 0 = 0</p>
+<p>An =  0 * 0 + 255 * 0 + 0 * 0 + 255 * 1 + 0 = 255</p>
+<p>Новые RGBA значения зеленого = (0,0,0,255), а это черный.  Тем же путем и синий (0,0,255,255) стал черным.</p>
+<p>А белый (255,255,255,255) после преобразования</p>
+<p>Rn = 255 * 1 + 255 * 0 + 255 * 0 + 255 * 0 + 0 = 255</p>
+<p>Gn =  255 * 0 + 255 * 0 + 255 * 0 + 255 * 0 + 0 = 0</p>
+<p>Bn =  255 * 0 + 255 * 0 + 255 * 0 + 255 * 0 + 0 = 0</p>
+<p>An =  255 * 0 + 255 * 0 + 255 * 0 + 255 * 1 + 0 = 255</p>
+<p>стал таким (255,0,0,255) – т.е. красным. Скриншот это подтверждает.</p>
+<p>Т.е. применив фильтр, мы для всех цветов «обнулили» значения синего (B) и зеленого (G). Оставили только красную (R) составляющую. Это видно и на андроид-иконке.</p>
+<p>Но тут важно понимать одну вещь. Мы не выкрасили все в красный цвет. Мы полностью убрали зеленый и синий, а красный оставили в том значении, в каком он был.</p>
+<p>Т.е. в красном квадрате значение красного было 255. Таким и осталось.</p>
+<p>В синем и зеленом квадратах значение красного было 0. Таким и осталось.</p>
+<p>В андроид-иконке видно, что красный неоднородный, где-то светлее, где-то темнее. Т.е. изначально иконка была нарисована разными оттенками, в которых были использованы различные RGB комбинации. А мы в этих комбинациях убрали G и B, оставили только R.  Т.е. где R был, например 50, остался 50. Где был 150 – остался 150. А G и B теперь везде = 0.</p>
+<p>Давайте настроим матрицу так, чтобы красный везде стал максимальным. Независимо от первоначального значения. А синий и зеленый снова будем обнулять.</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                0, 0, 0, 0, 255, 
+                0, 0, 0, 0, 0, 
+                0, 0, 0, 0, 0, 
+                0, 0, 0, 1, 0};</code></pre>
+<p>Мы убрали коэффициент 1 из первого числа первой строки. Т.е. теперь новое значение R уже не будет равно старое значение R умноженное на 1. Теперь оно будет умножаться на 0. Но последнее число первой строки = 255. Оно будет прибавлено к нулю и мы получим полный красный цвет на замену первоначальным оттенкам красного.</p>
+<p>Синий и зеленый также станут красными. Т.к. G и B значения мы в них обнулим, а R будет равен 255, т.е. (255,0,0,255).</p>
+<p>Результат</p>
+<p><img src="images/lesson153/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Теперь изменим матрицу так, чтобы обнулялся только синий. Красный и зеленый компоненты останутся неизменны.</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                1, 0, 0, 0, 0, 
+                0, 1, 0, 0, 0, 
+                0, 0, 0, 0, 0, 
+                0, 0, 0, 1, 0};</code></pre>
+<p>Результат</p>
+<p><img src="images/lesson153/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Убрав из синего цвета (0,0,255,255) синюю компоненту мы получили черный (0,0,0,255).</p>
+<p>А убрав из белого цвета (255,255,255,255) синюю компоненту мы получили желтый (255,255,0,255).</p>
+<p>Т.е.</p>
+<p>красный + зеленый + синий = белый</p>
+<p>белый – синий = красный + зеленый = желтый.</p>
+<p>Мы меняли компоненты цветов (RGB), теперь давайте попробуем поменять прозрачность (A). Напомню, что если A = 255, то цвет абсолютно непрозрачен. Если A = 0, то цвет совсем не виден.</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                1, 0, 0, 0, 0, 
+                0, 1, 0, 0, 0, 
+                0, 0, 1, 0, 0, 
+                0, 0, 0, 0.3f, 0};</code></pre>
+<p>Мы поставили коэффициент 0.3 для вычисления нового значения прозрачности. Т.е. An = A * 0.3. Т.е. все цвета станут прозрачными на 30% от текущего уровня.</p>
+<p>Результат</p>
+<p><img src="images/lesson153/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Еще пара примеров матриц, которые я нашел в инете:</p>
+<p>Черно-белая</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                0.3f, 0.59f, 0.11f, 0, 0, 
+                0.3f, 0.59f, 0.11f, 0, 0, 
+                0.3f, 0.59f, 0.11f, 0, 0, 
+                0, 0, 0, 1, 0,};</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson153/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Инвертирование цветов</p>
+<pre><code class="java">        float[] cmData = new float[]{
+                -1, 0, 0, 0, 255, 
+                0, -1, 0, 0, 255, 
+                0, 0, -1, 0, 255, 
+                0, 0, 0, 1, 0,};</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson153/lesson7.png" alt="" width="640" height="385"/></p>
+<p>У матрицы также есть несколько методов, которые позволяют настраивать ее значения.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/ColorMatrix.html#setScale(float, float, float, float)" target="_blank" rel="noopener noreferrer">setScale</a> – позволяет нам указать на какие значения необходимо умножать RGBA значения цвета.</p>
+<p>Перепишем конструктор <b>DrawView</b>:</p>
+<pre><code class="java">    public DrawView(Context context) {
+        super(context);
+        
+        rect  = new Rect(0,0,200,200);
+        
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        
+        icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
+        
+        cm = new ColorMatrix();
+        cm.setScale(1, 1, 0, 0.5f);
+        filter = new ColorMatrixColorFilter(cm);
+        
+      }</code></pre>
+<p>При создании ColorMatrix мы не использовали массив, и матрица создалась такой, какая была у нас в самом первом примере, т.е. ничего не меняющая. Но сейчас мы ее поднастроим.</p>
+<p>Используем метод setScale. Его входящие параметры – это коэффициенты соответственно для R, G, B и A компонентов.</p>
+<p>Т.е. значения 1, 1, 0, 0.5f настроят матрицу так, что</p>
+<p>Rn = R * 1;</p>
+<p>Gn = G * 1;</p>
+<p>Bn = B * 0;</p>
+<p>An = A * 0.5f</p>
+<p>Т.е. красный и зеленый останутся прежними, синий обнулится, а прозрачность станет в 0.5 от старого значения.</p>
+<p>Результат</p>
+<p><img src="images/lesson153/lesson8.png" alt="" width="640" height="385"/></p>
+<p>Похоже на то, что было в четвертом примере, только прозрачность другая.</p>
+<p>Также есть интересный метод <a href="http://developer.android.com/reference/android/graphics/ColorMatrix.html#setSaturation(float)" target="_blank" rel="noopener noreferrer">setSaturation</a>. Отвечает за насыщенность цветов. Принимает на вход значения от 0 до 1.</p>
+<p>Если задать 0, то получим черно-белую картинку.</p>
+<p><img src="images/lesson153/lesson9.png" alt="" width="640" height="385"/></p>
+<p>Если например 0.5f, то будет половина насыщенности</p>
+<p><img src="images/lesson153/lesson10.png" alt="" width="640" height="385"/></p>
+<p>По умолчанию значение этого метода = 1, все цвета при этом будут такими, какими должны.</p>
+<p>Есть еще метод <a href="http://developer.android.com/reference/android/graphics/ColorMatrix.html#setRotate(int, float)" target="_blank" rel="noopener noreferrer">setRotate</a>. Это поворот относительно одного из RGB компонентов на указанное кол-во градусов. Я, честно говоря, его не понимаю и объяснить его смысл не могу. Возможно, он будет понятен тем, кто активно использует графические редакторы и работает с цветом.</p>
+<h3>LightingColorFilter</h3>
+<p><a href="http://developer.android.com/reference/android/graphics/LightingColorFilter.html" target="_blank" rel="noopener noreferrer">LightingColorFilter</a> принимает на вход два цвета</p>
+<p><b>mul</b> – RGB-компоненты этого цвета будут умножены на соответствующие RGB-компоненты исходного цвета. Причем, компоненты mul надо рассматривать, как числа в диапазоне от 0 до 1.  Т.е. если в mul компонент, например, R равен 255, то R-компонент исходного цвета останется без изменений (умножение на 1). Если в mul компонент R = 0, то R-компонент обнулится (умножение на 0). Если в mul компонент R = 127, то R-компонент уменьшится в два раза (умножение на 0.5)</p>
+<p><b>add</b> - RGB-компоненты этого цвета будут прибавлены к соответствующим RGB-компонентам исходного цвета, а результат урезан до 255.</p>
+<p>В общем, должен сказать, что все эти игры с цветом для меня темный лес. Я не очень понимаю, какую практическую пользу можно вынести их этих механизмов. Но теперь мы имеем понятие как они работают и как ими пользоваться. Возможно, когда-нибудь это пригодится при работе с графикой.</p>
+<p>Есть еще третий ColorFilter класс: <a href="http://developer.android.com/reference/android/graphics/PorterDuffColorFilter.html" target="_blank" rel="noopener noreferrer">PorterDuffColorFilter</a>. О нем поговорим в одном из следующих уроков.</p>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

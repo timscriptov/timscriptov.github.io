@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 84. Handler. Обработка Runnable</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с Handler и Runnable</p>
+<p>Кроме обработки сообщений, мы можем попросить Handler выполнить кусок кода – <b>Runnable</b>. В прошлых уроках мы работали с сообщениями, которые содержали атрибуты. Мы их обрабатывали в Handler и в зависимости от значений атрибутов выполняли те или иные действия. Runnable же – это кусок кода, который мы пошлем вместо атрибутов сообщения, и он будет выполнен в потоке, с которым работает Handler. Нам уже ничего не надо обрабатывать.</p>
+<p>Для отправки кода в работу используется метод <a href="http://developer.android.com/reference/android/os/Handler.html#post(java.lang.Runnable)" target="_blank">post</a>. Как и сообщения, Runnable может быть выполнен с задержкой (<a href="http://developer.android.com/reference/android/os/Handler.html#postDelayed(java.lang.Runnable, long)" target="_blank">postDelayed</a>), и может быть удален из очереди (<a href="http://developer.android.com/reference/android/os/Handler.html#removeCallbacks(java.lang.Runnable)" target="_blank">removeCallbacks</a>). Напишем приложение, которое продемонстрирует все эти возможности.</p>
+<p>Создадим проект:</p>
+<p><b>Project</b> <b>name</b>: P0841_HandlerRunnable <br><b>Build</b> <b>Target</b>: Android 4.0<br><b>Application</b> <b>name</b>: HandlerRunnable<br><b>Package</b> <b>name</b>: ru.startandroid.develop.p0841handlerrunnable<br><b>Create</b> <b>Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;HandlerRunnable&lt;/string&gt;
+	&lt;string name="info"&gt;Подробно&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;ProgressBar
+		android:id="@+id/pbCount"
+		style="?android:attr/progressBarStyleHorizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="20dp"&gt;
+	&lt;/ProgressBar&gt;
+	&lt;CheckBox
+		android:id="@+id/chbInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/info"&gt;
+	&lt;/CheckBox&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""
+		android:visibility="gone"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>ProgressBar</b>, отображающий текущий прогресс. <b>CheckBox</b>, который будет включать отображение доп.информации в <b>TextView</b>.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0841handlerrunnable;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  ProgressBar pbCount;
+  TextView tvInfo;
+  CheckBox chbInfo;
+  int cnt;
+
+  final String LOG_TAG = "myLogs";
+  final int max = 100;
+
+  Handler h;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    h = new Handler();
+
+    pbCount = (ProgressBar) findViewById(R.id.pbCount);
+    pbCount.setMax(max);
+    pbCount.setProgress(0);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+
+    chbInfo = (CheckBox) findViewById(R.id.chbInfo);
+    chbInfo.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+      public void onCheckedChanged(CompoundButton buttonView,
+          boolean isChecked) {
+        if (isChecked) {
+          tvInfo.setVisibility(View.VISIBLE);
+          // показываем информацию
+          h.post(showInfo);
+        } else {
+          tvInfo.setVisibility(View.GONE);
+          // отменяем показ информации
+          h.removeCallbacks(showInfo);
+        }
+      }
+    });
+
+    Thread t = new Thread(new Runnable() {
+      public void run() {
+        try {
+          for (cnt = 1; cnt &lt; max; cnt++) {
+            TimeUnit.MILLISECONDS.sleep(100);
+            // обновляем ProgressBar
+            h.post(updateProgress);
+          }
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    t.start();
+
+  }
+
+  // обновление ProgressBar
+  Runnable updateProgress = new Runnable() {
+    public void run() {
+      pbCount.setProgress(cnt);
+    }
+  };
+
+  // показ информации
+  Runnable showInfo = new Runnable() {
+    public void run() {
+      Log.d(LOG_TAG, "showInfo");
+      tvInfo.setText("Count = " + cnt);
+      // планирует сам себя через 1000 мсек
+      h.postDelayed(showInfo, 1000);
+    }
+  };
+}</code></pre>
+<p>В <b>onCreate </b>мы прописываем обработчик для CheckBox. При включении галки отображается TextView и в работу отправляется задание <b>showInfo</b>. При выключении галки – задание <b>showInfo </b>удаляется из очереди.</p>
+<p>Далее в новом потоке эмулируем какое-либо действие - запускаем счетчик с паузами. В каждой итерации цикла отправляем в работу задание <b>updateProgress</b>, которое обновляет ProgressBar.</p>
+<p><b>updateProgress </b>– код, который обновляет значение ProgressBar.</p>
+<p><b>showInfo </b>– код, который обновляет TextView и сам себя планирует на выполнение через 1000 мсек. Т.е мы включаем CheckBox, showInfo срабатывает первый раз и само себя планирует на следующий раз. Т.е. этот код лежит в очереди сообщений, обрабатывается и снова кладет себя туда. Так продолжается, пока мы явно его не удалим из очереди (removeCallbacks), выключив CheckBox.</p>
+<p>Будем выводить что-нибудь в лог из <b>showInfo</b>, чтобы увидеть, когда он работает, а когда нет.</p>
+<p>Все сохраним и запустим приложение. Побежал ProgressBar.</p>
+<p><img src="images/lesson_83_0.png" alt="" width="640" height="454"></p>
+<p>Включим CheckBox.</p>
+<p>Появился TextView, который отображает текущее значение счетчика.</p>
+<p><img src="images/lesson_83_1.png" alt="" width="640" height="454"></p>
+<p>В логи при этом добавляется раз в секунду запись:</p>
+<p><i>showInfo</i></p>
+<p>Выключим CheckBox. Текст исчез.</p>
+<p><img src="images/lesson_83_2.png" alt="" width="640" height="454"></p>
+<p>И логи перестали идти. Значит, задание <b>showInfo </b>успешно удалилось из очереди и больше не работает.</p>
+<p>Если снова включим CheckBox – оно снова начнет срабатывать и само себя помещать в очередь с задержкой исполнения. Выключаем CheckBox – удаляем его из очереди.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

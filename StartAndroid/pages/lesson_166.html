@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 166. Графика. Создание своего Drawable</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- создаем Drawable</p>
+<p><span style="font-size: 12.16px;">В прошлых уроках мы рассмотрели несколько системных Drawable, теперь предлагаю вам научиться создавать их самим. <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html" target="_blank" rel="noopener noreferrer">Drawable</a> – это абстрактный класс, и его наследникам необходимо реализовать 4 следующих метода:</span></p>
+<p>1) <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#draw(android.graphics.Canvas)" target="_blank" rel="noopener noreferrer">public abstract void draw(Canvas canvas)</a> – это, пожалуй, самый главный метод, т.к. здесь нам дается канва и нам необходимо на ней нарисовать то, что должен отображать наш кастомный Drawable</p>
+<p>2) <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#getOpacity()" target="_blank" rel="noopener noreferrer">public abstract int getOpacity()</a> – насколько я понял документацию, в этом методе нам следует вернуть значение прозрачности нашего Drawable. Всего есть 4 константы:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/PixelFormat.html#UNKNOWN" target="_blank" rel="noopener noreferrer">UNKNOWN</a> – прозрачность неизвестна</p>
+<p><a href="http://developer.android.com/reference/android/graphics/PixelFormat.html#TRANSPARENT" target="_blank" rel="noopener noreferrer">TRANSPARENT</a> – Drawable будет полностью прозрачным</p>
+<p><a href="http://developer.android.com/reference/android/graphics/PixelFormat.html#TRANSLUCENT" target="_blank" rel="noopener noreferrer">TRANSLUCENT</a> – Drawable будет состоять из прозрачных и непрозрачных участков</p>
+<p><a href="http://developer.android.com/reference/android/graphics/PixelFormat.html#OPAQUE" target="_blank" rel="noopener noreferrer">OPAQUE</a> – Drawable будет полностью непрозрачным</p>
+<p>Т.е. если кто-то, например, надумает из вашего Drawable сделать bitmap, то он может методом getOpacity запросить прозрачность и, если вы вернете константу OPAQUE, то это будет означать, что можно использовать конфиг RGB_565 вместо ARGB_8888, т.е. не тратить биты памяти на прозрачность.  (Подробнее про конфиги, биты и память читайте в уроке 157).</p>
+<p>3) <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#setAlpha(int)" target="_blank" rel="noopener noreferrer">public abstract void setAlpha (int alpha)</a> – тут нам дают значение прозрачности и нам надо каким то образом применить это к итоговому изображению</p>
+<p>4) <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#setColorFilter(android.graphics.ColorFilter)" target="_blank" rel="noopener noreferrer">public abstract void setColorFilter (ColorFilter colorFilter)</a> – аналогичен предыдущему, только на вход идет не альфа, а ColorFilter.</p>
+<h3>Шестиугольник</h3>
+<p>Давайте создадим свой Drawable и на этом примере станет понятней как реализовать вышеописанные 4 метода. Для примера создадим Drawable, который будет выводить шестиугольник. Класс назовем <b>HexagonDrawable</b> и не забываем указать, что он наследник класса Drawable:</p>
+<pre><code class="java">import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+
+public class HexagonDrawable extends Drawable {
+  
+  private Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private Path mPath = new Path();
+  
+  @Override
+  public void draw(Canvas canvas) {
+    canvas.drawPath(mPath, mPaint);
+  }
+
+  @Override
+  public int getOpacity() {
+    return PixelFormat.TRANSLUCENT;
+  }
+
+  @Override
+  public void setAlpha(int alpha) {
+    mPaint.setAlpha(alpha);
+  }
+
+  @Override
+  public void setColorFilter(ColorFilter colorFilter) {
+    mPaint.setColorFilter(colorFilter);
+  }
+  
+  @Override
+  protected void onBoundsChange(Rect bounds) {
+    super.onBoundsChange(bounds);
+    int width = bounds.width();
+    int height = bounds.height();
+    mPath.reset();
+    mPath.moveTo(0, height/2);
+    mPath.lineTo(width/4, 0);
+    mPath.lineTo(width*3/4, 0);
+    mPath.lineTo(width, height/2);
+    mPath.lineTo(width*3/4, height);
+    mPath.lineTo(width/4, height);
+    mPath.close();
+  }
+
+}</code></pre>
+<p><span style="font-size: 12.16px;">В методе <b>draw</b> просто выводим mPath (который будет сформирован в другом методе) на канву, используя кисть mPaint.</span></p>
+<p>В методе <b>getOpacity</b> возвращаем TRANSLUCENT, т.к. у нас будет непрозрачный шестиугольник, а оставшееся пространство Drawable будет прозрачным. Документация, кстати, рекомендует использовать именно TRANSLUCENT, если точно не знаете, что указать.</p>
+<p>Методы <b>setAlpha</b> и <b>setColorFilter</b> я просто переадресую кисти mPaint. Тут все просто, т.к. кисть у меня всего одна, и она при рисовании сама учтет переданные ей эти данные.</p>
+<p>Вообще, методы setAlpha и setColorFilter можно не реализовывать и оставить пустыми, ваш Drawable будет работать и без них. Но если вдруг кто-то (или вы сами) будет использовать ваш Drawable и захочет сделать его полупрозрачным или применить ColorFilter, то он не получит ожидаемого результата, т.к. методы не реализованы.</p>
+<p>Кроме 4 обязательных методов пришлось еще реализовать метод <a href="http://developer.android.com/reference/android/graphics/drawable/Drawable.html#onBoundsChange(android.graphics.Rect)" target="_blank" rel="noopener noreferrer">onBoundsChange</a>. Этот метод вызывается когда меняется размер Drawable. А т.к. нам нужно нарисовать 6-тиугольник размером с Drawable, мы должны знать его размер. Здесь мы получаем ширину и высоту Drawable и используем их для создания path-фигуры 6-тиугольника.</p>
+<p>Осталось в layout повесить View, задать ему размер, например 200x200 dp и в коде задать ему наш HexagonDrawable в качестве background</p>
+<pre><code class="java">    View view = findViewById(R.id.view);
+    Drawable dr = new HexagonDrawable();
+    view.setBackgroundDrawable(dr);</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson166/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Мы создали Drawable, который просто рисует 6-иугольник дефолтным черным цветом. Но это выглядит немного скучновато, поэтому давайте «добавим красок» и реализуем возможность указания любого цвета для заливки шестиугольника.</p>
+<h3>Цветной шестиугольник</h3>
+<p>Функционал уже созданного класса мы менять не будем, пусть он так и отображает черный шестиугольник. Мы создадим новый класс, который будет наследником HexagonDrawable.</p>
+<p>Но сначала в класс HexagonDrawable все же придется добавить такой метод</p>
+<pre><code class="java">  protected Paint getPaint() {
+    return mPaint;
+  }</code></pre>
+<p><span style="font-size: 12.16px;">Он позволит наследникам HexagonDrawable получать доступ к кисти, которая рисует шестиугольник. И, соответственно, меняя параметры кисти мы будем получать изменения рисунка.</span></p>
+<p>Теперь создаем класс <b>ColorHexagonDrawable</b>:</p>
+<pre><code class="java">public class ColorHexagonDrawable extends HexagonDrawable {
+
+  public ColorHexagonDrawable(int color) {
+    getPaint().setColor(color);
+  }
+
+}</code></pre>
+<p><span style="font-size: 12.16px;">Он наследует класс HexagonDrawable, который мы создали ранее, т.е. он тоже будет рисовать 6-тиугольник, но в конструкторе мы добавили возможность указания цвета. Используя добавленный в HexagonDrawable метод getPaint мы получаем кисть и задаем ей требуемый цвет.</span></p>
+<p>Создаем объект ColorHexagonDrawable с указанием зеленого цвета, и давайте заодно проверим, работает ли прозрачность:</p>
+<pre><code class="java">    View view = findViewById(R.id.view);
+    Drawable dr = new ColorHexagonDrawable(Color.GREEN);
+    dr.setAlpha(50);
+    view.setBackgroundDrawable(dr);</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson166/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Мы указали зеленый цвет и значение прозрачности. Оба этих значения были переданы кисти, что мы и видим в итоге на экране - зеленый полупрозрачный шестиугольник.</p>
+<p>Таким образом у нас теперь есть целых два собственных Drawable: один рисует черный шестиугольник, а второй еще и позволяет указать цвет. Сделаем третий, который возьмет Bitmap и сделает из него шестиугольник.</p>
+<h3>Шестиугольник из картинки</h3>
+<p>Создаем класс <b>BitmapHexagonDrawable</b>, наследуя HexagonDrawable</p>
+<pre><code class="java">import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Rect;
+import android.graphics.Shader;
+
+public class BitmapHexagonDrawable extends HexagonDrawable {
+  
+  Bitmap mOriginBitmap;
+  
+  public BitmapHexagonDrawable(Bitmap bitmap) {
+    mOriginBitmap = bitmap;
+  }
+  
+  @Override
+  protected void onBoundsChange(Rect bounds) {
+    super.onBoundsChange(bounds);
+    Bitmap bitmap = Bitmap.createScaledBitmap(mOriginBitmap, bounds.width(), bounds.height(), true);
+    BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+    getPaint().setShader(shader);
+  }
+
+}</code></pre>
+<p><span style="font-size: 12.16px;">В конструктор передаем Bitmap, а в onBoundsChange берем размеры Drawable, создаем Bitmap этого же размера, создаем на его основе шейдер и передаем его в кисть. Про шейдеры подробнее можно почитать в Уроке 165.</span></p>
+<p>Для примера я возьму вот эту картинку</p>
+<p><img src="images/lesson166/lesson3.png" alt="" width="147" height="147"/></p>
+<p>Кладем ее в папку res под именем picture.png. Теперь создаем с нее Bitmap и передаем его в конструктор BitmapHexagonDrawable.</p>
+<pre><code class="java">    View view = findViewById(R.id.view);
+    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.picture);
+    Drawable dr = new BitmapHexagonDrawable(bitmap);
+    view.setBackgroundDrawable(dr);</code></pre>
+<p>Результат:</p>
+<p><img src="images/lesson166/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Картинка стала шестиугольной формы.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

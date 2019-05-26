@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 76. Tab - вкладки. Общий обзор</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем экран с вкладками<br> - используем иконку в названии вкладки<br> - используем обработчик перехода между вкладками</p>
+<p>Вкладки помогают логически разделить содержимое экрана. Вместо того, чтобы бегать по разным экранам, вы можете сделать вкладки и переключаться между ними. В этом уроке создадим приложение с вкладками и посмотрим их основные возможности.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0761_Tab<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Tab<br><b>Package name</b>: ru.startandroid.develop.p0761tab<br><b>Create Activity</b>: MainActivity</p>
+<p>Пропишем тексты в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;Tab&lt;/string&gt;
+	&lt;string name="text_tab1"&gt;Это первая вкладка&lt;/string&gt;
+	&lt;string name="text_tab2"&gt;Это вторая вкладка&lt;/string&gt;
+	&lt;string name="text_tab3"&gt;Это третья вкладка&lt;/string&gt;
+	&lt;string name="text_tab_header"&gt;Свой заголовок&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>Удалим все дефолтное с экрана <b>main.xml</b> и добавим туда компонент <b>TabHost</b> из вкладки <b>Composite</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;TabHost
+		android:id="@android:id/tabhost"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+		&lt;LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:orientation="vertical"&gt;
+			&lt;TabWidget
+				android:id="@android:id/tabs"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"&gt;
+			&lt;/TabWidget&gt;
+			&lt;FrameLayout
+				android:id="@android:id/tabcontent"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"&gt;
+				&lt;LinearLayout
+					android:id="@+id/tab1"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"&gt;
+				&lt;/LinearLayout&gt;
+				&lt;LinearLayout
+					android:id="@+id/tab2"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"&gt;
+				&lt;/LinearLayout&gt;
+				&lt;LinearLayout
+					android:id="@+id/tab3"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"&gt;
+				&lt;/LinearLayout&gt;
+			&lt;/FrameLayout&gt;
+		&lt;/LinearLayout&gt;
+	&lt;/TabHost&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Компонент добавился и притащил с собой еще кучу всего. Давайте смотреть. <a href="http://developer.android.com/reference/android/widget/TabHost.html" target="_blank">TabHost</a> – корневой элемент вкладок. В нем вертикальный LinearLayout, в котором расположены <a href="http://developer.android.com/reference/android/widget/TabWidget.html" target="_blank">TabWidget </a>и FrameLayout. TabWidget будет отображать заголовки вкладок, а FrameLayout – содержимое вкладок. В этом FrameLayout мы размещаем все View-компоненты, которые хотим отображать на вкладках. Позже мы (в коде) сообщим вкладке, какой именно компонент она должна показать (явно укажем id), вкладка выберет из этой общей кучи нужный ей компонент и отобразит его, как свое содержимое.</p>
+<p>По дефолту во FrameLayout созданы три LinearLayout – они могут быть использованы, как контейнеры для содержимого вкладок. Т.е. вы их заполняете компонентами, как вам необходимо, а потом в коде просто указываете id нужного LinearLayout-а и он со всем содержимым отобразится на вкладке.</p>
+<p>Нам сейчас не нужны LInearLayout, мы не будем делать вкладки с сложным содержимым, разместим во FrameLayout просто несколько TextView.</p>
+<p>В итоге <b>main.xml</b> получился такой:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;TabHost
+		android:id="@android:id/tabhost"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+		&lt;LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:orientation="vertical"&gt;
+			&lt;TabWidget
+				android:id="@android:id/tabs"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"&gt;
+			&lt;/TabWidget&gt;
+			&lt;FrameLayout
+				android:id="@android:id/tabcontent"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"&gt;
+				&lt;TextView
+					android:id="@+id/tvTab1"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/text_tab1"&gt;
+				&lt;/TextView&gt;
+				&lt;TextView
+					android:id="@+id/tvTab2"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/text_tab2"&gt;
+				&lt;/TextView&gt;
+				&lt;TextView
+					android:id="@+id/tvTab3"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/text_tab3"&gt;
+				&lt;/TextView&gt;
+			&lt;/FrameLayout&gt;
+		&lt;/LinearLayout&gt;
+	&lt;/TabHost&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Создадим еще один layout-файл - <b>tab_header.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/text_tab_header"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Этот layout мы используем как свой экран для заголовка вкладки. Тут просто TextView.</p>
+<p>Создайте в папке <b>res </b>папку <b>drawable</b>, если ее нет. В ней создайте файл <b>tab_icon_selector.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;selector xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item android:drawable="@android:drawable/star_on" android:state_selected="true"&gt;&lt;/item&gt;
+	&lt;item android:drawable="@android:drawable/star_off"&gt;&lt;/item&gt;
+&lt;/selector&gt;</code></pre>
+<p>Подробно об этом можно почитать <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#StateList" target="_blank">тут</a>. Этот xml-файл мы укажем как картинку для заголовка вкладки. И когда система будет прорисовывать заголовок вкладки, она обратится к этому файлу, чтобы понять какую картинку ей отображать. Этот код будет возвращать стандартную Android картинку star_on, если вкладка выбрана (state_selected="true"). Иначе вернет star_off. Далее увидим это в приложении, и станет понятней.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0761tab;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TabHost;
+import android.widget.TabHost.OnTabChangeListener;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        TabHost tabHost = (TabHost) findViewById(android.R.id.tabhost);
+        // инициализация
+        tabHost.setup();
+        
+        TabHost.TabSpec tabSpec;
+        
+        // создаем вкладку и указываем тег
+        tabSpec = tabHost.newTabSpec("tag1");
+        // название вкладки
+        tabSpec.setIndicator("Вкладка 1");
+        // указываем id компонента из FrameLayout, он и станет содержимым
+        tabSpec.setContent(R.id.tvTab1);
+        // добавляем в корневой элемент
+        tabHost.addTab(tabSpec);
+        
+        tabSpec = tabHost.newTabSpec("tag2");
+        // указываем название и картинку
+        // в нашем случае вместо картинки идет xml-файл, 
+        // который определяет картинку по состоянию вкладки
+        tabSpec.setIndicator("Вкладка 2", getResources().getDrawable(R.drawable.tab_icon_selector));
+        tabSpec.setContent(R.id.tvTab2);        
+        tabHost.addTab(tabSpec);
+        
+        tabSpec = tabHost.newTabSpec("tag3");
+        // создаем View из layout-файла
+        View v = getLayoutInflater().inflate(R.layout.tab_header, null);
+        // и устанавливаем его, как заголовок
+        tabSpec.setIndicator(v);
+        tabSpec.setContent(R.id.tvTab3);        
+        tabHost.addTab(tabSpec);
+        
+        // вторая вкладка будет выбрана по умолчанию
+        tabHost.setCurrentTabByTag("tag2");
+        
+        // обработчик переключения вкладок
+        tabHost.setOnTabChangedListener(new OnTabChangeListener() {
+      public void onTabChanged(String tabId) {
+        Toast.makeText(getBaseContext(), "tabId = " + tabId, Toast.LENGTH_SHORT).show();
+      }
+    });
+    }
+}</code></pre>
+<p>Находим компонент <b>TabHost</b>. Обратите внимание, используется андроидный id. Он был таким по умолчанию при добавлении компонента в <b>main.xml</b>. В принципе, в нашем случае, этот id можно сменить на свой. Далее вызываем обязательный метод <a href="http://developer.android.com/reference/android/widget/TabHost.html#setup()" target="_blank">setup</a>. Это первичная инициализация. В этом методе <b>TabHost </b>находит в себе <b>TabWidget </b>и <b>FrameLayout</b>. Вот их id в main.xml менять нельзя. Иначе TabHost будет ругаться, что не может их найти.</p>
+<p>Далее создаем три вкладки. Для создания используется метод <a href="http://developer.android.com/reference/android/widget/TabHost.html#newTabSpec(java.lang.String)" target="_blank">newTabSpec</a>, на вход он берет тэг. Тэг – это просто некий строковый идентификатор вкладки. Позже увидим, где он используется. Для первой вкладки задаем название методом <a href="http://developer.android.com/reference/android/widget/TabHost.TabSpec.html#setIndicator(java.lang.CharSequence)" target="_blank">setIndicator</a>. В метод <a href="http://developer.android.com/reference/android/widget/TabHost.TabSpec.html#setContent(int)" target="_blank">setContent </a>передаем id компонента (из FrameLayout), который мы хотели бы видеть в качестве содержимого вкладки. В нашем случае это TextView. Метод addTab присоединяет готовую вкладку к TabHost.</p>
+<p>Вторая вкладка создается аналогично, только используем другую реализацию метода <a href="http://developer.android.com/reference/android/widget/TabHost.TabSpec.html#setIndicator(java.lang.CharSequence, android.graphics.drawable.Drawable)" target="_blank">setIndicator</a>. Заголовок вкладки может содержать не только текст, но и картинку. И здесь мы это используем – передаем в метод текст и xml вместо картинки. Тот самый xml, который определяет картинку по состоянию вкладки. Разумеется, если вам нужна статичная картинка, вы можете указать ее и не использовать xml вообще.</p>
+<p>При создании третьей вкладки используем еще одну реализацию метода <a href="http://developer.android.com/reference/android/widget/TabHost.TabSpec.html#setIndicator(android.view.View)" target="_blank">setIndicator</a>, которая берет на вход View и его ставит как заголовок. Используем тут наш layout-файл tab_header.</p>
+<p>Вкладки созданы. Устанавливаем (<a href="http://developer.android.com/reference/android/widget/TabHost.html#setCurrentTabByTag(java.lang.String)" target="_blank">setCurrentTabByTag</a>) вторую в качестве выбранной по умолчанию. И пропишем (<a href="http://developer.android.com/reference/android/widget/TabHost.html#setOnTabChangedListener(android.widget.TabHost.OnTabChangeListener)" target="_blank">setOnTabChangedListener</a>) для TabHost обработчик, который срабатывает при переключении вкладок. Будем выводить сообщение с тэгом вкладки.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_75_0.png" alt="" width="640" height="449"></p>
+<p>Выбрана вторая вкладка, т.к. мы это определили методом <b>setCurrentTabByTag</b>. Ее содержимое – это TextView с id = tvTab2, как мы и указывали в коде в методе setContent при создании вкладки.</p>
+<p>У третьей вкладки заголовок соответствует содержимому <b>tab_header</b>, т.к. мы использовали <b>setIndicator</b>, который принимает на вход <b>View</b>.</p>
+<p>Выберем первую вкладку.</p>
+<p><img src="images/lesson_75_1.png" alt="" width="640" height="449"></p>
+<p>Сработал обработчик и появилось сообщение с тэгом выбранной вкладки. Содержимое первой вкладки – это TextView с id = tvTab1 из FrameLayout.</p>
+<p>Обратите внимание, что сменилась картинка на заголовке второй вкладки. Это обеспечил <b>selector </b>из res/drawable/tab_icon_selector. В зависимости от состояния вкладки он выдает разные картинки.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

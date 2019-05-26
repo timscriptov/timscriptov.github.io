@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 115. Одно приложение на разных экранах</title>
+	
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- учитываем ориентацию и размер экрана в работе приложения</p>
+<p> </p>
+<p>На <a href="http://developer.android.com/reference/android/app/Fragment.html#Layout" target="_blank">странице фрагмента</a> на официальном сайте приводятся куски кода приложения. Это приложение отображает список заголовков статей и содержимое выбранной статьи, а его вид зависит от ориентации экрана. В горизонтальной ориентации, оно отображает и заголовки и содержимое(два фрагмента в одном Activity). В вертикальной ориентации заголовки и содержимое отображаются на разных экранах (два фрагмента разделены по двум Activity).</p>
+<p>Пример достаточно полезен, и я решил, что имеет смысл разобрать его детально. Я немного поменяю и сокращу код, но общий смысл конструкции останется неизменным. Также, думаю, будет полезным, если мы создадим приложение так, что оно будет запускаться на версиях более ранних, чем третья. Ну и в довесок сделаем так, чтобы оно работало адекватно на экранах разных размеров.</p>
+<p>Соответственно урок состоит из трех частей.</p>
+<p>1. Приложение, отображающее слева заголовки, а справа – содержимое</p>
+<p>2. Добавляем учет ориентации. При вертикальной будем отображать заголовки на первом экране, а содержимое на втором.</p>
+<p>3. Добавляем учет размера экрана. Для небольших экранов в любой ориентации будем отображать заголовки на первом экране, а содержимое на втором.</p>
+<p> </p>
+<p>Долго думал, как назвать проект. Решил – MultipleScreen.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1151_MultipleScreen <br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: MultipleScreen<br>
+<b>Package name</b>: ru.startandroid.develop.p1151multiplescreen<br>
+<b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string-array name="headers"&gt;
+	&lt;item&gt;Header 1&lt;/item&gt;
+	&lt;item&gt;Header 2&lt;/item&gt;
+	&lt;item&gt;Header 3&lt;/item&gt;
+	&lt;item&gt;Header 4&lt;/item&gt;
+&lt;/string-array&gt;
+&lt;string-array name="content"&gt;
+	&lt;item&gt;Content 1&lt;/item&gt;
+	&lt;item&gt;Content 2&lt;/item&gt;
+	&lt;item&gt;Content 3&lt;/item&gt;
+	&lt;item&gt;Content 4&lt;/item&gt;
+&lt;/string-array&gt;</code></pre>
+<p>Два массива – заголовки и содержимое.</p>
+<p> </p>
+<p>Не забывайте, что мы используем библиотеку v4, чтобы наше приложение с фрагментами работало на старых версиях.</p>
+<p>Создаем фрагмент, который будет отображать список заголовков</p>
+<p><b>TitlesFragment.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.support.v4.app.ListFragment;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class TitlesFragment extends ListFragment {
+
+  public interface onItemClickListener {
+    public void itemClick(int position);
+  }
+
+  onItemClickListener listener;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(getActivity(),
+        android.R.layout.simple_list_item_1, getResources()
+            .getStringArray(R.array.headers));
+    setListAdapter(adapter);
+  }
+
+  @Override
+  public void onAttach(Activity activity) {
+    super.onAttach(activity);
+    listener = (onItemClickListener) activity;
+  }
+
+  @Override
+  public void onListItemClick(ListView l, View v, int position, long id) {
+    super.onListItemClick(l, v, position, id);
+    listener.itemClick(position);
+  }
+}</code></pre>
+<p>Класс наследует ListFragment для удобства работы со списком.</p>
+<p><b>onItemClickListener</b> – интерфейс, который будет наследовать Activity. Подробно эту схему мы разбирали в Уроке 106. Интерфейс имеет метод itemClick, который фрагмент будет вызывать при выборе элемента списка.</p>
+<p>В <b>onCreate </b>создаем адаптер с заголовками и передаем его списку.</p>
+<p>В <b>onAttach </b>записываем Activity (к которому присоединен фрагмент) в listener. Разумеется, это Activity должно реализовывать интерфейс onItemClickListener.</p>
+<p>В <b>onListItemClick</b>, мы через listener посылаем в Activity данные о выбранном элементе.</p>
+<p>Т.е. этот фрагмент покажет нам заголовки и уведомит Activity о том, какой из них был выбран.</p>
+<p> </p>
+<p>Создаем второй фрагмент, для отображения содержимого.</p>
+<p>layout-файл <b>details.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;FrameLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#cccccc"&gt;
+	&lt;TextView
+		android:id="@+id/tvText"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"&gt;
+	&lt;/TextView&gt;
+&lt;/FrameLayout&gt;</code></pre>
+<p>TextView, который будет отображать содержимое.</p>
+<p> </p>
+<p>Класс <b>DetailsFragment.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+public class DetailsFragment extends Fragment {
+
+  public static DetailsFragment newInstance(int pos) {
+    DetailsFragment details = new DetailsFragment();
+    Bundle args = new Bundle();
+    args.putInt("position", pos);
+    details.setArguments(args);
+    return details;
+  }
+
+  int getPosition() {
+    return getArguments().getInt("position", 0);
+  }
+
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View v = inflater.inflate(R.layout.details, container, false);
+    TextView tv = (TextView) v.findViewById(R.id.tvText);
+    tv.setText(getResources().getStringArray(R.array.content)[getPosition()]);
+    return v;
+  }
+}</code></pre>
+<p>Метод <b>newInstance </b>создает экземпляр фрагмента и записывает в его атрибуты число, которое пришло на вход методу. Это число будет содержать позицию выбранного элемента из списка заголовков.</p>
+<p>Метод <b>getPosition </b>достает из аргументов позицию.</p>
+<p><b>onCreateView </b>создает View, находим в нем TextView, и помещает в этот TextView содержимое, соответствующее позиции.</p>
+<p>Для нас тут новыми являются аргументы фрагмента. Они могут быть заданы строго до того, как фрагмент будет присоединен к какому либо Activity, т.е., обычно, сразу после создания фрагмента. Они хранятся в фрагменте даже после того, как он был пересоздан в результате, например, смены ориентации экрана. Метод <a href="http://developer.android.com/reference/android/app/Fragment.html#setArguments(android.os.Bundle)" target="_blank">setArguments</a> позволяет записать аргументы, а <a href="http://developer.android.com/reference/android/app/Fragment.html#getArguments()" target="_blank">getArguments</a> – считать.</p>
+<p>Этот фрагмент при создании читает содержимое по переданной ему позиции и выводит в TextView.</p>
+<p> </p>
+<p>Настраиваем Activity. layout-файл <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="horizontal"&gt;
+	&lt;fragment
+		android:id="@+id/titles"
+		android:name="ru.startandroid.develop.p1151multiplescreen.TitlesFragment"
+		android:layout_width="wrap_content"
+		android:layout_height="match_parent"
+		android:layout_weight="1"&gt;
+	&lt;/fragment&gt;
+	&lt;FrameLayout
+		android:id="@+id/cont"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_weight="1"&gt;
+	&lt;/FrameLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Слева будет TitlesFragment с заголовками, а в правой части будем помещать DetailsFragment в контейнер FrameLayout.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import ru.startandroid.develop.p1151multiplescreen.TitlesFragment.onItemClickListener;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+
+public class MainActivity extends FragmentActivity implements
+    onItemClickListener {
+  
+  int position = 0;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    if (savedInstanceState != null)
+      position = savedInstanceState.getInt("position");
+    showDetails(position);
+  }
+
+  void showDetails(int pos) {
+    DetailsFragment details = (DetailsFragment) getSupportFragmentManager()
+        .findFragmentById(R.id.cont);
+    if (details == null || details.getPosition() != pos) {
+      details = DetailsFragment.newInstance(pos);
+      getSupportFragmentManager().beginTransaction()
+          .replace(R.id.cont, details).commit();
+    }
+  }
+
+  @Override
+  public void itemClick(int position) {
+    this.position = position;
+    showDetails(position);
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putInt("position", position);
+  }
+}</code></pre>
+<p>Activity наследует интерфейс onItemClickListener, чтобы получать оповещения о выбранных элементах от фрагмента со списком заголовков. Поле position будет хранить последний выбранный элемент. Это поле сохраняем (onSaveInstanceState) и читаем (savedInstanceState в onCreate) при пересоздании Activity.</p>
+<p>В <b>onCreate </b>вызываем метод, который покажет последнюю выбранную запись.</p>
+<p>Метод <b>showDetails </b>получает на вход позицию, ищет DetailsFragment. Если не находит или находит но, отображающий данные по другой позиции, то создает фрагмент заново, передает ему нужную позицию и размещает в контейнер.</p>
+<p><b>itemClick </b>– метод, вызываемый из фрагмента со списком заголовков. В нем мы получаем позицию выбранного элемента в списке. Пишем ее в поле position и вызываем showDetails, который отобразит нужные данные на экране.</p>
+<p> </p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_0.png" alt="" width="640" height="400"></p>
+<p> </p>
+<p>Выберем какой-либо пункт</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_1.png" alt="" width="640" height="400"></p>
+<p> </p>
+<p>Повернем экран</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_2.png" alt="" width="400" height="640"></p>
+<p>все работает, как и должно.</p>
+<p> </p>
+<p>Теперь добавим учет ориентации экрана. В вертикальной ориентации MainActivity будет отображать только заголовки. Фрагмент с содержимым вынесем в отдельное DetailsActivity</p>
+<p> </p>
+<p><b>DetailsActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import android.content.res.Configuration;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+
+public class DetailsActivity extends FragmentActivity {
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    
+        if (getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE) {
+            finish();
+            return;
+        }
+    
+        if (savedInstanceState == null) {
+            DetailsFragment details = DetailsFragment.newInstance(getIntent().getIntExtra("position", 0));
+            getSupportFragmentManager().beginTransaction().add(android.R.id.content, details).commit();
+        }
+  }
+}</code></pre>
+<p>Код из рубрики: «все слова вроде знакомые, а че сказать хотел - непонятно». Давайте разбираться.</p>
+<p>Представим ситуацию. Мы поворачиваем планшет вертикально, у нас отобразятся только заголовки. Мы нажимаем на какой-либо заголовок и переходим на DetailsActivity, которое покажет нам содержимое (средствами DetailsFragment, разумеется). Т.е. мы имеем вертикальную ориентацию и видим содержимое. Теперь поворачиваем планшет горизонтально. Что будет? DetailsActivity отобразится во весь горизонтальный экран и покажет содержимое. Но наша концепция гласит, что в горизонтальной ориентации приложение должно показывать и содержимое и заголовки, ширина экрана ведь позволяет это сделать. А, значит, нам надо вернуться в MainActivity.</p>
+<p>Смотрим первый фрагмент кода. Приложение определяет, что ориентация горизонтальная и в этом случае просто закрывает Activity. И т.к. это DetailsActivity у нас будет вызвано из MainActivity, то после finish мы попадаем в MainActivity и видим то, что нужно – и заголовки, и содержимое. Причем MainActivity хранит номер выбранного заголовка (независимо от ориентации) и содержимое отобразится то же самое, что было в DetailsActivity.</p>
+<p>Смотрим второй фрагмент. Мы проверяем, что savedInstanceState == null – это означает, что Activity создается первый раз, а не пересоздается после смены ориентации экрана. Далее мы создаем фрагмент DetailsFragment, используя позицию из интента, и помещаем его в Activity.</p>
+<p>Почему создаем фрагмент только при создании Activity и при пересоздании - нет? Потому что система сама умеет пересоздавать существующие фрагменты при поворотах экрана, сохраняя при этом аргументы фрагмента. И нам совершенно незачем в данном случае пересоздавать фрагмент самим.</p>
+<p>Причем тут надо понимать, что система будет создавать фрагмент вовсе не через метод newInstance. Она просто не знает такой метод. Система использует конструктор. И мы ничего не можем передать в этот конструктор, чтобы повлиять на поведение или содержимое фрагмента. Именно в таких случаях выручают аргументы. Система сохраняет аргументы фрагмента при его пересоздании. И при каждом пересоздании наш фрагмент будет знать, какое содержимое он должен отобразить, т.к. использует аргументы при создании экрана в методе onCreateView.</p>
+<p>Не забудьте прописать Activity в манифесте.</p>
+<p> </p>
+<p>Создадим папку <b>res/layout-land</b> и скопируем туда основной layout - <b>res/layout/main.xml</b>. Т.е. при горизонтальной ориентации у нас все останется, как есть.</p>
+<p>А <b>res/layout/main.xml</b> поменяем следующим образом:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="horizontal"&gt;
+	&lt;fragment
+		android:id="@+id/titles"
+		android:name="ru.startandroid.develop.p1151multiplescreen.TitlesFragment"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/fragment&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Мы удалили контейнер для содержимого, оставили только заголовки.  Такой экран мы получим в вертикальной ориентации.</p>
+<p> </p>
+<p>Меняем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import ru.startandroid.develop.p1151multiplescreen.TitlesFragment.onItemClickListener;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+
+public class MainActivity extends FragmentActivity implements
+    onItemClickListener {
+
+  int position = 0;
+  boolean withDetails = true;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    if (savedInstanceState != null)
+      position = savedInstanceState.getInt("position");
+    withDetails = (findViewById(R.id.cont) != null);
+    if (withDetails)
+      showDetails(position);
+  }
+
+  void showDetails(int pos) {
+    if (withDetails) {
+      DetailsFragment details = (DetailsFragment) getSupportFragmentManager()
+          .findFragmentById(R.id.cont);
+      if (details == null || details.getPosition() != pos) {
+        details = DetailsFragment.newInstance(pos);
+        getSupportFragmentManager().beginTransaction()
+            .replace(R.id.cont, details).commit();
+      }
+    } else {
+      startActivity(new Intent(this, DetailsActivity.class).putExtra("position", position));      
+    }
+  }
+
+  @Override
+  public void itemClick(int position) {
+    this.position = position;
+    showDetails(position);
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putInt("position", position);
+  }
+}</code></pre>
+<p>Изменений немного. Добавляется поле <b>withDetails</b>, которое будет сообщать нам: показывает Activity заголовки с содержимым или без. В нашем случае это будет совпадать соответственно с горизонтальной и вертикальной ориентацией.</p>
+<p>В <b>onCreate </b>мы задаем значение withDetails с помощью проверки наличия контейнера для фрагмента с содержимым. Если у нас должно отображаться содержимое, то вызываем метод showDetails и передаем ему позицию. Если содержимое не должно отображаться, то ничего не делаем, показываем только заголовки.</p>
+<p>В методе <b>showDetails</b> мы смотрим withDetails. Если содержимое должно быть показано здесь же, то работает старый алгоритм, мы создаем фрагмент. Если же содержимое должно быть показано в отдельном Activity, то вызываем DetailsActivity и передаем ему позицию.</p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_3.png" alt="" width="640" height="400"></p>
+<p> </p>
+<p>Выбираем заголовок</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_4.png" alt="" width="640" height="400"></p>
+<p> </p>
+<p>Поворачиваем экран</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_5.png" alt="" width="400" height="640"></p>
+<p>видим только заголовки</p>
+<p> </p>
+<p>Выбираем заголовок</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_6.png" alt="" width="400" height="640"></p>
+<p>видим содержимое в новом Activity</p>
+<p> </p>
+<p>Поворачиваем экран</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_7.png" alt="" width="640" height="400"></p>
+<p>видим содержимое и заголовки</p>
+<p> </p>
+<p>Осталось подстроить работу приложения под маленькие экраны. Напомню, что на мелких экранах мы при любой ориентации будем разделять заголовки и содержимое по разным Activity. Размер экрана можно определять по-разному. Я буду считать большими экраны large и xlarge. Для этих экранов логика остается текущая, для остальных немного изменим.</p>
+<p>Ориентация экрана бывает горизонтальная (land) и вертикальная (port). Экраны мы будем различать: мелкие, large и xlarge. Итого у нас получается 6 комбинаций экранов.</p>
+<p>1) мелкий, port</p>
+<p>2) large, port</p>
+<p>3) xlarge, port</p>
+<p>4) мелкий, land</p>
+<p>5) large, land</p>
+<p>6) xlarge, land</p>
+<p> </p>
+<p>И у нас уже есть два варианта файла <b>main.xml</b> – "<b>заголовки с содержимым</b>" и "<b>только заголовки</b>".</p>
+<p> </p>
+<p>Надо сопоставить комбинации и варианты.</p>
+<p>Вариант "заголовки с содержимым" будем использовать в комбинациях 5,6 (большие экраны в горизонтальной ориентации)</p>
+<p>Вариант "только заголовки" подходит к комбинациям 1,2,3,4 (мелкие экраны в любой ориентации и большие экраны в вертикальной ориентации).</p>
+<p> </p>
+<p>Создаем layout-папки под эти комбинации, и помещаем в них варианты экранов.</p>
+<p>Папка res/<b>layout-large-land</b>. Это комбинация 5. Сюда помещаем вариант main.xml, который "заголовки с содержимым".</p>
+<p>Папка res/<b>layout-xlarge-land</b>. Это комбинация 6. Сюда помещаем вариант main.xml, который "заголовки с содержимым".</p>
+<p>Папка res/<b>layout</b>. Это все остальные комбинации (1,2,3,4). Сюда помещаем вариант main.xml, который "только заголовки".</p>
+<p>Т.е. в итоге получается, что мы в папки layout-large-land и layout-xlarge-land копируем файл из layout-land, и удаляем папку layout-land. Папку layout не трогаем, там все ок.</p>
+<p> </p>
+<p>Осталось немного изменить <b>DetailsActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1151multiplescreen;
+
+import android.content.res.Configuration;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+
+public class DetailsActivity extends FragmentActivity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    if (getResources().getConfiguration().orientation 
+        == Configuration.ORIENTATION_LANDSCAPE
+        &amp; isLarge()) {
+      finish();
+      return;
+    }
+
+    if (savedInstanceState == null) {
+      DetailsFragment details = DetailsFragment.newInstance(getIntent()
+          .getIntExtra("position", 0));
+      getSupportFragmentManager().beginTransaction()
+          .add(android.R.id.content, details).commit();
+    }
+  }
+
+  boolean isLarge() {
+    return (getResources().getConfiguration().screenLayout 
+        &amp; Configuration.SCREENLAYOUT_SIZE_MASK) 
+        &gt;= Configuration.SCREENLAYOUT_SIZE_LARGE;
+  }
+
+}</code></pre>
+<p>Метод <b>isLarge </b>определяет, большой экран или нет. Если раньше мы в горизонтальной ориентации сразу закрывали это Activity, то теперь будем делать это только для больших экранов. А на остальных содержимое будет отображаться в горизонтальной ориентации.</p>
+<p> </p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p>Скрины с планшета приводить не буду. Они полностью повторят предыдущие.</p>
+<p>А на смартфоне с маленьким экраном будет так:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_8.png" alt="" width="320" height="480"></p>
+<p>выбираем заголовок</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_9.png" alt="" width="320" height="480"></p>
+<p>поворачиваем экран</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_10.png" alt="" width="480" height="320"></p>
+<p>Жмем назад и попадаем к заголовкам</p>
+<p><img style="border: 1px solid black;" src="images/lesson_114_11.png" alt="" width="480" height="320"></p>
+<p> </p>
+<p>Немаленький такой материал получился. Но, вроде, все рассказал, чего хотел.</p>
+<p>На всякий случай напоминаю, что архитектура решения не моя. Я разбирал <a href="http://developer.android.com/reference/android/app/Fragment.html#Layout" target="_blank">пример</a>, который немного поменял. Я перенес логику из фрагмента заголовков в главное Activity и убрал использование режима выбора и выделение элементов списка. Зато добавил работу с <a href="http://developer.android.com/guide/topics/resources/providing-resources.html#AlternativeResources" target="_blank">квалификаторами</a>, которые позволили нам менять поведение приложения в зависимости от размера и ориентации экрана.</p>
+<p>Если остались непонятные моменты – велкам на форум, будем решать.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

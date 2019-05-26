@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 77. Tab - вкладки. TabActivity. Activity, как содержимое вкладки</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем Activity в качестве содержимого вкладки <br> - используем TabActivity</p>
+<p>В качестве вкладки можно использовать Activity. Для этого существует реализация метода <a href="http://developer.android.com/reference/android/widget/TabHost.TabSpec.html#setContent(android.content.Intent)" target="_blank">setContent</a>, которая принимает на вход Intent. А в Intent мы прописываем, какое Activity нам нужно.</p>
+<p>При использовании Intent и вкладок есть нюанс. Наше основное Activity, которое содержит TabHost должно наследовать не android.app.Activity как обычно, а <a href="http://developer.android.com/reference/android/app/TabActivity.html" target="_blank">android.app.TabActivity</a>. В этом случае нам не надо заморачиваться с дополнительной инициализацией для работы с Intent.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0771_TabIntent<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: TabIntent<br><b>Package name</b>: ru.startandroid.develop.p0771tabintent<br><b>Create Activity</b>: MainActivity</p>
+<p>Пропишем тексты в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;TabIntent&lt;/string&gt;
+	&lt;string name="text_activity1"&gt;Это первое Activity&lt;/string&gt;
+	&lt;string name="text_activity2"&gt;Это второе Activity&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;TabHost
+		android:id="@android:id/tabhost"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+		&lt;LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:orientation="vertical"&gt;
+			&lt;TabWidget
+				android:id="@android:id/tabs"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"&gt;
+			&lt;/TabWidget&gt;
+			&lt;FrameLayout
+				android:id="@android:id/tabcontent"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"&gt;
+			&lt;/FrameLayout&gt;
+		&lt;/LinearLayout&gt;
+	&lt;/TabHost&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Менять id у TabHost в случае использования android.app.TabActivity нельзя. Иначе система просто не найдет TabHost.</p>
+<p>FrameLayout не заполняем, т.к. мы не будем использовать его компоненты для содержимого вкладок. Мы будем туда целые Activity грузить.</p>
+<p>Создадим пару Activity.</p>
+<p>layout-файлы</p>
+<p><b>one.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/text_activity1"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>two.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/text_activity2"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Классы</p>
+<p><b>OneActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0771tabintent;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+public class OneActivity extends Activity {
+  
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.one);
+  }
+}</code></pre>
+<p><b>TwoActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0771tabintent;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+public class TwoActivity extends Activity {
+
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.two);
+  }
+}</code></pre>
+<p>Не забываем прописать их в манифесте.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0771tabintent;
+
+import android.app.TabActivity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.TabHost;
+
+public class MainActivity extends TabActivity {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        // получаем TabHost
+        TabHost tabHost = getTabHost();
+        
+        // инициализация была выполнена в getTabHost
+        // метод setup вызывать не нужно
+        
+        TabHost.TabSpec tabSpec;
+        
+        tabSpec = tabHost.newTabSpec("tag1");
+        tabSpec.setIndicator("Вкладка 1");
+        tabSpec.setContent(new Intent(this, OneActivity.class));
+        tabHost.addTab(tabSpec);
+        
+        tabSpec = tabHost.newTabSpec("tag2");
+        tabSpec.setIndicator("Вкладка 2");
+        tabSpec.setContent(new Intent(this, TwoActivity.class));
+        tabHost.addTab(tabSpec);
+    }
+}</code></pre>
+<p>Наше Activity наследует <b>TabActivity</b>. Это дает нам возможность получить TabHost методом <a href="http://developer.android.com/reference/android/app/TabActivity.html#getTabHost()" target="_blank">getTabHost</a>. Нам не нужно самим искать его на экране. Также этот замечательный метод выполняет за нас обычную инициализацию, нам не надо вызывать метод setup, как на прошлом уроке. И кроме обычной инициализации, этот метод выполняет подготовку для работы с Activity, как содержимым вкладок.</p>
+<p>Ну а далее вам все знакомо с прошлого урока. Создаем вкладки, указываем имена. В методе setContent вместо содержимого из FrameLayout мы даем Intent, указывающий на необходимое нам Activity.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p>Первая вкладка с <b>OneActivity</b></p>
+<p><img src="images/lesson_76_0.png" alt="" width="640" height="449"></p>
+<p>Вторая вкладка с <b>TwoActivity</b></p>
+<p><img src="images/lesson_76_1.png" alt="" width="640" height="449"></p>
+<p>А как отрабатывают события Activity LifeCycle? При первом показе первой вкладки срабатывают три метода <b>OneActivity</b>: <b>onCreate</b>, <b>onStart</b>, <b>onResume</b>. Переключаемся на вторую вкладку – срабатывает <b>onPause </b>в <b>OneActivity</b>, а потом три метода <b>TwoActivity</b>: <b>onCreate</b>, <b>onStart</b>, <b>onResume</b>. И далее при переключениях между вкладками одна уходит в <b>onPause</b>, другая возвращается в <b>onResume</b>. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

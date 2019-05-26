@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 98. Service. Локальный биндинг</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- обмен данными в биндинге</p>
+<p>Подключаться к сервису мы теперь умеем. В этом уроке попробуем обменяться с ним данными.</p>
+<p>В сервисе метод onBind возвращает объект, наследующий интерфейс <a href="http://developer.android.com/reference/android/os/IBinder.html" target="_blank">IBinder</a>. Проще всего использовать для этого объект <a href="http://developer.android.com/reference/android/os/Binder.html" target="_blank">Binder </a>и расширить его необходимыми нам методами. Т.е. создаем свой класс MyBinder с предком Binder и рисуем в нем свои методы.</p>
+<p>При биндинге, в методе onServiceConnected мы получаем объект Binder. Мы можем привести его к типу MyBinder (из сервиса) и вызывать его методы, а реализация будет срабатывать в сервисе, где мы описывали этот класс.</p>
+<p>Как вы понимаете, это сработает только, если сервис и приложение выполняются в одном процессе. Поэтому такой биндинг называется локальным.</p>
+<p>Нарисуем пример. У нас будет сервис, который с определенным интервалом будет что-то выводить в лог. Мы к нему подключимся, и будем повышать или понижать интервал и получать новое значение интервала обратно.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0981_ServiceBindingLocal<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ServiceBindingLocal<br><b>Package name</b>: ru.startandroid.develop.p0981servicebindinglocal<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;string name="up"&gt;Up&lt;/string&gt;
+&lt;string name="down"&gt;Down&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/tvInterval"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickStart"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnUp"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickUp"
+		android:text="@string/up"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnDown"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClickDown"
+		android:text="@string/down"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопки для запуска сервиса, повышения интервала и понижения интервала.</p>
+<p>Создаем сервис <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0981servicebindinglocal;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
+import android.util.Log;
+
+public class MyService extends Service {
+
+  final String LOG_TAG = "myLogs";
+
+  MyBinder binder = new MyBinder();
+
+  Timer timer;
+  TimerTask tTask;
+  long interval = 1000;
+
+  public void onCreate() {
+    super.onCreate();
+    Log.d(LOG_TAG, "MyService onCreate");
+    timer = new Timer();
+    schedule();
+  }
+
+  void schedule() {
+    if (tTask != null) tTask.cancel();
+    if (interval &gt; 0) {
+      tTask = new TimerTask() {
+        public void run() {
+          Log.d(LOG_TAG, "run");
+        }
+      };
+      timer.schedule(tTask, 1000, interval);
+    }
+  }
+
+  long upInterval(long gap) {
+    interval = interval + gap;
+    schedule();
+    return interval;
+  }
+
+  long downInterval(long gap) {
+    interval = interval - gap;
+    if (interval &lt; 0) interval = 0;
+    schedule();
+    return interval;
+  }
+
+  public IBinder onBind(Intent arg0) {
+    Log.d(LOG_TAG, "MyService onBind");
+    return binder;
+  }
+
+  class MyBinder extends Binder {
+    MyService getService() {
+      return MyService.this;
+    }
+  }
+}</code></pre>
+<p>Здесь мы используем таймер – <a href="http://developer.android.com/reference/java/util/Timer.html" target="_blank">Timer</a>. Он позволяет повторять какое-либо действие через заданный промежуток времени. Кратко распишу принцип действия. <a href="http://developer.android.com/reference/java/util/TimerTask.html" target="_blank">TimerTask </a>– это задача, которую Timer будет периодически выполнять. В методе <a href="http://developer.android.com/reference/java/util/TimerTask.html#run()" target="_blank">run</a> – кодим действия этой задачи.  И далее для объекта Timer вызываем метод <a href="http://developer.android.com/reference/java/util/Timer.html#schedule(java.util.TimerTask, long, long)" target="_blank">schedule</a>, в который передаем задачу TimerTask, время через которое начнется выполнение, и период повтора. Чтобы отменить выполнение задачи, необходимо вызвать метод cancel для TimerTask. Отмененную задачу нельзя больше запланировать, и если снова надо ее включить – необходимо создать новый экземпляр TimerTask и скормить его таймеру.</p>
+<p>Итак, в методе <b>onCreate </b>мы создаем таймер и выполняем метод schedule, в котором стартует задача.</p>
+<p>Метод <b>schedule </b>проверяет, что задача уже создана и отменяет ее. Далее планирует новую, с отложенным на 1000 мс запуском и периодом = interval. Т.е. можно сказать, что этот метод перезапускает задачу с использованием текущего интервала повтора (interval), а если задача еще не создана, то создает ее. Сама задача просто выводит в лог текст run. Если interval = 0, то ничего не делаем.</p>
+<p>Метод <b>upInterval </b>получает на вход значение, увеличивает interval на это значение и перезапускает задачу. Соответственно задача после этого будет повторяться реже.</p>
+<p>Метод <b>downInterval </b>получает на вход значение, уменьшает interval на это значение (но так, чтоб не меньше 0) и перезапускает задачу. Соответственно задача после этого будет повторяться чаще.</p>
+<p><b>onBind </b>возвращает binder. Это объект класса MyBinder.</p>
+<p><b>MyBinder</b> расширяет стандартный Binder, мы добавляем в него один метод getService. Этот метод возвращает наш сервис MyService.</p>
+<p>Т.е. в подключаемом Activity, в методе onServiceConnected мы получим объект, который идет на выход метода onBind. Далее преобразуем его к типу MyBinder, вызовем getService и вуаля - у нас в Activity будет ссылка на объект-сервис MyService.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0981servicebindinglocal;
+
+import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  boolean bound = false;
+  ServiceConnection sConn;
+  Intent intent;
+  MyService myService;
+  TextView tvInterval;
+  long interval;
+  
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvInterval = (TextView) findViewById(R.id.tvInterval);
+    intent = new Intent(this, MyService.class);
+    sConn = new ServiceConnection() {
+
+      public void onServiceConnected(ComponentName name, IBinder binder) {
+        Log.d(LOG_TAG, "MainActivity onServiceConnected");
+        myService = ((MyService.MyBinder) binder).getService(); 
+        bound = true;
+      }
+
+      public void onServiceDisconnected(ComponentName name) {
+        Log.d(LOG_TAG, "MainActivity onServiceDisconnected");
+        bound = false;
+      }
+    }; 
+  }
+  
+  @Override
+  protected void onStart() {
+    super.onStart();
+    bindService(intent, sConn, 0);
+  }
+  
+  @Override
+  protected void onStop() {
+    super.onStop();
+    if (!bound) return;
+    unbindService(sConn);
+    bound = false;
+  }
+
+  public void onClickStart(View v) {
+    startService(intent);
+  }
+  
+  public void onClickUp(View v) {
+    if (!bound) return;
+    interval = myService.upInterval(500);
+    tvInterval.setText("interval = " + interval);
+  }
+  
+  public void onClickDown(View v) {
+    if (!bound) return;
+    interval = myService.downInterval(500);
+    tvInterval.setText("interval = " + interval);
+  }
+}</code></pre>
+<p>В <b>onCreate </b>создаем Intent для доступа к сервису и ServiceConnection. В методе onServiceConnected мы берем binder, преобразуем его к MyService.MyBinder, вызываем метод getService и получаем наш сервис MyService. Теперь мы можем выполнять методы сервиса. Нас интересуют методы увеличения и понижения интервала.</p>
+<p>В методах <b>onStart </b>и <b>onStop </b>мы соответственно подключаемся к сервису и отключаемся.</p>
+<p>В <b>onClickStart </b>запускаем сервис.</p>
+<p>В <b>onClickUp</b> и <b>onClickDown </b>проверяем, что соединение с сервисом есть, и вызываем соответствующие методы сервиса для увеличения или понижения интервала. В качестве дельты изменения интервала передаем 500. В ответ эти методы передают нам новое значение интервала, и мы выводим его в TextView.</p>
+<p>Все сохраним и запускаем.</p>
+<p><img src="images/lesson_97_0.png" alt="" width="640" height="449"></p>
+<p>Жмем <b>Start </b>– запускаем сервис. В логах:</p>
+<p><i>MyService onCreate<br> MyService onBind<br> MainActivity onServiceConnected</i></p>
+<p>Создается сервис, и мы к нему подключаемся. Биндинг был ранее вызван в onStart и, когда сервис стартанул, мы автоматически подключились.  В прошлом уроке мы разбирали такую ситуацию, когда биндинг идет к незапущенному пока сервису.</p>
+<p><br><i> run<br> run<br> run<br> …<br> run</i></p>
+<p>Далее с интервалом в одну секунду в лог падает текст run.</p>
+<p>Попробуем увеличить интервал. Жмем <b>Up</b>.</p>
+<p><img src="images/lesson_97_1.png" alt="" width="640" height="449"></p>
+<p>На экране появилось текущее значение интервала. И по времени записей в логах видим, что именно с этим интервалом срабатывает задача (вывод текста run в лог) .</p>
+<p>Далее можно нажимать <b>Up</b> и <b>Down</b> и наблюдать, как меняется интервал выполнения задачи. Таким образом, мы из Activity подключились к сервису и управляем его работой.</p>
+<p>В начале урока я отметил, что все это будет работать, если приложение и сервис в одном процессе. Если же они в разных процессах, то используется немного более сложный вариант для обмена данными. Но это гораздо менее используемый случай, поэтому сейчас я про него не рассказываю. Но попозже об этом обязательно будет статья.</p>
+</body>
+</html>
+            </div>
+     </div>
+</div>
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 149. Рисование. Текст</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- работаем с текстом</p>
+<p>В прошлых уроках мы уже выводили текст, настраивали для него выравнивание, использовали path для указания линии текста. Посмотрим какие еще операции доступны при работе с текстом.</p>
+<h3>Определение размеров</h3>
+<p>Есть несколько методов, позволяющих определить размеры текста.</p>
+<p>Для начала определим ширину всего текста и каждого символа по отдельности.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1491_CanvasText<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CanvasText<br/> <b>Package name</b>: ru.startandroid.develop.p1491canvastext<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1491canvastext;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint fontPaint;
+    Paint redPaint;
+    String text = "Test width text";
+    int fontSize = 100;
+    float[] widths;
+    float width;
+
+    public DrawView(Context context) {
+      super(context);
+      redPaint = new Paint();
+      redPaint.setColor(Color.RED);
+
+      fontPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      fontPaint.setTextSize(fontSize);
+      fontPaint.setStyle(Paint.Style.STROKE);
+
+      // ширина текста
+      width = fontPaint.measureText(text);
+
+      // посимвольная ширина 
+      widths = new float[text.length()];
+      fontPaint.getTextWidths(text, widths);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.translate(50, 250);
+
+      // вывод текста
+      canvas.drawText(text, 0, 0, fontPaint);
+
+      // линия шириной в текст
+      canvas.drawLine(0, 0, width, 0, fontPaint);
+
+      // посимвольные красные точки 
+      canvas.drawCircle(0, 0, 3, redPaint);
+      for (float w : widths) {
+        canvas.translate(w, 0);
+        canvas.drawCircle(0, 0, 3, redPaint);
+      }
+    }
+  }
+
+}</code></pre>
+<p>В конструкторе DrawView мы создаем и настраиваем fontPaint, который будет использован для вывода текста. Здесь же мы вычисляем размеры текста. Метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#measureText(java.lang.String)" target="_blank">measureText</a> вернет ширину указанного текста. Сохраним ее в переменную width. А метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#getTextWidths(java.lang.String, float[])" target="_blank">getTextWidths</a> позволяет получить массив, содержащий значения ширины для каждого символа текста. Используем массив widths, размер которого равен кол-ву символов в тексте.</p>
+<p>В onDraw рисуем текст. А под текстом рисуем линию шириной равной ранее полученной ширине текста - width, и используя массив widths выводим красные точки, отмечая ширину каждого символа.</p>
+<p>Результат:</p>
+<p><img src="images/lesson149/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Далее рассмотрим метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#breakText(java.lang.String, boolean, float, float[])" target="_blank">breakText</a>. Он позволит нам узнать сколько символов текста поместится в указанную нами ширину.</p>
+<p> </p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    String text = "Test width text";
+    int fontSize = 80;
+    int maxWidth = 350;
+    float realWidth = 0;
+    int cnt = 0;
+    String info = "";
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setTextSize(fontSize);
+
+      // кол-во символов и их ширина
+      float[] measuredWidth = new float[1];
+      cnt = p.breakText(text, true, maxWidth, measuredWidth);
+      realWidth = measuredWidth[0];
+
+      info = "cnt = " + cnt + ", realWidth = " + realWidth
+          + ", maxWidth = " + maxWidth;
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // данные о ширине
+      p.setTextSize(24);
+      canvas.drawText(info, 50, 50, p);
+
+      // текст
+      p.setTextSize(fontSize);
+      canvas.drawText(text, 50, 250, p);
+
+      p.setStrokeWidth(10);
+
+      // полоса реальной ширины урезанного текста
+      p.setColor(Color.BLUE);
+      canvas.drawLine(50, 260, 50 + realWidth, 260, p);
+
+      // полоса лимита
+      p.setColor(Color.GREEN);
+      canvas.drawLine(50, 270, 50 + maxWidth, 270, p);
+
+    }
+  }</code></pre>
+<p>В конструкторе DrawView вызываем метод breakText. На вход передаем: </p>
+<p>- текст<br/> - true, означает что пойдем по тексту вперед, начиная с первого символа. Если false, то пойдем с конца.<br/> - ширину, которая будет ограничивать текст<br/> - массив, для получения точного значения ширины</p>
+<p>Метод breakText возвращает кол-во символов.</p>
+<p>Т.е. мы у объекта Paint спрашиваем, сколько символов указанного текста text влезет в указанную ширину maxWidth. Ответ мы получаем в переменную cnt. А в массив measuredWidth также попадает точная ширина урезанного текста, для удобства сохраним ее в переменную realWidth.</p>
+<p>В onDraw выводим текст с полученными данными, искомый текст и две полосы для наглядности. Синяя полоса покажет точную ширину (realWidth) урезанного текста, а зеленая покажет лимит (maxWidth), который мы задавали.</p>
+<p>Результат:</p>
+<p><img src="images/lesson149/lesson2.png" alt="" width="640" height="385"/></p>
+<p>maxWidth у нас равен 350. Метод breakText выяснил, что из указанного текста в 350 px влезет лишь 9 символов и они займут 330 px по ширине.</p>
+<p>Синяя полоса показывает ширину урезанного текста. Видно что над этой полосой 9 символов (включая пробел).</p>
+<p>Зеленая полоса показала лимит, который мы ставили - 350.</p>
+<p>Среди методов измерения также есть метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#getTextBounds(java.lang.String, int, int, android.graphics.Rect)" target="_blank">getTextBounds</a>, который позволит получить вам прямоугольник, в который заключен текст.</p>
+<p><span style="color: #135cae; font-family: Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold;">Шрифты, стили</span></p>
+<p>Рассмотрим возможность использования типов и стилей шрифтов.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    String text = "Test width text";
+    int fontSize = 60;
+    float y = 80;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setTextSize(fontSize);
+      p.setStyle(Paint.Style.STROKE);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // обычный текст
+      canvas.translate(50, y);
+      canvas.drawText(text, 0, 0, p);
+
+      // моноширинный
+      canvas.translate(0, y);
+      p.setTypeface(Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL));
+      canvas.drawText(text, 0, 0, p);
+
+      // с засечками
+      canvas.translate(0, y);
+      p.setTypeface(Typeface.create(Typeface.SERIF, Typeface.NORMAL));
+      canvas.drawText(text, 0, 0, p);
+
+      // обычный жирный 
+      canvas.translate(0, y);
+      p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+      canvas.drawText(text, 0, 0, p);
+
+      // обычный жирный курсивный
+      canvas.translate(0, y);
+      p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
+      canvas.drawText(text, 0, 0, p);
+
+      // обычный курсивный
+      canvas.translate(0, y);
+      p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.ITALIC));
+      canvas.drawText(text, 0, 0, p);
+
+    }
+  }</code></pre>
+<p>В onDraw мы выводим один и тот же текст, используя различные типы и стили шрифта. Для этого используем метод <a href="http://developer.android.com/reference/android/graphics/Paint.html#setTypeface(android.graphics.Typeface)" target="_blank">setTypeface</a>, который требует на вход <a href="http://developer.android.com/reference/android/graphics/Typeface.html" target="_blank">Typeface</a>. Создать Typeface можно методом <a href="http://developer.android.com/reference/android/graphics/Typeface.html#create(android.graphics.Typeface, int)" target="_blank">create</a>, который требует на вход тип и стиль.</p>
+<p>Результат:</p>
+<p><img src="images/lesson149/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Сначала используем шрифт по умолчанию, затем строим различные комбинации</p>
+<p>из типов:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#MONOSPACE" target="_blank">MONOSPACE</a> – моноширинный, т.е. ширина всех символов одинакова</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#SERIF" target="_blank">SERIF</a> – шрифт с засечками</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#DEFAULT" target="_blank">DEFAULT</a> - шрифт по умолчанию</p>
+<p>и стилей:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#NORMAL" target="_blank">NORMAL</a> – обычный</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#BOLD" target="_blank">BOLD</a> – жирный</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#BOLD_ITALIC" target="_blank">BOLD_ITALIC</a> – жирный курсивный</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Typeface.html#ITALIC" target="_blank">ITALIC</a> - курсивный</p>
+<p>Кроме системных шрифтов, существует возможность использовать свои шрифты. Для этого вместо метода Typeface.create необходимо использовать другие его разновидности. Например <a href="http://developer.android.com/reference/android/graphics/Typeface.html#createFromAsset(android.content.res.AssetManager, java.lang.String)" target="_blank">createFromAsset</a>. Помещаете ваш шрифт в папку assets и в методе createFromAsset указываете имя файла.</p>
+<p>Рассмотрим еще несколько методов форматирования текста. </p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    String text = "Test width text";
+    int fontSize = 60;
+    float y = 80;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setTextSize(fontSize);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // обычный текст
+      canvas.translate(50, y);
+      canvas.drawText(text, 0, 0, p);
+
+      // растянутый
+      canvas.translate(0, y);
+      p.setTextScaleX(1.5f);
+      canvas.drawText(text, 0, 0, p);
+      p.setTextScaleX(1);
+
+      // наклоненный
+      canvas.translate(0, y);
+      p.setTextSkewX(0.5f);
+      canvas.drawText(text, 0, 0, p);
+      p.setTextSkewX(0);
+
+      // подчеркнутый
+      canvas.translate(0, y);
+      p.setUnderlineText(true);
+      canvas.drawText(text, 0, 0, p);
+      p.setUnderlineText(false);
+
+      // зачеркнутый
+      canvas.translate(0, y);
+      p.setStrikeThruText(true);
+      canvas.drawText(text, 0, 0, p);
+      p.setStrikeThruText(false);
+
+    }
+  }</code></pre>
+<p><a href="http://developer.android.com/reference/android/graphics/Paint.html#setTextScaleX(float)" target="_blank">setTextScaleX</a> – позволяет растянуть/сжать текст</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Paint.html#setTextSkewX(float)" target="_blank">setTextSkewX</a> – наклон текста</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Paint.html#setUnderlineText(boolean)" target="_blank">setUnderlineText</a> – подчеркнутый текст</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Paint.html#setStrikeThruText(boolean)" target="_blank">setStrikeThruText</a> – зачеркнутый текст</p>
+<p>Результат:</p>
+<p><img src="images/lesson149/lesson4.png" alt="" width="640" height="385"/></p>
+<h3>Прочее</h3>
+<p>Метод <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawPosText(java.lang.String, float[], android.graphics.Paint)" target="_blank">drawPosText</a> позволяет при выводе раскидать текст посимвольно по различным точкам</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    String text = "Test text";
+    int fontSize = 100;
+    float pos[];
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint(Paint.ANTI_ALIAS_FLAG);
+      p.setTextSize(fontSize);
+
+      pos = new float[] { 100, 300, 200, 150, 300, 500, 400, 300, 500,
+          250, 600, 350, 700, 400, 800, 200, 900, 500 };
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      canvas.drawPosText(text, pos, p);
+
+    }
+  }</code></pre>
+<p>В конструкторе создаем массив pos. В нем указаны координаты точек, по которым поочередно будут раскиданы символы текста.</p>
+<p>В onDraw вызываем drawPosText и передаем ему текст и массив.</p>
+<p>Результат:</p>
+<p><img src="images/lesson149/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Методы измерения можно использовать не только в рисовании. Вы можете для обычного TextView получить объект Paint методом <a href="http://developer.android.com/reference/android/widget/TextView.html#getPaint()" target="_blank">getPaint</a>, и далее уже вызывать необходимые вам методы. А метод <a href="http://developer.android.com/reference/android/widget/TextView.html#setTypeface(android.graphics.Typeface)" target="_blank">setTypeface</a> (для задания шрифта) у TextView есть свой.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

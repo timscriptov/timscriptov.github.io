@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 7. Layout параметры для View-элементов.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>На этом уроке мы:</p>
+<p>- разбираемся в характеристиках экрана<br>- рассматриваем layout параметры (высота, ширина, отступ, гравитация, вес)</p>
+<h3>Экраны</h3>
+<p>Для начала немного теории по экранам. Экран имеет такие физические характеристики как диагональ и разрешение. Диагональ – это расстояние между противоположными углами экрана, обычно измеряется в дюймах. Разрешение – кол-во точек по горизонтали и вертикали, которое экран способен отобразить, измеряется в пикселах.</p>
+<p>Возьмем в качестве примера экран смартфона HTC Desire. Диагональ = 3,7 дюйма, разрешение = 800х480 пикселов.</p>
+<p><img src="images/lesson_6_0.png" alt="" width="266" height="349" border="0"></p>
+<p>Кол-во пикселов в одном дюйме называется dpi (dot per inch). Узнаем чему равно dpi в данном случае, вспомнив классику: c<sup>2</sup> = a<sup>2</sup> + b<sup>2</sup>, где с – кол-во пикселей по диагонали, т.е. вмещаемое в 3,7 дюйма. a и b – стороны экрана.</p>
+<p>c = 3,7 * dpi<br> (3,7 * dpi)<sup>2</sup> = 480<sup>2</sup> + 800<sup>2<br></sup>dpi<sup>2</sup> = 870400 / 13,69 = 63579<br> dpi = 252. Т.е. в одном дюйме экрана помещается ряд из 252 пикселов.</p>
+<p>Возвращаемся к теме урока. Рассмотрим подробно следующие параметры View элементов</p>
+<p><img src="images/lesson_6_1.png" alt="" width="334" height="186" border="0"></p>
+<h3>Layout width и Layout height</h3>
+<p>Про ширину (layout_width) и высоту (layout_height) мы уже немного говорили на прошлом уроке. Мы можем указывать для них абсолютные значения, а можем использовать константы. Разберем подробнее эти возможности.</p>
+<p>Используются следующие <a href="http://developer.android.com/guide/topics/resources/more-resources.html#Dimension" target="_blank">единицы измерения</a> (ЕИ):</p>
+<p><b>dp </b>или <b>dip </b>- Density-independent Pixels. Абстрактная ЕИ, позволяющая приложениям выглядеть одинаково на различных экранах и разрешениях.</p>
+<p><b>sp </b>- Scale-independent Pixels. То же, что и dp, только используется для размеров шрифта в View элементах</p>
+<p><b>pt </b>- 1/72 дюйма, определяется по физическому размеру экрана. Эта ЕИ <a href="http://en.wikipedia.org/wiki/Point_(typography)" target="_blank">из типографии</a>.</p>
+<p><b>px </b>– пиксел, не рекомендуется использовать т.к. на разных экранах приложение будет выглядеть по-разному.</p>
+<p><b>mm </b>– миллиметр, определяется по физическому размеру экрана</p>
+<p><b>in </b>– дюйм, определяется по физическому размеру экрана</p>
+<p>Подробней о различиях и соотношениях между этими ЕИ вы можете прочесть в <a href="/ru/uroki/vse-uroki-spiskom/10-about/40-edinitsy-izmerenija-chem-otlichaetsja-dp-dip-ot-px-screen-density.html">этом материале</a> сайта.</p>
+<p>match_parent (fill_parent) – означает, что элемент займет всю доступную ему в родительском элементе ширину/высоту.</p>
+<p>wrap_content – ширина/высота элемента будет определяться его содержимым</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0072_LayoutProp<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: LayoutProp<br><b>Package name</b>: ru.startandroid.develop.layoutprop<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем <b>main.xml</b>. Настроим корневой <b>LinearLayout</b> на горизонтальную ориентацию, удалим <b>TextView</b>, и добавим <b>Button </b>с шириной и высотой равной <b>wrap_content</b>. Она отображается на экране и ее ширина соответствует тексту на ней.</p>
+<p><img src="images/lesson_6_2.png" alt="" width="328" height="232" border="0"></p>
+<p>Изменим текст с «Button» на «Button with text», сохраним и посмотрим на экран.</p>
+<p><img src="images/lesson_6_3.png" alt="" width="325" height="230" border="0"></p>
+<p>Кнопка стала шире, т.к. ширина определяется по содержимому. Если же мы сейчас явно укажем ей ширину 250 dp, то кнопка растянется независимо от содержимого.</p>
+<p><img src="images/lesson_6_4.png" alt="" width="330" height="228" border="0"></p>
+<p>Теперь сделаем ширину равной <b>match_parent</b>. Кнопка растянулась на всю<b> ширину родителя</b>, т.е. LinearLayout. А LinearLayout в свою очередь занимет всю ширину экрана.</p>
+<p><img src="images/lesson_6_5.png" alt="" width="326" height="228" border="0"></p>
+<p>Если у нас родитель содержит несколько элементов и мы хотим, чтобы они заняли все пространство необходимо использовать параметр<b> Layout weight – вес</b>. Свободное пространство распределяется между элементами пропорционально их weight-значениям.</p>
+<p>Изменим текст нашей кнопки на <b>B1 </b>и добавим ей соседа по LinearLayout – вторую кнопку с текстом <b>B2</b>. Ширину для обоих поставьте <b>wrap_content </b></p>
+<p><img src="images/lesson_6_6.png" alt="" width="325" height="231" border="0"></p>
+<p>Займемся дележом. Если мы хотим, чтобы кнопки поделили пространство родителя <b>поровну </b>– то для обеих укажем <b>weight </b>= 1. В этом случае кнопки равны по ширине.</p>
+<p><img src="images/lesson_6_7.png" alt="" width="324" height="230" border="0"></p>
+<p>Обратите внимание, что не используются единицы измерения, указываются просто числа.</p>
+<p>Если нужно, чтобы B1 занимала четверть, а B2 три четверти свободного пространства, то проставляем <b>weight </b>= 1 для <b>B1</b> и <b>weight </b>= 3 для <b>B2</b>.</p>
+<p><img src="images/lesson_6_8.png" alt="" width="324" height="231" border="0"></p>
+<p>Кол-во элементов может быть любым. Добавим еще кнопку с текстом <b>B3</b>, <b>weight </b>= 2 и <b>width </b>= wrap_content.</p>
+<p><img src="images/lesson_6_9.png" alt="" width="330" height="230" border="0"></p>
+<p>xml-код получившегося экрана:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/button1"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="B1"
+        android:layout_weight="1"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/button2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="B2"
+        android:layout_weight="3"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:id="@+id/button3"
+        android:text="B3"
+        android:layout_weight="2"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Теперь для <b>B2 </b>и <b>B3 </b>укажите <b>weight </b>= 0. Они больше не претендуют на свободное пространство и занимают ширину по содержимому, а <b>B1 </b>забирает все себе.</p>
+<p><img src="images/lesson_6_10.png" alt="" width="325" height="231" border="0"></p>
+<p>Разумеется, все выше сказанное применимо и для параметра высоты - <b>height</b>.</p>
+<p>При использовании <b>weigth </b>вы можете указать значение <b>height </b>или <b>width </b>=<b> 0dp</b>. В этом случае не будет учитываться содержимое элементов и результат будет более соответствующий коэффициентам веса.</p>
+<h3>Layout gravity</h3>
+<p>Параметр layout_gravity аналогичен выравниванию из Word или Excel. Удобнее всего продемонстрировать его с использованием <b>FrameLayout</b>. Я не описывал этот Layout на прошлом уроке, т.к. он совсем простой. Все помещаемые в него элементы он по умолчанию помещает в левый верхний угол и никак их не выстраивает. Нам это очень подходит для демонстрации настроек выравнивания.</p>
+<p>Создадим <b>grlayout.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;FrameLayout
+        android:id="@+id/frameLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"&gt;
+        &lt;Button
+            android:id="@+id/button1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|left"
+            android:text="gravity = top left"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|right"
+            android:text="gravity = top right"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|left"
+            android:text="gravity = bottom left"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:text="gravity = bottom right"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:id="@+id/button5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="gravity = center"&gt;
+        &lt;/Button&gt;
+    &lt;/FrameLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране видим:</p>
+<p><img src="images/lesson_6_11.png" alt="" width="329" height="490" border="0"></p>
+<p>Для наглядности текст кнопки отображает ее свойства. Все очевидно и несложно.</p>
+<p>Я честно пытался понять зачем нужны значения gravity <b>fill_*</b> и <b>clip_*</b>, но так и не понял. То, что написано про них в документацие у меня не работает. Если у вас есть сведения по этому поводу – пишите в каменты.</p>
+<h3>Layout margin</h3>
+<p>Параметры margin полностью аналогичны <b>margin</b> из <b>html</b>. Это отступ. Он может быть со всех сторон сразу, либо только с необходимых сторон. Продемонстрируем это на примере TableLayout. Создадим <b>marginlayout.xml</b> и нарисуем таблицу три на три с кнопками.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;TableLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:id="@+id/tableLayout1"&gt;
+        &lt;TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+        &lt;/TableRow&gt;
+        &lt;TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Margin"
+                android:id="@+id/button5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+        &lt;/TableRow&gt;
+        &lt;TableRow
+            android:id="@+id/tableRow3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+            &lt;Button
+                android:text="Button"
+                android:id="@+id/button9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"&gt;
+            &lt;/Button&gt;
+        &lt;/TableRow&gt;
+    &lt;/TableLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><img src="images/lesson_6_12.png" alt="" width="322" height="237" border="0"></p>
+<p>И на кнопке в центре будем экспериментировать.</p>
+<p><b>margin </b>= 50 dp<br>Вокруг кнопки со всех сторон образовался отступ = 50 dp.</p>
+<p><img src="images/lesson_6_13.png" alt="" width="640" height="251" border="0"></p>
+<p><br><b>margin left</b> = 10 dp <br><b>margin</b> <b>top</b> = 20 dp<br>Отступ слева и сверху.</p>
+<p><img src="images/lesson_6_14.png" alt="" width="640" height="251" border="0"></p>
+<p><b>margin right </b>= 30 dp<br><b>margin</b> <b>bottom </b>= 40 dp<br>Отступ справа и снизу.</p>
+<p><img src="images/lesson_6_15.png" alt="" width="640" height="252" border="0"></p>
+<p>Урок получился большой, но полезный. Думаю, это был последний урок дизайна, моделирования и верстки и дальше мы уже начнем программировать.</p>
+<h3>Стили</h3>
+<p>Если кто использовал HTML, то наверняка слышали про каскадные стили - CSS. Стили позволяют вам группировать атрибуты элементов (кнопок, таблиц, параграфов и т.д.). Далее вы просто применяете к элементам стили, и элемент рисуется с учетом всех атрибутов стиля. И нет необходимости повторять несколько раз один и тот же код для элементов, которые должны выглядеть одинаково. Особенно это удобно в случае изменения атрибутов. Вы просто меняете один раз стиль и все элементы с этим стилем меняются.</p>
+<p>В Android тоже есть стили и они имеют точно такое же назначение. Если у вас есть несколько элементов и вам надо, чтобы они выглядели одинаково, то вы просто создаете один стиль и применяете его к нужным элементам. В принципе, вы пока можете не заморачиваться этим и начать использовать стили, когда наберетесь опыта. Ну а тем кому это интересно прямо сейчас - прошу в <a href="http://forum.startandroid.ru/viewtopic.php?f=25&amp;t=912" target="_blank">эту ветку</a> нашего форума. Пользователь icamys на примере подробно разъясняет как использовать стили. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

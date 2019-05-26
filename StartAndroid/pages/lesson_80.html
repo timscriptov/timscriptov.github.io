@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 80. Handler. Немного теории.  Наглядный пример использования</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- разбираемся, что такое Handler и зачем он нужен</p>
+<p>Для полного понимания урока желательно иметь представление о <b>потоках </b>(threads) в Java.</p>
+<p>Так просто ведь и не объяснишь, что такое <b>Handler</b>. Можете попробовать почитать <a href="http://developer.android.com/reference/android/os/Handler.html" target="_blank">официальное описание</a>, но там достаточно нетривиально и мало написано. Я попробую здесь в двух словах рассказать.</p>
+<p>В Android к <b>потоку </b>(thread) может быть привязана<b> очередь сообщений</b>. Мы можем помещать туда <b>сообщения</b>, а система будет за очередью следить и отправлять сообщения на <b>обработку</b>. При этом мы можем указать, чтобы сообщение ушло на обработку не сразу, а спустя определенное кол-во времени.</p>
+<p>Handler - это механизм, который позволяет <b>работать </b>с очередью сообщений. Он привязан к конкретному потоку (thread) и работает с его очередью. Handler умеет <b>помещать </b>сообщения в очередь. При этом он ставит самого себя в качестве <b>получателя </b>этого сообщения. И когда приходит время, система достает сообщение из очереди и <b>отправляет </b>его адресату (т.е. в Handler) на обработку.</p>
+<p>Handler дает нам две интересные и полезные возможности:</p>
+<p>1) реализовать<b> отложенное по времени</b> выполнение кода</p>
+<p>2) выполнение кода <b>не в своем потоке</b></p>
+<p>Подозреваю, что стало не сильно понятнее, что такое Handler, а главное – зачем он вообще нужен :) .  В ближайшие несколько уроков будем с этим разбираться, и все станет понятно.</p>
+<p>В этом уроке сделаем небольшое приложение. Оно будет эмулировать какое-либо долгое действие, например закачку файлов и в TextView выводить кол-во закачанных файлов. С помощью этого примера мы увидим, зачем может быть нужен Handler.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0801_Handler <br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Handler<br><b>Package name</b>: ru.startandroid.develop.p0801handler<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;Handler&lt;/string&gt;
+	&lt;string name="start"&gt;Start&lt;/string&gt;
+	&lt;string name="test"&gt;Test&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;ProgressBar
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:indeterminate="true"&gt;
+	&lt;/ProgressBar&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+	&lt;Button
+		android:id="@+id/btnStart"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnTest"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/test"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>ProgressBar </b>у нас будет крутиться всегда. Позже станет понятно, зачем. <b>TextView </b>– для вывода информации о закачке файлов. Кнопка <b>Start </b>будет стартовать закачку. Кнопка <b>Test </b>будет просто выводить в лог слово test.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0801handler;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  Handler h;
+  TextView tvInfo;
+  Button btnStart;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      for (int i = 1; i &lt;= 10; i++) {
+        // долгий процесс
+        downloadFile();
+        // обновляем TextView
+        tvInfo.setText("Закачано файлов: " + i);
+        // пишем лог
+        Log.d(LOG_TAG, "Закачано файлов: " + i);
+      }
+      break;
+    case R.id.btnTest:
+      Log.d(LOG_TAG, "test");
+      break;
+    default:
+      break;
+    }
+  }
+
+  void downloadFile() {
+    // пауза - 1 секунда
+    try {
+      TimeUnit.SECONDS.sleep(1);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+}</code></pre>
+<p>В обработчике кнопки <b>Start </b>мы организуем цикл для закачки файлов. В каждой итерации цикла выполняем метод <b>downloadFile </b>(который эмулирует закачку файла), обновляем <b>TextView </b>и пишем в лог информацию о том, что кол-во закачанных файлов изменилось. Итого у нас должны закачаться 10 файлов и после закачки каждого из них лог и экран должны показывать, сколько файлов уже закачано.</p>
+<p>По нажатию кнопки <b>Test </b>– просто выводим в лог сообщение.</p>
+<p><b>downloadFile </b>– эмулирует закачку файла, это просто пауза в одну секунду.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_79_0.png" alt="" width="640"></p>
+<p>Мы видим, что <b>ProgressBar </b>крутится. Понажимаем на кнопку <b>Test</b>, в логах появляется test. Все в порядке, приложение отзывается на наши действия.</p>
+<p>Теперь расположите AVD на экране монитора так, чтобы он не перекрывал вкладку <b>логов </b>в Eclipse (LogCat). Нам надо будет видеть их одновременно.</p>
+<p>Если мы нажмем кнопку <b>Start</b>, то мы должны наблюдать, как обновляется <b>TextView </b>и пишется <b>лог </b>после закачки очередного файла. Но на деле будет немного не так. Наше приложение просто «зависнет» и перестанет реагировать на нажатия. Остановится <b>ProgressBar</b>, не будет обновляться <b>TextView</b>, и не будет нажиматься кнопка <b>Test</b>. Т.е. <b>UI</b> (экран) для нас станет недоступным. И только по логам будет понятно, что приложение на самом деле работает и файлы закачиваются. Нажмите <b>Start </b>и убедитесь.</p>
+<p>Экран «висит», а логи идут. Как только все 10 файлов будут закачаны, приложение оживет и снова станет реагировать на ваши нажатия.</p>
+<p>А все почему? Потому что работа экрана обеспечивается <b>основным </b>потоком приложения. А мы <b>заняли </b>весь этот основной поток под свои нужды. В нашем случае, как будто под закачку файлов. И как только мы закончили закачивать файлы – поток <b>освободился</b>, и экран стал снова обновляться и реагировать на нажатия.</p>
+<p>Для тех, кто имеет опыт кодинга на  Java, я ничего нового не открыл. Для остальных же, надеюсь, у меня получилось доступно объяснить. Тут надо понять одну вещь - <b>основной поток приложения отвечает за экран</b>. Этот поток ни в коем случае<b> нельзя грузить</b> чем-то тяжелым – экран просто перестает обновляться и реагировать на нажатия. Если у вас есть долгоиграющие задачи  – их надо вынести в <b>отдельный поток</b>. Попробуем это сделать.</p>
+<p>Перепишем <b>onclick</b>:</p>
+<pre><code class="java">  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      Thread t = new Thread(new Runnable() {
+        public void run() {
+          for (int i = 1; i &lt;= 10; i++) {
+            // долгий процесс
+            downloadFile();
+            // обновляем TextView
+            tvInfo.setText("Закачано файлов: " + i);
+            // пишем лог
+            Log.d(LOG_TAG, "i = " + i);
+          }
+        }
+      });
+      t.start();
+      break;
+    case R.id.btnTest:
+      Log.d(LOG_TAG, "test");
+      break;
+    default:
+      break;
+    }
+  }</code></pre>
+<p>Т.е. мы просто помещаем весь цикл<b> в новый поток</b> и запускаем его. Теперь закачка файлов пойдет в этом <b>новом </b>потоке. А основной поток будет не занят и сможет без проблем прорисовывать экран и реагировать на нажатия. А значит, мы будем видеть изменение TextView после каждого закачанного файла и крутящийся ProgressBar. И, вообще, сможем полноценно взаимодействовать с приложением. Казалось бы, вот оно счастье :)</p>
+<p>Все сохраним и запустим приложение. Жмем <b>Start</b>.</p>
+<p><img src="images/lesson_79_1.png" alt="" width="640" height="454"></p>
+<p>Приложение вылетело с ошибкой. Смотрим лог ошибок в LogCat. Там есть строки:</p>
+<p><i>android.view.ViewRoot$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.</i></p>
+<p>и</p>
+<p><i>at ru.startandroid.develop.p0801handler.MainActivity$1.run(MainActivity.java:37)</i></p>
+<p>Смотрим, что за код у нас в <b>MainActivity.java</b> в <b>37</b>-й строке:</p>
+<pre><code class="java">tvInfo.setText("Закачано файлов: " + i);</code></pre>
+<p>При попытке выполнить этот код (не в основном потоке) мы получили ошибку «<b>Only the original thread that created a view hierarchy can touch its views</b>». Если по-русски, то «<b>Только оригинальный поток, создавший view-компоненты, может взаимодействовать с ними</b>». Т.е. работа с view-компонентами доступна только из <b>основного </b>потока. А новые потоки, которые мы создаем, не имеют доступа к элементам экрана.</p>
+<p>Т.е. с одной стороны<b> нельзя загружать основной поток</b> тяжелыми задачами, чтобы не «вешался» экран. С другой стороны –<b> новые потоки</b>, созданные для выполнения тяжелых задач, <b>не имеют доступа к экрану</b>, и мы не сможем из них показать пользователю, что наша тяжелая задача как-то движется.</p>
+<p>Тут нам поможет Handler. План такой:</p>
+<p>- мы создаем в основном потоке Handler<br> - в потоке закачки файлов обращаемся к Handler и с его помощью помещаем в очередь сообщение для него же самого<br> - система берет это сообщение, видит, что адресат – Handler, и  отправляет сообщение на обработку в Handler<br> - Handler, получив сообщение, обновит TextView</p>
+<p>Чем это отличается от нашей предыдущей попытки обновить TextView из другого потока? Тем, что <b>Handler </b>был <b>создан </b>в <b>основном </b>потоке, и обрабатывать поступающие ему сообщения он будет в основном потоке, а значит, будет иметь доступ к экранным компонентам и сможет поменять текст в TextView. Получить доступ к Handler из какого-либо другого потока мы сможем без проблем, т.к. основной поток монополизирует только доступ к UI. А элементы классов (в нашем случае это Handler в MainActivity.java) доступны в любых потоках. Таким образом Handler выступит в качестве «<b>моста</b>» между потоками.</p>
+<p>Перепишем метод <b>onCreate</b>:</p>
+<pre><code class="java">  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+    btnStart = (Button) findViewById(R.id.btnStart);
+    h = new Handler() {
+      public void handleMessage(android.os.Message msg) {
+        // обновляем TextView
+        tvInfo.setText("Закачано файлов: " + msg.what);
+        if (msg.what == 10) btnStart.setEnabled(true);
+      };
+    };
+  }</code></pre>
+<p>Здесь мы создаем Handler и в нем реализуем метод обработки сообщений <a href="http://developer.android.com/reference/android/os/Handler.html#handleMessage(android.os.Message)" target="_blank">handleMessage</a>. Мы извлекаем из сообщения атрибут what – это кол-во закачанных файлов. Если оно равно 10, т.е. все файлы закачаны, мы активируем кнопку Start. (кол-во закачанных файлов мы сами кладем в сообщение - сейчас увидите, как)</p>
+<p>Метод <b>onclick </b>перепишем так:</p>
+<pre><code class="java">  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnStart:
+      btnStart.setEnabled(false);
+      Thread t = new Thread(new Runnable() {
+        public void run() {
+          for (int i = 1; i &lt;= 10; i++) {
+            // долгий процесс
+            downloadFile();
+            h.sendEmptyMessage(i);
+            // пишем лог
+            Log.d(LOG_TAG, "i = " + i);
+          }
+        }
+      });
+      t.start();
+      break;
+    case R.id.btnTest:
+      Log.d(LOG_TAG, "test");
+      break;
+    default:
+      break;
+    }
+  }</code></pre>
+<p>Мы деактивируем кнопку <b>Start </b>перед запуском закачки файлов. Это просто защита, чтобы нельзя было запустить несколько закачек одновременно. А в процессе закачки, после каждого закачанного файла, отправляем (<a href="http://developer.android.com/reference/android/os/Handler.html#sendEmptyMessage(int)" target="_blank">sendEmptyMessage</a>) для Handler сообщение с кол-вом уже закачанных файлов. Handler это сообщение примет, извлечет из него кол-во файлов и обновит TextView.</p>
+<p>Все сохраняем и запускаем приложение. Жмем кнопку <b>Start</b>.</p>
+<p><img src="images/lesson_79_2.png" alt="" width="640" height="454"></p>
+<p>Кнопка <b>Start </b>стала неактивной, т.к. мы ее сами выключили. А TextView обновляется, ProgressBar крутится и кнопка Test нажимается. Т.е. и закачка файлов идет, и приложение продолжает работать без проблем, отображая статус закачки.</p>
+<p>Когда все файлы закачаются, кнопка Start снова станет активной.</p>
+<p><img src="images/lesson_79_3.png" alt="" width="640" height="454"></p>
+<p>Подытожим все вышесказанное.</p>
+<p>1) Сначала мы попытались грузить приложение тяжелой задачей в основном потоке. Это привело к тому, что мы потеряли экран – он перестал обновляться и отвечать на нажатия. Случилось это потому, что за экран отвечает основной поток приложения, а он был сильно загружен.</p>
+<p>2) Мы создали отдельный поток и выполнили весь тяжелый код там. И это бы сработало, но нам надо было обновлять экран в процессе работы. А из не основного потока доступа к экрану нет.  Экран доступен только из основного потока.</p>
+<p>3) Мы создали Handler в основном потоке. А из нового потока отправляли для Handler сообщения, чтобы он нам обновлял экран. В итоге Handler помог нам обновлять экран не из основного потока.</p>
+<p>Достаточно сложный урок получился. Наверняка, мало, что понятно. Не волнуйтесь, в этом уроке я просто показал, в какой ситуации Handler может быть полезен. А методы работы с ним мы рассмотрим подробно в следующих уроках. </p>
+<p>Eclipse может подчеркивать Handler желтым цветом и ругаться примерно такими словами: "<b><i>This Handler class should be static or leaks might occur</i></b>". Тем самым он сообщает нам, что наш код немного плох и может вызвать утечку памяти. Тут он прав абсолютно, но я в своих уроках все-таки буду придерживаться этой схемы, чтобы не усложнять. </p>
+<p>А на форуме я отдельно расписал, почему может возникнуть утечка и как это можно пофиксить. Как закончите тему Handler-ов, обязательно загляните туда и почитайте - <a href="http://forum.startandroid.ru/viewtopic.php?f=30&amp;t=1870" target="_blank">http://forum.startandroid.ru/viewtopic.php?f=30&amp;t=1870</a>. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

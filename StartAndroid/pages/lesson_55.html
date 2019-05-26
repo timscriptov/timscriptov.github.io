@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 55. Header и Footer в списках. HeaderViewListAdapter</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем Header и Footer в списках<br>- разбираемся, как и где используется HeaderViewListAdapter</p>
+<p><b>Header</b> и <b>Footer</b> (далее по тексту HF) – это View, которые могут быть добавлены к списку сверху и снизу. За создание соответствующих View для пунктов списка отвечает уже не адаптер, а программист. Он должен сам создать View и предоставить его списку в методы <b>addHeader</b> или <b>addFooter</b>.</p>
+<p>У этих методов есть <b>две реализации</b>. Рассмотрим на примере Header.</p>
+<p>1) <a href="http://developer.android.com/reference/android/widget/ListView.html#addHeaderView(android.view.View, java.lang.Object, boolean)" target="_blank">addHeaderView (View v, Object data, boolean isSelectable)</a></p>
+<p><b> v</b> – View, которое отобразится, как пункт списка<br><b> data</b> – объект, связанный с этим пунктом списка<br><b> isSelectable</b> – можно ли будет кликать на пункт или выделять его</p>
+<p>2) <a href="http://developer.android.com/reference/android/widget/ListView.html#addHeaderView(android.view.View)" target="_blank">addHeaderView (View v)</a></p>
+<p>Тут просто идет вызов первого метода с параметрами: <b>addHeaderView(v, null, true)</b>;</p>
+<p>При использовании HF и адаптера есть нюанс. При присвоении списку <b>адаптера</b> (метод setAdapter), список проверяет, были ли уже добавлены <b>Header</b> или <b>Footer</b>.</p>
+<p>Если <b>нет</b>, то список использует данный ему адаптер и <b>запрещает</b> в дальнейшем добавлять себе HF. Это же написано в документацие методов addHeader и addFooter – «Call this before calling setAdapter». Т.е. вы должны добавить HF до того, как присвоите адаптер списку.</p>
+<p>Если <b>да</b>, то список оборачивает полученный адаптер в HeaderViewListAdapter, используя конструктор: <a href="http://developer.android.com/reference/android/widget/HeaderViewListAdapter.html#HeaderViewListAdapter(java.util.ArrayList&lt;android.widget.ListView.FixedViewInfo&gt;, java.util.ArrayList&lt;android.widget.ListView.FixedViewInfo&gt;, android.widget.ListAdapter)" target="_blank">HeaderViewListAdapter (ArrayList&lt;ListView.FixedViewInfo&gt; headerViewInfos, ArrayList&lt;ListView.FixedViewInfo&gt; footerViewInfos, ListAdapter adapter)</a>, где <b>headerViewInfos</b> и <b>footerViewInfos</b> – это ранее добавленные к списку HF, а <b>adapter</b> – тот адаптер, который мы даем списку. И теперь при работе списка будут использоваться методы адаптера <b>HeaderViewListAdapter</b>, т.е. будут использоваться как HF, так и данные из адаптера, который присвоили списку.</p>
+<p>Посмотрим на практике.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0551_HeaderFooter<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: HeaderFooter<br><b>Package name</b>: ru.startandroid.develop.p0551headerfooter<br><b>Create Activity</b>: MainActivity</p>
+<p>В файл <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="header_title"&gt;Header&lt;/string&gt;
+&lt;string name="footer_title"&gt;Footer&lt;/string&gt;
+&lt;string name="button_text"&gt;Test&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onclick"
+        android:text="@string/button_text"&gt;
+    &lt;/Button&gt;
+    &lt;ListView
+        android:id="@+id/lvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка и список.</p>
+<p>Создадим Layout-файлы для Header и Footer.</p>
+<p><b>header.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/header_title"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="20sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>footer.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/footer_title"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="20sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0551headerfooter;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+  
+  String[] data = {"one", "two", "three", "four", "five"};
+  ListView lvMain;
+  ArrayAdapter&lt;String&gt; adapter;
+  
+  View header1;
+  View header2;
+  
+  View footer1;
+  View footer2;
+  
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+
+        lvMain = (ListView) findViewById(R.id.lvMain);
+        adapter = new ArrayAdapter&lt;String&gt;(this, android.R.layout.simple_list_item_1, data);
+        
+        // создаем Header и Footer
+        header1 = createHeader("header 1");
+        header2 = createHeader("header 2");
+        footer1 = createFooter("footer 1");
+        footer2 = createFooter("footer 2");
+        
+        fillList();
+        
+    }
+    
+ // формирование списка
+    void fillList() {
+    }
+    
+    // нажатие кнопки
+    public void onclick(View v) {
+    }
+    
+    // создание Header
+    View createHeader(String text) {
+      View v = getLayoutInflater().inflate(R.layout.header, null);
+      ((TextView)v.findViewById(R.id.tvText)).setText(text);
+      return v;
+    }
+    
+    // создание Footer
+    View createFooter(String text) {
+      View v = getLayoutInflater().inflate(R.layout.footer, null);
+      ((TextView)v.findViewById(R.id.tvText)).setText(text);
+      return v;
+    }    
+}</code></pre>
+<p>В <b>onCreate</b> подготавливаем адаптер и HF-элементы.</p>
+<p>В <b>fillList</b> будем заполнять список.</p>
+<p><b>onclick</b> – обработка нажатия кнопки</p>
+<p><b>createHeader</b> и <b>createFooter</b> – создание View для HF и заполнение их данными.</p>
+<p>Попробуем проверить, что Header реально нельзя добавить после установки адаптера. Реализуем метод <b>fillList</b> так:</p>
+<pre><code class="java"> // формирование списка
+    void fillList() {
+          try {
+          lvMain.setAdapter(adapter);
+          lvMain.addHeaderView(header1);
+          } catch (Exception ex) {
+            Log.e(LOG_TAG, ex.getMessage());
+          }
+    }</code></pre>
+<p>Сохраним и запустим.</p>
+<p><img src="images/lesson_54_0.png" alt="" width="640"></p>
+<p>Пункты списка есть. Header-а нет. </p>
+<p>Смотрим лог, видим там ошибку: «<i>Cannot add header view to list -- setAdapter has already been called</i>». По русски: <i>нельзя добавить Header, адаптер уже установлен</i>.</p>
+<p>Давайте сначала добавим HF, а потом присвоим адаптер. Поменяем код <b>fillList</b>:</p>
+<pre><code class="java"> // формирование списка
+    void fillList() {
+      lvMain.addHeaderView(header1);
+        lvMain.addHeaderView(header2, "some text for header 2", false);
+        lvMain.addFooterView(footer1);
+        lvMain.addFooterView(footer2, "some text for footer 2", false);
+        lvMain.setAdapter(adapter);
+    }</code></pre>
+<p>Обратите внимание на то, с какими параметрами добавляем <b>header2 </b>и <b>footer2</b>.  Мы связываем с ними <b>String </b>объекты и с помощью <b>false</b> указываем, что выделение на этих пунктах не будет работать.</p>
+<p>Все сохраним, запустим приложение.</p>
+<p><img src="images/lesson_54_1.png" alt="" width="640"></p>
+<p>HF появились. Убедитесь, что клик на header2 и footer2 ни к чему не приводит. И если покрутить колесо мыши, то выделение на этих пунктах не останавливается.</p>
+<p>Кстати, если вы делаете свой адаптер, то этого эффекта можно добиться, выполнив свою реализацию метода <a href="http://developer.android.com/reference/android/widget/ListAdapter.html#isEnabled(int)" target="_blank">isEnabled</a>.</p>
+<p>Попробуем удалить HF. Метод <b>onclick</b> перепишем так:</p>
+<pre><code class="java">  // нажатие кнопки
+  public void onclick(View v) {
+    lvMain.removeHeaderView(header2);
+    lvMain.removeFooterView(footer2);
+  }</code></pre>
+<p>Запустим, нажмем кнопку <b>Test </b>и видим, что исчезли те HF, которые мы удалили - <b>header2 </b>и <b>footer2</b>.</p>
+<p>Теперь посмотрим, как работает <b>HeaderViewListAdapter</b>, разберемся, что там за вложенный адаптер у него и как до него добраться.</p>
+<p>Перепишем метод <b>onclick</b>:</p>
+<pre><code class="java">  // нажатие кнопки
+  public void onclick(View v) {
+    Object obj;
+    HeaderViewListAdapter hvlAdapter = (HeaderViewListAdapter) lvMain.getAdapter();
+    obj = hvlAdapter.getItem(1);
+    Log.d(LOG_TAG, "hvlAdapter.getItem(1) = " + obj.toString());
+    obj = hvlAdapter.getItem(4);
+    Log.d(LOG_TAG, "hvlAdapter.getItem(4) = " + obj.toString());
+
+    ArrayAdapter&lt;String&gt; alAdapter = (ArrayAdapter&lt;String&gt;) hvlAdapter.getWrappedAdapter();
+    obj = alAdapter.getItem(1);
+    Log.d(LOG_TAG, "alAdapter.getItem(1) = " + obj.toString());
+    obj = alAdapter.getItem(4);
+    Log.d(LOG_TAG, "alAdapter.getItem(4) = " + obj.toString());
+  }</code></pre>
+<p>Сначала мы с помощью метода <b>getAdapter </b>получаем адаптер, который использует <b>ListView</b>. Т.к. мы <b>добавляли HF</b> к списку, то он использует адаптер <b>HeaderViewListAdapter</b>. Попробуем получить данные по второму и пятому пункту этого адаптера, вызвав <b>getItem </b>и выведем значение в лог.</p>
+<p>Далее мы от <b>HeaderViewListAdapter </b>получаем его <b>вложенный </b>адаптер. Это тот адаптер, который мы давали на вход списку в методе setAdapter. Но т.к. были использованы HF, то список создал HeaderViewListAdapter в качестве основного адаптера и отдал ему наш в качестве вложенного и теперь мы его получаем методом <b>getWrappedAdapter</b>. Попробуем от нашего адаптера получить данные также по второму и пятому пункту и вывести в лог.</p>
+<p>Тут важно понимать, что если бы мы не добавляли HF к списку, то список не стал бы заморачиваться с созданием HeaderViewListAdapter и метод lvMain.getAdapter сразу вернул бы <b>ArrayAdapter</b>.</p>
+<p>Сохраняем, запускаем, жмем кнопку <b>Test </b>и смотрим лог.</p>
+<p><i>hvlAdapter.getItem(1) = some text for header 2<br>hvlAdapter.getItem(4) = three<br>alAdapter.getItem(1) = two<br>alAdapter.getItem(4) = five</i></p>
+<p>Адаптеры показали разные данные. Это произошло потому, что <b>hvlAdapter объединяет HF</b> с данными из <b>alAdapter </b>и работает с ними, как с<b> одним набором</b> данных. А <b>alAdapter </b>учитывает только <b>свои</b> данные, которые мы ему давали (массив строк data[]).</p>
+<p>Для <b>hvlAdapter </b>второй пункт – это header2. При добавлении Header-а мы присвоили ему объект String, его он сейчас и вывел в лог. Пятый пункт – three.</p>
+<p>Для <b>alAdapter </b>второй пункт – two, а пятый - five. Он вообще не в курсе ни про какие HF, он работает только со своими данными.</p>
+<p>Вот как-то так организована работа с Header и Footer элементами. А про HeaderViewListAdapter в документацие написано, что разрабам скорее всего не придется использовать этот класс напрямую в своем коде. Наверно так оно и есть. Этот класс используется списком, чтобы работать с данными адаптера и добавленными Header и Footer, как с одним набором данных.</p>
+<p>Для тех, кто расстроился, что нельзя добавлять HF после присвоения адаптера списку, внесу сразу важную поправку. В документацие действительно так написано. Но на деле это относится только к Header. А Footer добавляется без проблем. И я не знаю, баг это или фича )</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

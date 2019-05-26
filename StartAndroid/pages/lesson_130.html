@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+	<title>Урок 130. Медиа. Запись звука с помощью AudioRecorder</title>
+	
+<link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+		<p>В этом уроке:</p>
+<p>- пишем звук с помощью AudioRecorder</p>
+ 
+<p> </p>
+<p>Рассмотренный на прошлом уроке MediaRecorder записывал звук сразу в файл. <a href="http://developer.android.com/reference/android/media/AudioRecord.html" target="_blank" rel="noopener noreferrer">AudioRecorder</a> не пишет данные, а позволяет нам их получать в приложении. т.е. является посредником между приложением и микрофоном. Когда мы стартуем запись,  AudioRecorder начинает получать данные с микрофона и хранит их у себя во внутреннем буфере. Мы можем при создании AudioRecorder указать желаемый размер этого буфера и далее запрашивать из него данные методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#read(byte[], int, int)" target="_blank" rel="noopener noreferrer">read</a>.</p>
+<p>Т.е. AudioRecorder будет полезен, если вы хотите как-то обработать данные перед записью в файл или, если вы хотите отправлять данные не в файл, а куда-либо еще.</p>
+<p>Напишем приложение, в котором рассмотрим основные методы работы с AudioRecorder.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1301_AudioRecorder<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: AudioRecorder<br/> <b>Package name</b>: ru.startandroid.develop.p1301audiorecorder<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="start_record"&gt;Start record&lt;/string&gt;
+&lt;string name="stop_record"&gt;Stop record&lt;/string&gt;
+&lt;string name="start_read"&gt;Start read&lt;/string&gt;
+&lt;string name="stop_read"&gt;Stop read&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Нарисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	tools:context=".MainActivity"&gt;
+	&lt;LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="recordStart"
+			android:text="@string/start_record"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="recordStop"
+			android:text="@string/stop_record"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+	&lt;LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="readStart"
+			android:text="@string/start_read"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="readStop"
+			android:text="@string/stop_read"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Верхние кнопки стартуют/останавливают запись звука с микрофона в AudioRecorder, нижние – чтение данных из AudioRecorder в наш буфер.</p>
+<p><img src="images/xl0130_010.jpg.pagespeed.ic.3vfihgttkt.jpg" alt=""/></p>
+<p> </p>
+<p>В манифесте добавьте разрешение на запись звука: <b>android.permission.RECORD_AUDIO</b>.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1301audiorecorder;
+
+import android.app.Activity;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String TAG = "myLogs";
+
+  int myBufferSize = 8192;
+  AudioRecord audioRecord;
+  boolean isReading = false;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    createAudioRecorder();
+
+    Log.d(TAG, "init state = " + audioRecord.getState());
+  }
+
+  void createAudioRecorder() {
+    int sampleRate = 8000;
+    int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+    int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+
+    int minInternalBufferSize = AudioRecord.getMinBufferSize(sampleRate,
+        channelConfig, audioFormat);
+    int internalBufferSize = minInternalBufferSize * 4;
+    Log.d(TAG, "minInternalBufferSize = " + minInternalBufferSize
+        + ", internalBufferSize = " + internalBufferSize
+        + ", myBufferSize = " + myBufferSize);
+
+    audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+        sampleRate, channelConfig, audioFormat, internalBufferSize);
+  }
+
+  public void recordStart(View v) {
+    Log.d(TAG, "record start");
+    audioRecord.startRecording();
+    int recordingState = audioRecord.getRecordingState();
+    Log.d(TAG, "recordingState = " + recordingState);
+  }
+
+  public void recordStop(View v) {
+    Log.d(TAG, "record stop");
+    audioRecord.stop();
+  }
+
+  public void readStart(View v) {
+    Log.d(TAG, "read start");
+    isReading = true;
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        if (audioRecord == null)
+          return;
+
+        byte[] myBuffer = new byte[myBufferSize];
+        int readCount = 0;
+        int totalCount = 0;
+        while (isReading) {
+          readCount = audioRecord.read(myBuffer, 0, myBufferSize);
+          totalCount += readCount;
+          Log.d(TAG, "readCount = " + readCount + ", totalCount = "
+              + totalCount);
+        }
+      }
+    }).start();
+  }
+
+  public void readStop(View v) {
+    Log.d(TAG, "read stop");
+    isReading = false;
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+
+    isReading = false;
+    if (audioRecord != null) {
+      audioRecord.release();
+    }
+  }
+}</code></pre>
+<p>Смотрим код.</p>
+<p>В <b>onCreate</b> мы вызываем свой метод создания AudioRecorder и выводим в лог состояние созданного объекта. Состояние можно получить методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#getState()" target="_blank" rel="noopener noreferrer">getState</a>. Может быть всего два состояния: <a href="http://developer.android.com/reference/android/media/AudioRecord.html#STATE_INITIALIZED" target="_blank" rel="noopener noreferrer">STATE_INITIALIZED</a> и <a href="http://developer.android.com/reference/android/media/AudioRecord.html#STATE_UNINITIALIZED" target="_blank" rel="noopener noreferrer">STATE_UNINITIALIZED</a>. Означают они соответственно то, что AudioRecorder к работе готов или не готов.</p>
+<p> </p>
+<p>В <b>createAudioRecorder</b> создаем AudioRecorder. Для этого нам понадобится несколько входных параметров:<br/>- источник звука<br/> - сэмплрейт <br/> - режим каналов моно/стерео<br/> - формат аудио<br/> - размер буфера</p>
+<p>Сэмплрейт мы ставим 8000. Режим  - моно. Формат аудио – 16 бит.  Чтобы узнать размер буфера, есть метод <a href="http://developer.android.com/reference/android/media/AudioRecord.html#getMinBufferSize(int, int, int)" target="_blank" rel="noopener noreferrer">getMinBufferSize</a>. Он, исходя из переданных ему на вход данных о формате аудио, возвращает минимально-возможный размер буфера, с которым сможет работать AudioRecorder. Мы получаем минимальный размер и в переменную internalBufferSize помещаем этот размер, умноженный на 4. Такой размер буфера будет в созданном AudioRecord.</p>
+<p>Далее создаем AudioRecord. В качестве источника звука указываем микрофон. Также указываем сэмплрейт, режим каналов, формат и размер буфера.</p>
+<p> </p>
+<p>В методе <b>recordStart</b> стартуем запись методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#startRecording()" target="_blank" rel="noopener noreferrer">startRecording</a>. С помощью метода <a href="http://developer.android.com/reference/android/media/AudioRecord.html#getRecordingState()" target="_blank" rel="noopener noreferrer">getRecordingState</a> получаем статус - идет запись или нет. Вариантов тут два: <a href="http://developer.android.com/reference/android/media/AudioRecord.html#RECORDSTATE_RECORDING" target="_blank" rel="noopener noreferrer">RECORDSTATE_RECORDING</a> (запись идет) и <a href="http://developer.android.com/reference/android/media/AudioRecord.html#RECORDSTATE_STOPPED" target="_blank" rel="noopener noreferrer">RECORDSTATE_STOPPED</a> (запись остановлена).</p>
+<p> </p>
+<p>В <b>recordStop</b> останавливаем запись методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#stop()" target="_blank" rel="noopener noreferrer">stop</a>.</p>
+<p> </p>
+<p>В <b>readStart</b> ставим метку isReading в true. Она будет означать, что мы сейчас находимся в режиме чтения данных из AudioRecorder. Далее создаем новый поток и чтение выполняем в нем, чтобы не занимать основной поток. Мы создаем свой буфер размером myBufferSize и читаем в него данные методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#read(byte[], int, int)" target="_blank" rel="noopener noreferrer">read</a>. Это происходит в цикле, который проверяет, что мы в режиме чтения. Метод read на вход принимает массив (в который будут помещены данные), отступ (если вам надо прочесть данные не сначала, а с какой-то позиции), и размер порции получаемых данных. В readCount метод read возвращает число байт, которые он нам отдал. В totalCount мы суммируем общее количество полученных байтов.</p>
+<p>У метода read кстати есть еще несколько реализаций, если эта вам не подходит. Подробнее смотрите в документацие.</p>
+<p> </p>
+<p>В методе <b>readStop</b> мы выключаем режим чтения, присваивая переменной isReading значение false. Поток из readStart прочтет это значение, выйдет из цикла и завершит свою работу.</p>
+<p> </p>
+<p>В <b>onDestroy</b> выключаем режим чтения и методом <a href="http://developer.android.com/reference/android/media/AudioRecord.html#release()" target="_blank" rel="noopener noreferrer">release</a> освобождаем ресурсы, занятые AudioRecord.</p>
+<p> </p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p>В логах мы видим</p>
+<p><em>minInternalBufferSize = 1024, internalBufferSize = 4096, myBufferSize = 8192<br/> init state = 1</em></p>
+<p>Мы видим, что минимальный размер буфера AudioRecorder насчитал равным 1024. Внутренний буфер будет 4096. Размер нашего буфера будет 8192.  Состояние рекордера = 1, это значение переменной STATE_INITIALIZED, значит все ок, к работе готов.</p>
+<p> </p>
+<p>Жмем <b>Start record</b>.</p>
+<p><em>record start<br/> recordingState = 3</em></p>
+<p>Состояние записи рекордера = 3, это значение переменной RECORDSTATE_RECORDING, значит все ок, запись идет.</p>
+<p>AudioRecorder сейчас получает данные с микрофона и держит их в своем буфере. Попробуем прочесть эти данные. Жмем <b>Start read</b>, и через несколько секунд <b>Stop read</b></p>
+<p>Логи:</p>
+<p><i>14:03:48.519: D/myLogs(14361): read start<br/>14:03:48.519: D/myLogs(14361): readCount = 4096, totalCount = 4096<br/>14:03:48.779: D/myLogs(14361): readCount = 4096, totalCount = 8192<br/>14:03:49.039: D/myLogs(14361): readCount = 4096, totalCount = 12288<br/>14:03:49.289: D/myLogs(14361): readCount = 4096, totalCount = 16384<br/>14:03:49.549: D/myLogs(14361): readCount = 4096, totalCount = 20480<br/>14:03:49.809: D/myLogs(14361): readCount = 4096, totalCount = 24576<br/>14:03:50.069: D/myLogs(14361): readCount = 4096, totalCount = 28672<br/>14:03:50.319: D/myLogs(14361): readCount = 4096, totalCount = 32768<br/>14:03:50.569: D/myLogs(14361): readCount = 4096, totalCount = 36864<br/>14:03:50.829: D/myLogs(14361): readCount = 4096, totalCount = 40960<br/>14:03:51.079: D/myLogs(14361): readCount = 4096, totalCount = 45056<br/>14:03:51.179: D/myLogs(14361): read stop<br/>14:03:51.339: D/myLogs(14361): readCount = 4096, totalCount = 49152</i></p>
+<p>Видим, что прошло несколько чтений буфера. Таким образом, мы получали данные с микрофона с помощью AudioRecorder.</p>
+<p> </p>
+<h3>Сколько байт занимает секунда звука</h3>
+<p>Разберемся, как подсчитать сколько места занимает звук, когда его пишешь. Вспоминаем наши параметры, которые мы задавали при создании AudioRecorder: сэмплрейт (как часто считывается звук) = 8000 Hz, формат (сколько места занимает одна запись) = 16 бит, канал = моно. Эти параметры означают, что одна секунда звука будет занимать 8000 * 16 * 1 = 128 000 бит = 16 000 байт.</p>
+<p>Теперь посмотрим на логи. Первое чтение звука было в 14:03:48.519, а последнее в 14:03:51.339.  Т.е. мы писали звук примерно три секунды. Три секунды – это 16 000 * 3 = 48 000 байт.</p>
+<p>Снова смотрим логи, последнее значение totalCount = 49 152. Как видите, расчетная и реальная цифры похожи.</p>
+<p> </p>
+<p>Давайте поменяем параметры в методе createAudioRecorder:</p>
+<pre><code class="java">    int sampleRate = 22050;
+    int channelConfig = AudioFormat.CHANNEL_IN_STEREO;</code></pre>
+<p>и снова посчитаем:</p>
+<p>22 050 (сэмплрейт) * 16 (формат) * 2 (стерео) = 705 600 бит = 88 200 байт занимает теперь секунда звука. Как видите, при улучшении качества увеличились размеры.</p>
+<p>Все сохраним, запускаем приложение. Жмем <b>Start record</b>, затем <b>Start read</b> и секунды через три <b>Stop read</b>.</p>
+<p><i>14:15:29.959: D/myLogs(14567): read start<br/></i><i>14:15:29.969: D/myLogs(14567): readCount = 8192, totalCount = 8192<br/></i><i>14:15:29.969: D/myLogs(14567): readCount = 8192, totalCount = 16384<br/></i><i>14:15:30.069: D/myLogs(14567): readCount = 8192, totalCount = 24576<br/></i><i>…<br/></i><i>14:15:32.479: D/myLogs(14567): readCount = 8192, totalCount = 237568<br/></i><i>14:15:32.579: D/myLogs(14567): readCount = 8192, totalCount = 245760<br/></i><i>14:15:32.659: D/myLogs(14567): read stop<br/></i><i>14:15:32.669: D/myLogs(14567): readCount = 8192, totalCount = 253952</i></p>
+<p>Видим, что примерно за 3 секунды мы считали 253 952 байта. Смотрим наши подсчеты 88 200 * 3 = 264 600. Цифры снова близки.</p>
+<p> </p>
+<p>Это было небольшое отступление от темы урока, чтобы вы имели представление о взаимосвязи таких параметров как время, сэмплрейт, формат, каналы, байты.</p>
+<p> </p>
+<h3>Слушатель отданных фреймов</h3>
+<p>Когда AudioRecorder отдает нам данные, он ведет подсчет отданных фреймов. Фрейм – это единица записи звука. Сколько байт занимает один фрейм? Это мы уже считали чуть раньше – формат * режим каналов. Т.е. если мы пишем звук в формате 16 бит/моно, то фрейм займет 16 * 1 = 16 бит = 2 байта.</p>
+<p>Мы можем на AudioRecorder повесить слушателя с парой методов. Один метод будет срабатывать периодически через каждое указанное кол-во отданных фреймов, а другой разово по достижению определенного кол-ва отданных фреймов.</p>
+<p>Перепишем createAudioRecorder:</p>
+<pre><code class="java">  void createAudioRecorder() {
+    int sampleRate = 8000;
+    int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+    int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+
+    int minInternalBufferSize = AudioRecord.getMinBufferSize(sampleRate,
+        channelConfig, audioFormat);
+    int internalBufferSize = minInternalBufferSize * 4;
+    Log.d(TAG, "minInternalBufferSize = " + minInternalBufferSize
+        + ", internalBufferSize = " + internalBufferSize
+        + ", myBufferSize = " + myBufferSize);
+
+    audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+        sampleRate, channelConfig, audioFormat, internalBufferSize);
+
+    audioRecord.setPositionNotificationPeriod(1000);
+
+    audioRecord.setNotificationMarkerPosition(10000);
+    audioRecord
+        .setRecordPositionUpdateListener(new OnRecordPositionUpdateListener() {
+          public void onPeriodicNotification(AudioRecord recorder) {
+            Log.d(TAG, "onPeriodicNotification");
+          }
+
+          public void onMarkerReached(AudioRecord recorder) {
+            Log.d(TAG, "onMarkerReached");
+            isReading = false;
+          }
+        });
+  }</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/media/AudioRecord.html#setRecordPositionUpdateListener(android.media.AudioRecord.OnRecordPositionUpdateListener)" target="_blank" rel="noopener noreferrer">setRecordPositionUpdateListener</a> устанавливает <a href="http://developer.android.com/reference/android/media/AudioRecord.OnRecordPositionUpdateListener.html" target="_blank" rel="noopener noreferrer">слушателя</a> с методами <a href="http://developer.android.com/reference/android/media/AudioRecord.OnRecordPositionUpdateListener.html#onPeriodicNotification(android.media.AudioRecord)" target="_blank" rel="noopener noreferrer">onPeriodicNotification</a> и <a href="http://developer.android.com/reference/android/media/AudioRecord.OnRecordPositionUpdateListener.html#onMarkerReached(android.media.AudioRecord)" target="_blank" rel="noopener noreferrer">onMarkerReached</a>, которые я описал выше. Метод <a href="http://developer.android.com/reference/android/media/AudioRecord.html#setPositionNotificationPeriod(int)" target="_blank" rel="noopener noreferrer">setPositionNotificationPeriod</a> устанавливает кол-во фреймов для срабатывания onPeriodicNotification, а <a href="http://developer.android.com/reference/android/media/AudioRecord.html#setNotificationMarkerPosition(int)" target="_blank" rel="noopener noreferrer">setNotificationMarkerPosition</a> – для срабатывания onMarkerReached.</p>
+<p>Т.е. метод onPeriodicNotification будет срабатывать каждые 1000 отданных фреймов. А onMarkerReached – по достижению 10000 отданных фреймов. В onMarkerReached мы остановим чтение.</p>
+<p>Все сохраним, запустим приложение и жмем Start record, затем Start read. В этот раз мы можем вручную не останавливать процесс чтения, т.к. он остановится сам по достижении 10000 фреймов.</p>
+<p>Смотрим логи:</p>
+<p><i>read start<br/></i><i>readCount = 4096, totalCount = 4096<br/></i><i>onPeriodicNotification<br/></i><i>onPeriodicNotification<br/></i><i>onPeriodicNotification<br/></i><i>readCount = 4096, totalCount = 8192<br/></i><i>onPeriodicNotification<br/></i><i>onPeriodicNotification<br/></i><i>onPeriodicNotification<br/></i><i>readCount = 4096, totalCount = 12288<br/></i><i>onPeriodicNotification<br/></i><i>onPeriodicNotification<br/></i><i>readCount = 4096, totalCount = 16384<br/></i><i>onPeriodicNotification<br/></i><i>onMarkerReached<br/></i><i>onPeriodicNotification<br/></i><i>readCount = 4096, totalCount = 20480</i></p>
+<p> </p>
+<p>Видим, что onPeriodicNotification срабатывал примерно каждые 2000 байт, а onMarkerReached сработал около получения 20000 байт.</p>
+<p>Вспоминаем, что один фрейм при текущих настройках занимает два байта. А значит, как мы и указали, метод onPeriodicNotification срабатывал каждые 1000 фреймов, а onMarkerReached – как только было получено 10000 фреймов</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 184. Notifications. Action кнопки. Reply.</title>
+ <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В Android 4.1 появилась возможность добавлять кнопки в уведомление.</p>
+<p>Для этого используется метод <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#addAction(int, java.lang.CharSequence, android.app.PendingIntent)" target="_blank" rel="noopener noreferrer">addAction</a>. </p>
+<pre><code class="brush:java">Intent deleteIntent = new Intent(this, MyService.class);
+deleteIntent.setAction("ru.startandroid.notifications.action_delete");
+PendingIntent deletePendingIntent = PendingIntent.getService(this, 0, deleteIntent, 0);
+
+NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .addAction(android.R.drawable.ic_delete, "Delete", deletePendingIntent);
+</code></pre>
+<p>Сначала создаем PendingIntent, который будет вызван по нажатию на кнопку. Затем передаем его в метод addAction, а вместе с ним иконку и текст для кнопки.</p>
+<p>При раскрытии уведомления будет отображена кнопка.</p>
+<p><img src="images/lesson184/lesson1.gif" alt="" width="640" height="454" border="0"></p>
+<p>По нажатию на кнопку уведомление само не закроется. Если вам необходимо его закрыть, используйте <a href="https://developer.android.com/reference/android/app/NotificationManager.html#cancel(int)" target="_blank" rel="noopener noreferrer">cancel</a> в обработчике нажатия.</p>
+<p>Вы можете добавить до трех Action кнопок. Кнопки не должны дублировать действие, которое происходит по нажатию на уведомление.</p>
+<p>На последних версиях Android почему-то не отображается иконка кнопки, только текст.</p>
+<h2>Reply</h2>
+<p>Начиная с API 24 появилась возможность добавить в уведомление строку ввода. Это может быть удобно, например, в чат-приложениях. Пользователь сможет ответить на сообщение прямо из уведомления.</p>
+<p>Рассмотрим пример реализации:</p>
+<pre><code class="brush:java">// id
+int itemId = ...;
+
+// Intent
+Intent intent = new Intent(this, MyService.class);
+intent.setAction(ACTION_REPLY);
+intent.putExtra(EXTRA_ITEM_ID, itemId);
+
+// PendingIntent
+PendingIntent replyPendingIntent =
+       PendingIntent.getService(getApplicationContext(),
+               itemId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+// RemoteInput
+RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_TEXT_REPLY)
+       .setLabel("Type message")
+       .build();
+
+// Action
+NotificationCompat.Action action =
+       new NotificationCompat.Action.Builder(android.R.drawable.ic_menu_send,
+               "Reply", replyPendingIntent)
+               .addRemoteInput(remoteInput)
+               .build();
+
+// Notification builder
+NotificationCompat.Builder builder =
+       new NotificationCompat.Builder(this)
+               .setSmallIcon(R.mipmap.ic_launcher)
+               .setContentTitle("Title")
+               .setContentText("Notification text")
+               .addAction(action);
+
+// Notification
+Notification notification = builder.build();
+
+// Show notification
+NotificationManager notificationManager =
+       (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+notificationManager.notify(itemId, notification);
+</code></pre>
+<p>Разбираем код по порядку.</p>
+<p>У нас есть некий itemId. Это может быть, например, id чата, в который пришло новое сообщение.</p>
+<p>Создаем Intent и PendingIntent. Тут ничего нового. Мы будем вызывать сервис MyService и передавать ему itemId. В PendingIntent используем itemId в качестве requestCode.</p>
+<p>Далее создаем <a href="https://developer.android.com/reference/android/app/RemoteInput.html" target="_blank" rel="noopener noreferrer">RemoteInput</a>. Здесь настраиваем все, что касается поля ввода, которое будет отображено в уведомлении. В конструкторе билдера необходимо указать ключ, который мы в дальнейшем будем использовать, чтобы из Bundle достать текст, который введет пользователь. В метод setLabel можно передать текст, который будет использован как hint (подсказка) в поле ввода.</p>
+<p>Создаем Action кнопку с помощью <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Action.Builder.html" target="_blank" rel="noopener noreferrer">билдера</a>. Передаем туда стандартный набор: иконку, текст и PendingIntent. А в метод addRemoteInput передаем ранее созданный RemoteInput. Это будет Action кнопка Reply, по нажатию на которую будет появляться строка ввода.</p>
+<p>Далее используем созданный Action в билдере уведомления, создаем уведомление и отображаем его.</p>
+<p>В методе notify используем itemId. Соответственно, зная id чата, мы всегда сможем обновить или удалить уведомление.</p>
+<p>Обратите внимание, что PendingIntent, который мы создаем и используем в Action кнопке Reply, будет использован не по нажатию на уведомление, и даже не по нажатию на Reply. Он будет использован, когда пользователь нажмет на кнопку отправки текста.</p>
+<p>В этом примере, кстати, по нажатию на уведомление, ничего не произодет, т.к. в билдере уведомления я не использовал метод setContentIntent, чтобы не усложнять пример.</p>
+<p>Запускаем</p>
+<p><img src="images/lesson184/lesson2.gif" alt="" width="640" height="454" border="0"></p>
+<p>В уведомлении создается Action кнопка Reply. Она открывает строку ввода. </p>
+<p>По нажатию на кнопку отправки текста система запускает MyService, который мы указывали в PedningIntent, и отображает прогрессбар. Но он будет крутиться бесконечно, пока мы программно не обновим или не удалим уведомление.</p>
+<p>Давайте посмотрим, как в MyService мы можем получить введенный пользователем текст и убрать прогрессбар из уведомления:</p>
+<pre><code class="java">if (ACTION_REPLY.equals(intent.getAction())) {
+
+   // Get reply text
+   CharSequence replyText = null;
+   Bundle results = RemoteInput.getResultsFromIntent(intent);
+   if (results != null) {
+       replyText = results.getCharSequence(EXTRA_TEXT_REPLY);
+   }
+
+   // Get itemId
+   int itemId = intent.getIntExtra(EXTRA_ITEM_ID, 0);
+
+   // Perform operations with replyText and itemId
+   ...
+
+   // Create new notification
+   Notification repliedNotification =
+           new NotificationCompat.Builder(getBaseContext())
+                   .setSmallIcon(R.mipmap.ic_launcher)
+                   .setContentText("Replied")
+                   .build();
+
+   // Update notification
+   NotificationManager mNotificationManager =
+           (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+   mNotificationManager.notify(itemId, repliedNotification);
+
+}
+</code></pre>
+<p>Методом <a href="https://developer.android.com/reference/android/app/RemoteInput.html#getResultsFromIntent(android.content.Intent)" target="_blank" rel="noopener noreferrer">RemoteInput.getResultsFromIntent</a> достаем Bundle из Intent. Из этого Bundle можем достать текст, который вводил пользователь в уведомлении. Для этого используем ключ EXTRA_TEXT_REPLY (который ранее использовали в билдере RemoteInput).</p>
+<p>Далее из Intent достаем itemId.</p>
+<p>Теперь у нас есть id чата и текст, который ввел пользователь. Можем сохранить его в БД, отправить на сервер или сделать еще что-то. Это зависит от логики приложения.</p>
+<p>Далее нам необходимо разобраться с уведомлением. Напомню, что после отправки текста оно отображает прогрессбар. В этом примере мы создаем простое уведомление с текстом Replied и заменяем им (используя тот же itemId в методе notify) то уведомление, из которого был отправлен текст.</p>
+<p>Пробуем еще раз отправить текст из уведомления</p>
+<p><img src="images/lesson184/lesson3.gif" alt="" width="640" height="454" border="0"></p>
+<p>На этот раз мы в обработчике обновили уведомление и прогрессбар пропал.</p>
+<p>Что вы будете делать с уведомлением после отправки текста - это ваше решение. Например, вы можете просто удалить его. Либо, если вы в уведомлении отображаете последние сообщения чата, вы можете обновить это уведомление с учетом нового сообщения и снова сделать там кнопку Reply.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

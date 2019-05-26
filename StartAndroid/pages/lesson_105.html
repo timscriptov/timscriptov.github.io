@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 105. Android 3. Fragments. Динамическая работа</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- динамически работаем с фрагментами</p>
+<p>Размещать статические фрагменты мы уже умеем. Но, ясно дело, что гораздо интереснее работать с ними динамически. Система позволяет нам добавлять, удалять и заменять фрагменты друг другом. При этом мы можем сохранять все эти манипуляции в BackStack и кнопкой Назад отменять. В общем, все удобно и красиво.</p>
+<p>Создадим простое приложение с двумя  фрагментами, которое будет уметь:</p>
+<p>- добавлять первый фрагмент<br> - удалять первый фрагмент<br> - заменять первый фрагмент вторым фрагментом<br> - переключать режим сохранения в BackStack операций с фрагментами</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: Lesson105<br>
+<b>Package name</b>: com.mycompany.myapp<br>
+<b>Build Target</b>: Android 4.1 <br>
+<b>Application name</b>: FragmentDynamic<br>
+<b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="frag1_text"&gt;Fragment 1&lt;/string&gt;
+&lt;string name="frag2_text"&gt;Fragment 2&lt;/string&gt;
+&lt;string name="add"&gt;Add&lt;/string&gt;
+&lt;string name="remove"&gt;Remove&lt;/string&gt;
+&lt;string name="replace"&gt;Replace&lt;/string&gt;
+&lt;string name="stack"&gt;add to Back Stack&lt;/string&gt;</code></pre>
+<p>Создаем фрагменты. Как мы помним из прошлого урока, для этого нам нужны будут layout-файлы и классы, наследующие android.app.Fragment</p>
+<p><b>fragment1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#77ff0000"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag1_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>fragment2.xml:</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#7700ff00"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag2_text"&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>Fragment1.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1051fragmentdynamic;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment1 extends Fragment {
+
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment1, null);
+  }
+}</code></pre>
+<p><b>Fragment2.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1051fragmentdynamic;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class Fragment2 extends Fragment {
+
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    return inflater.inflate(R.layout.fragment2, null);
+  }
+}</code></pre>
+<p>Все почти аналогично прошлому уроку, только убрали вызовы кучи lifecycle методов с логами.</p>
+<p>Рисуем основное Activity.</p>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"&gt;
+		&lt;Button
+			android:id="@+id/btnAdd"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClick"
+			android:text="@string/add"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnRemove"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClick"
+			android:text="@string/remove"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnReplace"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClick"
+			android:text="@string/replace"&gt;
+		&lt;/Button&gt;
+		&lt;CheckBox
+			android:id="@+id/chbStack"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/stack"&gt;
+		&lt;/CheckBox&gt;
+	&lt;/LinearLayout&gt;
+	&lt;FrameLayout
+		android:id="@+id/frgmCont"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/FrameLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Три кнопки для добавления, удаления и замены фрагментов. Чекбокс для включения использования BackStack. И FrameLayout – это контейнер, в котором будет происходить вся работа с фрагментами. Он должен быть типа ViewGroup. А элементы Fragment, которые мы использовали на прошлом уроке для размещения фрагментов, нам не нужны для динамической работы. </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1051fragmentdynamic;
+
+import android.app.Activity;
+import android.app.FragmentTransaction;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.CheckBox;
+
+public class MainActivity extends Activity {
+
+  Fragment1 frag1;
+  Fragment2 frag2;
+  FragmentTransaction fTrans;
+  CheckBox chbStack;
+  
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    frag1 = new Fragment1();
+    frag2 = new Fragment2();
+    
+    chbStack = (CheckBox)findViewById(R.id.chbStack);
+  }
+
+  public void onClick(View v) {
+    fTrans = getFragmentManager().beginTransaction();
+    switch (v.getId()) {
+    case R.id.btnAdd:
+      fTrans.add(R.id.frgmCont, frag1);
+      break;
+    case R.id.btnRemove:
+      fTrans.remove(frag1);
+      break;
+    case R.id.btnReplace:
+      fTrans.replace(R.id.frgmCont, frag2);
+    default:
+      break;
+    }
+    if (chbStack.isChecked()) fTrans.addToBackStack(null);
+    fTrans.commit();
+  }
+}</code></pre>
+<p>В <b>onCreate</b> создаем пару фрагментов и находим чекбокс.</p>
+<p>В <b>onClick</b> мы получаем менеджер фрагментов с помощью метода <a href="http://developer.android.com/reference/android/app/Activity.html#getFragmentManager()" target="_blank">getFragmentManager</a>. Этот объект является основным для работы с фрагментами. Далее, чтобы добавить/удалить/заменить фрагмент, нам необходимо использовать транзакции. Они аналогичны транзакциям в БД, где мы открываем транзакцию, производим операции с БД, выполняем commit. Здесь мы открываем транзакцию, производим операции с фрагментами (добавляем, удаляем, заменяем), выполняем commit.</p>
+<p>Итак, мы получили FragmentManager и открыли транзакцию методом <a href="http://developer.android.com/reference/android/app/FragmentManager.html#beginTransaction()" target="_blank">beginTransaction</a>. Далее определяем, какая кнопка была нажата:</p>
+<p>если <b>Add</b>, то вызываем метод <a href="http://developer.android.com/reference/android/app/FragmentTransaction.html#add(int, android.app.Fragment)" target="_blank">add</a>, в который передаем id контейнера (тот самый FrameLayout из main.xml) и объект фрагмента. В итоге, в контейнер будет помещен Fragment1</p>
+<p>если <b>Remove</b>, то вызываем метод <a href="http://developer.android.com/reference/android/app/FragmentTransaction.html#remove(android.app.Fragment)" target="_blank">remove</a>, в который передаем объект фрагмента, который хотим убрать. В итоге, фрагмент удалится с экрана.</p>
+<p>если <b>Replace</b>, то вызываем метод <a href="http://developer.android.com/reference/android/app/FragmentTransaction.html#replace(int, android.app.Fragment)">replace</a>, в который передаем id контейнера и объект фрагмента. В итоге, из контейнера удалится его текущий фрагмент (если он там есть) и добавится фрагмент, указанный нами.</p>
+<p>Далее проверяем чекбокс. Если он включен, то добавляем транзакцию в BackStack. Для этого используем метод <a href="http://developer.android.com/reference/android/app/FragmentTransaction.html#addToBackStack(java.lang.String)" target="_blank">addToBackStack</a>. На вход можно подать строку-тэг. Я передаю null.</p>
+<p>Ну и вызываем <a href="http://developer.android.com/reference/android/app/FragmentTransaction.html#commit()" target="_blank">commit</a>, транзакция завершена.</p>
+<p>Давайте смотреть, что получилось. Все сохраняем, запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_104_0.png" alt="" width="384" height="640"></p>
+<p>Жмем <b>Add</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_104_1.png" alt="" width="384" height="640"></p>
+<p>появился первый фрагмент.</p>
+<p>Жмем <b>Remove</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_104_2.png" alt="" width="384" height="640"></p>
+<p>фрагмент удалился.</p>
+<p>Еще раз добавим первый фрагмент – жмем <b>Add</b>. И жмем <b>Replace</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_104_3.png" alt="" width="384" height="640"></p>
+<p>первый фрагмент заменился вторым.</p>
+<p>Жмем кнопку <b>Назад</b>. Приложение закрылось, т.к. все эти операции с фрагментами не сохранялись в BackStack. Давайте используем эту возможность.</p>
+<p>Снова запускаем приложение и включаем чекбокс<b> add to Back Stack</b></p>
+<p><img style="border: 1px solid black;" src="images/lesson_104_4.png" alt="" width="384" height="640"></p>
+<p>Выполняем те же операции: <b>Add</b>, <b>Remove</b>, <b>Add</b>, <b>Replace</b>. У нас добавится первый фрагмент, удалится первый фрагмент, добавится первый фрагмент, заменится вторым. В итоге мы снова видим второй фрагмент. Теперь жмем несколько раз кнопку <b>Назад </b>и наблюдаем, как выполняются операции, обратные тем, что мы делали. Когда транзакции, сохраненные в стеке закончатся, кнопка Назад закроет приложение.</p>
+<p>Т.е. все достаточно просто и понятно. Скажу еще про пару интересных моментов.</p>
+<p>Я в этом примере выполнял всего одну операцию в каждой транзакции. Но, разумеется, их может быть больше.</p>
+<p>Когда мы удаляем фрагмент и не добавляем транзакцию в BackStack, то фрагмент уничтожается. Если же транзакция добавляется в BackStack, то, при удалении, фрагмент не уничтожается (onDestroy не вызывается), а останавливается (onStop).</p>
+<p>В качестве самостоятельной работы: попробуйте немного изменить приложение и добавлять в один контейнер сразу два фрагмента. Возможно, результат вас удивит ) </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

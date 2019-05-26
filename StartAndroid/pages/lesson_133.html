@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+  
+<html lang="ru">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 133. Камера. Делаем снимок и пишем видео</title>
+	   
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+<p>В этом уроке:</p>
+<p>- делаем снимок<br/> - пишем видео</p>
+ 
+<p> </p>
+<p>На прошлом уроке мы очень подробно рассмотрели как правильно выводить изображение с камеры на экран. Теперь узнаем, как это изображение можно сохранить и как фото и как видео.</p>
+<p>Фото делается совсем просто, одним методом. А записать видео нам поможет <a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html" target="_blank" rel="noopener noreferrer">MediaRecorder</a>. Напомню, что MediaRecorder мы подробно рассмотрели в Уроке 129.</p>
+<p>Чтобы не усложнять урок и пример я не буду здесь заморачиваться с размерами превью и экрана, с поворотами и с описанием работы с камерой. Если нужны подробности – загляните в Урок 132.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1331_CameraRecord<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: CameraRecord<br/> <b>Package name</b>: ru.startandroid.develop.p1331camerarecord<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="take_picture"&gt;Picture&lt;/string&gt;
+&lt;string name="start_record"&gt;Start&lt;/string&gt;
+&lt;string name="stop_record"&gt;Stop&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity"&gt;
+    &lt;SurfaceView
+        android:id="@+id/surfaceView"
+        android:layout_width="200dp"
+        android:layout_height="150dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"&gt;
+    &lt;/SurfaceView&gt;
+    &lt;Button
+        android:id="@+id/btnTakePicture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/surfaceView"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:onClick="onClickPicture"
+        android:text="@string/take_picture"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnStartRecord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/btnTakePicture"
+        android:layout_toRightOf="@id/btnTakePicture"
+        android:onClick="onClickStartRecord"
+        android:text="@string/start_record"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnStopRecord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/btnStartRecord"
+        android:layout_toRightOf="@id/btnStartRecord"
+        android:onClick="onClickStopRecord"
+        android:text="@string/stop_record"&gt;
+    &lt;/Button&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>На экране у нас SurfaceView и три кнопки: сделать фото, начать запись, остановить запись.</p>
+<p><img src="images/xl0133_010.png.pagespeed.ic.p1p2etjaxu.png" alt=""/></p>
+<p> </p>
+<p>В манифест пропишем разрешения:</p>
+<pre><code class="xml">
+<p><i>&lt;uses-permission android:name="android.permission.CAMERA"/&gt;<br/>&lt;uses-permission android:name="android.permission.RECORD_AUDIO"/&gt;<br/>&lt;uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/&gt;</i></p>
+</code></pre>
+<p>Это работа с камерой, запись звука и запись на sd-карту.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1331camerarecord;
+
+import java.io.File;
+import java.io.FileOutputStream;
+
+import android.app.Activity;
+import android.hardware.Camera;
+import android.hardware.Camera.PictureCallback;
+import android.media.CamcorderProfile;
+import android.media.MediaRecorder;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  SurfaceView surfaceView;
+  Camera camera;
+  MediaRecorder mediaRecorder;
+
+  File photoFile;
+  File videoFile;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    File pictures = Environment
+        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+    photoFile = new File(pictures, "myphoto.jpg");
+    videoFile = new File(pictures, "myvideo.3gp");
+
+    surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+
+    SurfaceHolder holder = surfaceView.getHolder();
+    holder.addCallback(new SurfaceHolder.Callback() {
+      @Override
+      public void surfaceCreated(SurfaceHolder holder) {
+        try {
+          camera.setPreviewDisplay(holder);
+          camera.startPreview();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+
+      @Override
+      public void surfaceChanged(SurfaceHolder holder, int format,
+          int width, int height) {
+      }
+
+      @Override
+      public void surfaceDestroyed(SurfaceHolder holder) {
+      }
+    });
+
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    camera = Camera.open();
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    releaseMediaRecorder();
+    if (camera != null)
+      camera.release();
+    camera = null;
+  }
+
+  public void onClickPicture(View view) {
+    camera.takePicture(null, null, new PictureCallback() {
+      @Override
+      public void onPictureTaken(byte[] data, Camera camera) {
+        try {
+          FileOutputStream fos = new FileOutputStream(photoFile);
+          fos.write(data);
+          fos.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    });
+
+  }
+
+  public void onClickStartRecord(View view) {
+    if (prepareVideoRecorder()) {
+      mediaRecorder.start();
+    } else {
+      releaseMediaRecorder();
+    }
+  }
+
+  public void onClickStopRecord(View view) {
+    if (mediaRecorder != null) {
+      mediaRecorder.stop();
+      releaseMediaRecorder();
+    }
+  }
+
+  private boolean prepareVideoRecorder() {
+
+    camera.unlock();
+
+    mediaRecorder = new MediaRecorder();
+
+    mediaRecorder.setCamera(camera);
+    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+    mediaRecorder.setProfile(CamcorderProfile
+        .get(CamcorderProfile.QUALITY_HIGH));
+    mediaRecorder.setOutputFile(videoFile.getAbsolutePath());
+    mediaRecorder.setPreviewDisplay(surfaceView.getHolder().getSurface());
+
+    try {
+      mediaRecorder.prepare();
+    } catch (Exception e) {
+      e.printStackTrace();
+      releaseMediaRecorder();
+      return false;
+    }
+    return true;
+  }
+
+  private void releaseMediaRecorder() {
+    if (mediaRecorder != null) {
+      mediaRecorder.reset();
+      mediaRecorder.release();
+      mediaRecorder = null;
+      camera.lock();
+    }
+  }
+
+}</code></pre>
+<p>Смотрим код</p>
+<p>В <b>onCreate</b> мы создаем пути для фото и видео файлов, в которые будет сохраняться результат. Далее определяем SurfaceView, Holder и callback к нему.</p>
+<p>В <b>onResume</b> получаем доступ к камере.</p>
+<p>В <b>onPause</b> освобождаем ресурсы MediaRecorder и камеры.</p>
+<p> </p>
+<p><b>onClickPicture</b> – это обработчик нажатия на кнопку Picture. Здесь будем делать снимок. Для этого нам необходимо вызвать метод <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.html#takePicture(android.hardware.Camera.ShutterCallback, android.hardware.Camera.PictureCallback, android.hardware.Camera.PictureCallback)" target="_blank" rel="noopener noreferrer">takePicture</a>. Этот метод асинхронный, для получения результата используются callback-и. Их три.</p>
+<p>Первый, <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.ShutterCallback.html" target="_blank" rel="noopener noreferrer">ShutterCallback</a>, сработает сразу после того, как камера сделает снимок. Сюда можно повесить звук затвора, например. Я его не использую, передаю null.</p>
+<p>Второй, <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.PictureCallback.html" target="_blank" rel="noopener noreferrer">PictureCallback</a>, вернет нам сырую raw картинку. Я его также не использую, передаю null.</p>
+<p>Третий, <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.PictureCallback.html" target="_blank" rel="noopener noreferrer">PictureCallback</a>, вернет нам готовую сжатую jpeg картинку. Это нам и надо. Создаем callback и в его методе <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.PictureCallback.html#onPictureTaken(byte[], android.hardware.Camera)" target="_blank" rel="noopener noreferrer">onPictureTaken</a> будем получать byte-массив. Это и есть готовое фото, которое мы пишем в файл.</p>
+<p> </p>
+<p><b>onClickStartRecord</b> – обработчик нажатия на кнопку Start. Здесь будем включать запись видео с камеры. Для этого подготавливаем MediaRecorder в методе prepareVideoRecorder. Метод вернет нам значение Boolean, по которому мы поймем удалось ли подготовить объект. Если он готов, стартуем запись методом <a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#start()" target="_blank" rel="noopener noreferrer">start</a>. Если при подготовке возникли проблемы, то освобождаем ресурсы.</p>
+<p> </p>
+<p><b>onClickStopRecord</b> – обработчик кнопки Stop. Здесь останавливаем запись видео методом <a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#stop()" target="_blank" rel="noopener noreferrer">stop</a> и освобождаем ресурсы. Кстати, в документацие к методу stop написано, что он может выдавать RuntimeException, если что-то не так с аудио/видео, которое дали MediaRecorder-у на вход. Имеет смысл эту ошибку ловить и удалять в таком случае записываемый файл, т.к. там будут некорректные данные.</p>
+<p> </p>
+<p><b>prepareVideoRecorder</b> – метод подготовки MediaRecorder к записи. Сначала методом <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.html#unlock()" target="_blank" rel="noopener noreferrer">unlock</a> снимаем монопольный доступ с камеры, чтобы MediaRecorder мог ее использовать. Затем создаем объект MediaRecorder. Далее идут 6 методов его настройки:</p>
+<p><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setCamera(android.hardware.Camera)" target="_blank" rel="noopener noreferrer">setCamera</a> – предоставляем камеру, которая будет использована для записи<br/><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setAudioSource(int)" target="_blank" rel="noopener noreferrer"> setAudioSource</a>: указываем источник звука – CAMCORDER<br/><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setVideoSource(int)" target="_blank" rel="noopener noreferrer"> setVideoSource</a>: указываем источник видео – CAMERA<br/><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setProfile(android.media.CamcorderProfile)" target="_blank" rel="noopener noreferrer"> setProfile</a>: указываем профиль записи. В профиле содержаться такие данные как: тип контейнера, аудио/видео кодек, битрейт и пр. Чтобы нам руками не задавать все эти характеристики, используем профили. Список профилей можно посмотреть в документацие к объекту <a href="../external.html?link=http://developer.android.com/reference/android/media/CamcorderProfile.html" target="_blank" rel="noopener noreferrer">CamcorderProfile</a>. Мы используем высокое качество - QUALITY_HIGH.<br/><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setOutputFile(java.lang.String)" target="_blank" rel="noopener noreferrer"> setOutputFile</a>: указываем путь к файлу, куда будет записано видео<br/><a href="../external.html?link=http://developer.android.com/reference/android/media/MediaRecorder.html#setPreviewDisplay(android.view.Surface)" target="_blank" rel="noopener noreferrer"> setPreviewDisplay</a>: указываем surface для показа превью в процессе записи. Если ранее вы для камеры уже указали surface в ее методе setPreviewDisplay, то этот метод вызывать необязательно.</p>
+<p>Документация очень рекомендует вызывать эти 6 методов именно в таком порядке, иначе грозит ошибками и неудачей при записи.</p>
+<p>Когда все параметры указали, вызываем prepare и если все ок, то получаем MediaRecorder готовый к записи.</p>
+<p> </p>
+<p>В методе <b>releaseMediaRecorder</b> освобождаем ресурсы MediaRecorder и снова монополизируем камеру методом <a href="../external.html?link=http://developer.android.com/reference/android/hardware/Camera.html#lock()" target="_blank" rel="noopener noreferrer">lock</a>.</p>
+<p> </p>
+<p>Можно все сохранить и запускать. По нажатию на кнопку Picture будет сохраняться фото, а по кнопкам Start и Stop – стартовать и останавливаться запись видео. Полученные фото и видео будут сохранены в папке Pictures под именами myphoto.jpg и myvideo.3gp</p>
+<div>
+<!-- START: Modules Anywhere -->
+
+</div>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

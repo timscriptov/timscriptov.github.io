@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 101. Создаем свой ContentProvider</title>
+
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем свой ContentProvider</p>
+<p><a href="http://developer.android.com/reference/android/content/ContentProvider.html" target="_blank">Content Provider</a> – это способ расшарить для общего пользования данные вашего приложения. Обычно это данные из БД. И создание класса провайдера похоже на создание обычного класса для работы с БД. Мы используем SQLiteOpenHelper для управления базой, и реализуем методы <a href="http://developer.android.com/reference/android/content/ContentProvider.html#query(android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String)" target="_blank">query</a>, <a href="http://developer.android.com/reference/android/content/ContentProvider.html#insert(android.net.Uri, android.content.ContentValues)" target="_blank">insert</a>, <a href="http://developer.android.com/reference/android/content/ContentProvider.html#update(android.net.Uri, android.content.ContentValues, java.lang.String, java.lang.String[])" target="_blank">update</a>, <a href="http://developer.android.com/reference/android/content/ContentProvider.html#delete(android.net.Uri, java.lang.String, java.lang.String[])" target="_blank">delete </a>класса ContentProvider.</p>
+<p>Но есть и отличия. При работе с провайдером используется Uri. Он составной и похож на http-адрес. С помощью Uri система понимает, какой именно провайдер нужен, c какими данными необходимо работать и с какой конкретно записью. Uri можно представить в таком виде: content://&lt;<b>authority</b>&gt;/&lt;<b>path</b>&gt;/&lt;<b>id</b>&gt;.</p>
+<p>Например, возьмем Uri - content://ru.startandroid.provider.AdressBook/contacts/7 и разложим на части:</p>
+<p>content:// - это стандартное начало для адреса провайдера.</p>
+<p>ru.startandroid.provider.AdressBook– это <b>authority</b>. Определяет провайдера (если проводить аналогию с базой данных, то это имя базы).</p>
+<p>contacts – это <b>path</b>. Какие данные от провайдера нужны (таблица).</p>
+<p>7 – это <b>ID</b>. Какая конкретно запись нужна (ID записи)</p>
+<p><b>path </b>может быть составным – например contacts/phones или contacts/email. Это используется, если структура данных достаточно обширна, и данные хранятся в нескольких таблицах в соответствии с некоторой логикой и организацией.</p>
+<p><b>ID </b>может быть не указан. Это означает, что будем работать со всеми записями из <b>path</b>.</p>
+<p>Вышерассмотренный пример Uri указывает системе, что мы хотим достучаться до провайдера адресной книги ru.startandroid.provider.AdressBook, и получить доступ к контакту с ID = 7.</p>
+<p>Попробуем создать свой провайдер. Пусть это будет некая адресная книга – список контактов. Для каждого контакта будем хранить всего два атрибута: имя и емэйл.</p>
+<p>И отдельно создадим приложение, которое будет к этому провайдеру обращаться и манипулировать данными – читать, добавлять, изменять, удалять.</p>
+<p>Начнем с провайдера. Создадим проект без Activity:</p>
+<p><b>Project name</b>: P1011_ContentProvider<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: ContentProvider<br>
+<b>Package name</b>: ru.startandroid.develop.p1011contentprovider</p>
+<p>Создаем класс MyContactsProvider, наследующий android.content.ContentProvider</p>
+<p><img src="images/lesson_100_0.png" alt="" width="495" height="598"></p>
+<p>Он предлагает нам реализовать кучу методов. Реализуем.</p>
+<p><b>MyContactsProvider.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1011contentprovider;
+
+import android.content.ContentProvider;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.UriMatcher;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.net.Uri;
+import android.text.TextUtils;
+import android.util.Log; 
+
+public class MyContactsProvider extends ContentProvider {
+  final String LOG_TAG = "myLogs";
+
+  // // Константы для БД
+  // БД
+  static final String DB_NAME = "mydb";
+  static final int DB_VERSION = 1;
+
+  // Таблица
+  static final String CONTACT_TABLE = "contacts";
+
+  // Поля
+  static final String CONTACT_ID = "_id";
+  static final String CONTACT_NAME = "name";
+  static final String CONTACT_EMAIL = "email";
+
+  // Скрипт создания таблицы
+  static final String DB_CREATE = "create table " + CONTACT_TABLE + "("
+      + CONTACT_ID + " integer primary key autoincrement, "
+      + CONTACT_NAME + " text, " + CONTACT_EMAIL + " text" + ");";
+
+  // // Uri
+  // authority
+  static final String AUTHORITY = "ru.startandroid.providers.AdressBook";
+
+  // path
+  static final String CONTACT_PATH = "contacts";
+
+  // Общий Uri
+  public static final Uri CONTACT_CONTENT_URI = Uri.parse("content://"
+      + AUTHORITY + "/" + CONTACT_PATH);
+
+  // Типы данных
+  // набор строк
+  static final String CONTACT_CONTENT_TYPE = "vnd.android.cursor.dir/vnd."
+      + AUTHORITY + "." + CONTACT_PATH;
+
+  // одна строка
+  static final String CONTACT_CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd."
+      + AUTHORITY + "." + CONTACT_PATH;
+
+  //// UriMatcher
+  // общий Uri
+  static final int URI_CONTACTS = 1;
+
+  // Uri с указанным ID
+  static final int URI_CONTACTS_ID = 2;
+
+  // описание и создание UriMatcher
+  private static final UriMatcher uriMatcher;
+  static {
+    uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+    uriMatcher.addURI(AUTHORITY, CONTACT_PATH, URI_CONTACTS);
+    uriMatcher.addURI(AUTHORITY, CONTACT_PATH + "/#", URI_CONTACTS_ID);
+  }
+
+  DBHelper dbHelper;
+  SQLiteDatabase db;
+
+  public boolean onCreate() {
+    Log.d(LOG_TAG, "onCreate");
+    dbHelper = new DBHelper(getContext());
+    return true;
+  }
+
+  // чтение
+  public Cursor query(Uri uri, String[] projection, String selection,
+      String[] selectionArgs, String sortOrder) {
+    Log.d(LOG_TAG, "query, " + uri.toString());
+    // проверяем Uri
+    switch (uriMatcher.match(uri)) {
+    case URI_CONTACTS: // общий Uri
+      Log.d(LOG_TAG, "URI_CONTACTS");
+      // если сортировка не указана, ставим свою - по имени
+      if (TextUtils.isEmpty(sortOrder)) {
+        sortOrder = CONTACT_NAME + " ASC";
+      }
+      break;
+    case URI_CONTACTS_ID: // Uri с ID
+      String id = uri.getLastPathSegment();
+      Log.d(LOG_TAG, "URI_CONTACTS_ID, " + id);
+      // добавляем ID к условию выборки
+      if (TextUtils.isEmpty(selection)) {
+        selection = CONTACT_ID + " = " + id;
+      } else {
+        selection = selection + " AND " + CONTACT_ID + " = " + id;
+      }
+      break;
+    default:
+      throw new IllegalArgumentException("Wrong URI: " + uri);
+    }
+    db = dbHelper.getWritableDatabase();
+    Cursor cursor = db.query(CONTACT_TABLE, projection, selection,
+        selectionArgs, null, null, sortOrder);
+    // просим ContentResolver уведомлять этот курсор 
+    // об изменениях данных в CONTACT_CONTENT_URI
+    cursor.setNotificationUri(getContext().getContentResolver(),
+        CONTACT_CONTENT_URI);
+    return cursor;
+  }
+
+  public Uri insert(Uri uri, ContentValues values) {
+    Log.d(LOG_TAG, "insert, " + uri.toString());
+    if (uriMatcher.match(uri) != URI_CONTACTS)
+      throw new IllegalArgumentException("Wrong URI: " + uri);
+
+    db = dbHelper.getWritableDatabase();
+    long rowID = db.insert(CONTACT_TABLE, null, values);
+    Uri resultUri = ContentUris.withAppendedId(CONTACT_CONTENT_URI, rowID);
+    // уведомляем ContentResolver, что данные по адресу resultUri изменились
+    getContext().getContentResolver().notifyChange(resultUri, null);
+    return resultUri;
+  }
+
+  public int delete(Uri uri, String selection, String[] selectionArgs) {
+    Log.d(LOG_TAG, "delete, " + uri.toString());
+    switch (uriMatcher.match(uri)) {
+    case URI_CONTACTS:
+      Log.d(LOG_TAG, "URI_CONTACTS");
+      break;
+    case URI_CONTACTS_ID:
+      String id = uri.getLastPathSegment();
+      Log.d(LOG_TAG, "URI_CONTACTS_ID, " + id);
+      if (TextUtils.isEmpty(selection)) {
+        selection = CONTACT_ID + " = " + id;
+      } else {
+        selection = selection + " AND " + CONTACT_ID + " = " + id;
+      }
+      break;
+    default:
+      throw new IllegalArgumentException("Wrong URI: " + uri);
+    }
+    db = dbHelper.getWritableDatabase();
+    int cnt = db.delete(CONTACT_TABLE, selection, selectionArgs);
+    getContext().getContentResolver().notifyChange(uri, null);
+    return cnt;
+  }
+
+  public int update(Uri uri, ContentValues values, String selection,
+      String[] selectionArgs) {
+    Log.d(LOG_TAG, "update, " + uri.toString());
+    switch (uriMatcher.match(uri)) {
+    case URI_CONTACTS:
+      Log.d(LOG_TAG, "URI_CONTACTS");
+
+      break;
+    case URI_CONTACTS_ID:
+      String id = uri.getLastPathSegment();
+      Log.d(LOG_TAG, "URI_CONTACTS_ID, " + id);
+      if (TextUtils.isEmpty(selection)) {
+        selection = CONTACT_ID + " = " + id;
+      } else {
+        selection = selection + " AND " + CONTACT_ID + " = " + id;
+      }
+      break;
+    default:
+      throw new IllegalArgumentException("Wrong URI: " + uri);
+    }
+    db = dbHelper.getWritableDatabase();
+    int cnt = db.update(CONTACT_TABLE, values, selection, selectionArgs);
+    getContext().getContentResolver().notifyChange(uri, null);
+    return cnt;
+  }
+
+  public String getType(Uri uri) {
+    Log.d(LOG_TAG, "getType, " + uri.toString());
+    switch (uriMatcher.match(uri)) {
+    case URI_CONTACTS:
+      return CONTACT_CONTENT_TYPE;
+    case URI_CONTACTS_ID:
+      return CONTACT_CONTENT_ITEM_TYPE;
+    }
+    return null;
+  }
+
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      super(context, DB_NAME, null, DB_VERSION);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt;= 3; i++) {
+        cv.put(CONTACT_NAME, "name " + i);
+        cv.put(CONTACT_EMAIL, "email " + i);
+        db.insert(CONTACT_TABLE, null, cv);
+      }
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+<p>Кода много, но практически ничего нового для нас нет. В основном идет работа с БД.</p>
+<p>В начале идет куча констант. Константы для БД должны быть знакомы и понятны по прошлым урокам, их я не объясняю. Поясню только, что у нас в БД будет всего одна таблица <b>contacts</b> с тремя полями: <b>_id</b>, <b>name</b> и <b>email</b>.</p>
+<p>Далее идут константы <b>AUTHORITY </b>и <b>CONTACT_PATH </b>– это составные части Uri. Мы это уже обсуждали в начале урока. Из этих двух констант и префикса content:// мы формируем общий Uri - <b>CONTACT_CONTENT_URI</b>. Т.к. здесь не указан никакой ID, этот Uri дает доступ ко всем контактам.</p>
+<p>У нас тут получилось, что <b>имя таблицы в БД</b> совпало с <b>path в Uri</b>. Это вовсе необязательно, они могут быть разными.</p>
+<p>Далее описываем <b>MIME-типы</b> данных, предоставляемых провайдером. Один для набора данных, другой для конкретной записи. У меня пока что мало опыта работы с провайдерами, и я не очень понимаю, где и как можно эти типы данных использовать. Но реализовать их надо, поэтому делаем это. Мы будем возвращать их в методе getType нашего провайдера.</p>
+<p>Далее создаем и описываем <a href="http://developer.android.com/reference/android/content/UriMatcher.html" target="_blank">UriMatcher </a>и константы для него. UriMatcher – это что-то типа парсера. В методе <a href="http://developer.android.com/reference/android/content/UriMatcher.html#addURI(java.lang.String, java.lang.String, int)" target="_blank">addURI </a>мы даем ему комбинацию: <b>authority</b>, <b>path </b>и <b>константа</b>. Причем, мы можем использовать спецсимволы: <b>*</b> - строка любых символов любой длины, <b>#</b> - строка цифр любой длины. На вход провайдеру будут поступать Uri, и мы будем сдавать их в UriMatcher на проверку. Если Uri будет подходить под комбинацию <b>authority </b>и <b>path</b>, ранее добавленных в addURI, то UriMatcher вернет <b>константу </b>из того же набора: <b>authority</b>, <b>path</b>, <b>константа</b>.</p>
+<p>Т.е. строка:</p>
+<p>uriMatcher.addURI(AUTHORITY, CONTACT_PATH, URI_CONTACTS);</p>
+<p>означает, что мы добавили в uriMatcher комбинацию значений AUTHORITY, CONTACT_PATH и <b>URI_CONTACTS</b>. </p>
+<p>А строка</p>
+<p>uriMatcher.addURI(AUTHORITY, CONTACT_PATH + "/#", URI_CONTACTS_ID);</p>
+<p>означает, что мы добавили в uriMatcher комбинацию значений AUTHORITY, CONTACT_PATH + "/#" и <b>URI_CONTACTS_ID</b>. # - это маска для строки из цифр. А если у нас к path добавляется число, это значит - нам дают ID и мы будем работать с конкретной записью.</p>
+<p>И теперь, если мы попросим uriMatcher проверить Uri, состоящий из AUTHORITY и CONTACT_PATH, он вернет нам значение <b>URI_CONTACTS</b>. А если дадим ему Uri, состоящий из AUTHORITY, CONTACT_PATH и числа (ID), то он вернет нам <b>URI_CONTACTS_ID</b>. А мы по этим константам определим – работать со всеми записями или какой-то конкретной.</p>
+<p>В общем, на словах все очень сложно получилось, в коде все проще будет. Но главный смысл этого uriMatcher в том, что он определит, какой Uri к нам пришел – общий или с ID. Если общий – то вернет URI_CONTACTS, если с ID – то вернет URI_CONTACTS_ID.</p>
+<p>Разбираем методы.</p>
+<p>В <b>OnCreate </b>создаем DBHelper – уже знакомый нам помощник для работы с БД.</p>
+<p>В методе <b>query </b>мы получаем на вход Uri и набор параметров для выборки из БД: projection - столбцы, selection - условие, selectionArgs – аргументы для условия, sortOrder – сортировка. Опять же, эти параметры уже знакомы нам по работе с БД.</p>
+<p>Далее мы отдаем uri в метод match объекта uriMatcher. Он его разбирает, сверяет с теми комбинациями authority/path, которые мы давали ему в методах addURI и выдает константу из соответствующей комбинации. Если это URI_CONTACTS, значит нам пришел общий Uri и от провайдера хотят получить все его записи. В этом случае мы проверим, указана ли сортировка. Если нет, то поставим сортировку по имени. Как вы понимаете, эта операция с сортировкой совершенна необязательна. Мы могли и ничего не делать. Если же мы получили URI_CONTACTS_ID, то провайдер должен вернуть запись по конкретному ID. Для этого мы извлекаем ID из Uri методом getLastPathSegment и добавляем его в условие selection.</p>
+<p>Если uriMatcher не смог опознать Uri, то будем выдавать IllegalArgumentException. Вы, разумеется, можете тут прописать свое решение этой проблемы.</p>
+<p>Далее мы получаем БД и выполняем для нее метод query, получаем cursor. <a href="http://developer.android.com/reference/android/database/Cursor.html#setNotificationUri(android.content.ContentResolver, android.net.Uri)" target="_blank">Регистрируем </a>этот cursor, чтобы он получал уведомления, когда будут меняться данные, соответствующие общему Uri - CONTACT_CONTENT_URI. При изменении какой-либо конкретной записи, уведомление также будет срабатывать. В конце возвращаем cursor.</p>
+<p>В <b>insert </b>мы проверяем, что нам пришел наш общий Uri. Если все ок, то вставляем данные в таблицу, получаем ID. Этот ID мы добавляем к общему Uri и получаем Uri с ID. По идее, это можно сделать и обычным сложением строк, но рекомендуется использовать метод withAppendedId объекта. Далее мы <a href="http://developer.android.com/reference/android/content/ContentResolver.html#notifyChange(android.net.Uri, android.database.ContentObserver)" target="_blank">уведомляем </a>систему, что поменяли данные, соответствующие resultUri. Система посмотрит, не зарегистрировано ли слушателей на этот Uri. Увидит, что мы регистрировали курсор, и даст ему знать, что данные обновились. В конце мы возвращаем resultUri, соответствующий новой добавленной записи.</p>
+<p>В <b>delete </b>мы проверяем, какой Uri нам пришел. Если с ID, то фиксим selection – добавляем туда условие по ID. Выполняем удаление в БД, получаем кол-во удаленных записей. Уведомляем, что данные изменились. Возвращаем кол-во удаленных записей.</p>
+<p>В <b>update </b>мы проверяем, какой Uri нам пришел. Если с ID, то фиксим selection – добавляем туда условие по ID. Выполняем обновление в БД, получаем кол-во обновленных записей. Уведомляем, что данные изменились. Возвращаем кол-во обновленных записей.</p>
+<p>В методе <b>getType </b>возвращаем типы соответственно типу Uri – общий или с ID.</p>
+<p>Класс <b>DBHelper </b>помогает нам создать БД и наполнить ее первоначальными данными. Обновление здесь не реализуем.</p>
+<p>Осталось прописать класс провайдера в манифесте. Делается это аналогично, как мы прописываем Activity или сервис. Только из списка выбираем <b>Provider</b>. В Name выбираем наш класс. И заполняем поле <b>Authorities</b>, сюда необходимо прописать значение из константы AUTHORITY - <b>ru.startandroid.providers.AdressBook</b>.</p>
+<p><img src="images/lesson_100_1.png" alt="" width="640" height="411"></p>
+<p>Теперь, когда система получит запрос на получение данных по Uri с authority = ru.startandroid.providers.AdressBook, она будет работать с нашим провайдером.</p>
+<p>С провайдером все. Его можно инсталлить на AVD. Делается это как обычно, просто на экране ничего не появится, т.к. нет Activity. А в консоли будут примерно такие строки:</p>
+<p><i>Uploading P1011_ContentProvider.apk onto device 'emulator-5554'<br> Installing P1011_ContentProvider.apk...<br> Success!<br> \P1011_ContentProvider\bin\P1011_ContentProvider.apk installed on device<br> Done!</i></p>
+<p>Теперь пишем приложение, которое будет к провайдеру обращаться. Создадим проект:</p>
+<p><b>Project name</b>: P1012_ContProvClient<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ContProvClient<br><b>Package name</b>: ru.startandroid.develop.p1012contprovclient<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим в <b>strings.xml</b> строки:</p>
+<pre><code class="xml">&lt;string name="insert"&gt;Insert&lt;/string&gt;
+&lt;string name="update"&gt;Update&lt;/string&gt;
+&lt;string name="delete"&gt;Delete&lt;/string&gt;
+&lt;string name="error"&gt;Error&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:id="@+id/btnInsert"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClickInsert"
+			android:text="@string/insert"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnUpdate"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClickUpdate"
+			android:text="@string/update"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnDelete"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClickDelete"
+			android:text="@string/delete"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnError"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:onClick="onClickError"
+			android:text="@string/error"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+	&lt;ListView
+		android:id="@+id/lvContact"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+	&lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>4 кнопки для операций с данными и список для вывода данных провайдера.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1012contprovclient;
+
+import android.app.Activity;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
+
+public class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+
+  final Uri CONTACT_URI = Uri
+      .parse("content://ru.startandroid.providers.AdressBook/contacts");
+  
+  final String CONTACT_NAME = "name";
+  final String CONTACT_EMAIL = "email";
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    Cursor cursor = getContentResolver().query(CONTACT_URI, null, null,
+        null, null);
+    startManagingCursor(cursor);
+
+    String from[] = { "name", "email" };
+    int to[] = { android.R.id.text1, android.R.id.text2 };
+    SimpleCursorAdapter adapter = new SimpleCursorAdapter(this,
+        android.R.layout.simple_list_item_2, cursor, from, to);
+
+    ListView lvContact = (ListView) findViewById(R.id.lvContact);
+    lvContact.setAdapter(adapter);
+  }
+  
+  public void onClickInsert(View v) {
+        ContentValues cv = new ContentValues();
+        cv.put(CONTACT_NAME, "name 4");
+        cv.put(CONTACT_EMAIL, "email 4");
+        Uri newUri = getContentResolver().insert(CONTACT_URI, cv);
+        Log.d(LOG_TAG, "insert, result Uri : " + newUri.toString());
+  }
+
+  public void onClickUpdate(View v) {
+        ContentValues cv = new ContentValues();
+        cv.put(CONTACT_NAME, "name 5");
+        cv.put(CONTACT_EMAIL, "email 5");
+        Uri uri = ContentUris.withAppendedId(CONTACT_URI, 2);
+        int cnt = getContentResolver().update(uri, cv, null, null);
+        Log.d(LOG_TAG, "update, count = " + cnt);
+  }
+
+  public void onClickDelete(View v) {
+    Uri uri = ContentUris.withAppendedId(CONTACT_URI, 3);
+        int cnt = getContentResolver().delete(uri, null, null);
+        Log.d(LOG_TAG, "delete, count = " + cnt);
+  }
+
+  public void onClickError(View v) {
+    Uri uri = Uri.parse("content://ru.startandroid.providers.AdressBook/phones");
+    try { 
+      Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+    } catch (Exception ex) {
+      Log.d(LOG_TAG, "Error: " + ex.getClass() + ", " + ex.getMessage());
+    }
+    
+  }
+}</code></pre>
+<p>В <b>CONTACT_URI </b>мы храним общий Uri. В <b>CONTACT_NAME </b>и <b>CONTACT_EMAIL </b>– имена полей.</p>
+<p>В <b>onCreate </b>мы используем метод <a href="http://developer.android.com/reference/android/content/Context.html#getContentResolver()" target="_blank">getContentResolver</a>, чтобы получить <a href="http://developer.android.com/reference/android/content/ContentResolver.html" target="_blank">ContentResolver</a>. Этот объект – посредник между нами и провайдером. Мы вызываем его метод <a href="http://developer.android.com/reference/android/content/ContentResolver.html#query(android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String)" target="_blank">query </a>и передаем туда Uri. Остальные параметры оставляем пустыми – т.е. нам вернутся все записи, все поля и сортировку мы не задаем. Полученный курсор мы передаем в Activity на управление – метод startManagingCursor. Далее создаем адаптер и присваиваем его списку.</p>
+<p>В <b>onClickInsert </b>мы используем метод <a href="http://developer.android.com/reference/android/content/ContentResolver.html#insert(android.net.Uri, android.content.ContentValues)" target="_blank">insert </a>для добавления записей в провайдер. Этот метод возвращает нам Uri, соответствующий новой записи.</p>
+<p>В <b>onClickUpdate </b>мы создаем Uri, соответствующий записи с ID = 2, и <a href="http://developer.android.com/reference/android/content/ContentResolver.html#update(android.net.Uri, android.content.ContentValues, java.lang.String, java.lang.String[])" target="_blank">апдейтим </a>эту запись в провайдере.</p>
+<p>В <b>onClickDelete </b>мы создаем Uri, соответствующий записи с ID = 3, и <a href="http://developer.android.com/reference/android/content/ContentResolver.html#delete(android.net.Uri, java.lang.String, java.lang.String[])" target="_blank">удаляем</a> эту запись в провайдере.</p>
+<p>В <b>onClickError </b>мы пытаемся получить записи по Uri, который не знает провайдер. В его uriMatcher не добавляли информации об этом Uri. В этом случае мы генерировали в провайдере ошибку. Здесь попробуем поймать ее.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img src="images/lesson_100_2.png" alt="" width="640" height="449"></p>
+<p>В логах:</p>
+<p><em>onCreate<br> query, content://ru.startandroid.providers.AdressBook/contacts<br> URI_CONTACTS</em></p>
+<p>Создался провайдер. Выполнился его метод query и получил на вход Uri - <b>content://ru.startandroid.providers.AdressBook/contacts</b>. uriMatcher вернул <b>URI_CONTACTS</b>, т.е. опознал Uri – как общий, запрашивающий все данные. В итоге мы получили курсор со всеми данными и вывели их в список.</p>
+<p>Жмем <b>Insert</b>. Появилась новая строка в списке.</p>
+<p><img src="images/lesson_100_3.png" alt="" width="640" height="449"></p>
+<p>Тут надо отметить, что мы вообще не трогали ни курсор, ни адаптер, ни список. Мы только добавили запись в провайдер, а наш список сам обновился. Это работают уведомления, которые мы прописывали в методах провайдера. Курсор ждет уведомления об обновлениях провайдера, а метод вставки ему такое уведомление отправил.</p>
+<p>Логи:</p>
+<p><i>insert, content://ru.startandroid.providers.AdressBook/contacts<br> insert, result Uri : content://ru.startandroid.providers.AdressBook/contacts/4</i></p>
+<p>Выполнился метод <b>insert</b>, получил на вход общий Uri, в котором указано, в какую именно таблицу вставлять данные. Данные добавлены и провайдер вернул Uri новой записи: <b>content://ru.startandroid.providers.AdressBook/contacts/4</b></p>
+<p>Жмем <b>Update</b>.</p>
+<p><img src="images/lesson_100_4.png" alt="" width="640" height="449"></p>
+<p>Мы обновили вторую запись, и она ушла в конец списка, т.к. сортировку мы еще в провайдере настроили по имени, если не указано иное.</p>
+<p>Логи:</p>
+<p><em>update, content://ru.startandroid.providers.AdressBook/contacts/2<br> URI_CONTACTS_ID, 2<br> update, count = 1</em></p>
+<p>Сработал метод <b>update</b>, получил на вход Uri = <b>content://ru.startandroid.providers.AdressBook/contacts/2</b>. UriMatcher верно распознал, что полученный Uri содержит ID. Провайдер обновил запись и вернул нам кол-во обновленных записей.</p>
+<p>Жмем Delete.</p>
+<p><img src="images/lesson_100_5.png" alt="" width="640" height="449"></p>
+<p>Удалили запись с ID = 3.</p>
+<p>Логи:</p>
+<p><i>delete, content://ru.startandroid.providers.AdressBook/contacts/3<br> URI_CONTACTS_ID, 3<br> delete, count = 1</i></p>
+<p>Сработал метод <b>delete</b>, получил на вход Uri = <b>content://ru.startandroid.providers.AdressBook/contacts/3</b>. UriMatcher определил, что Uri с ID. Запись была удалена и мы получили кол-во удаленных записей.</p>
+<p>Жмем <b>Error</b>.</p>
+<p>Логи:</p>
+<p><i>query, content://ru.startandroid.providers.AdressBook/phones<br> Error: class java.lang.IllegalArgumentException, Wrong URI: content://ru.startandroid.providers.AdressBook/phones</i></p>
+<p>Был выполнен метод query с Uri = <b>content://ru.startandroid.providers.AdressBook/phones</b>. Но UriMatcher не знает такую комбинацию <b>authority </b>(ru.startandroid.providers.AdressBook) и <b>path </b>(phones). В этой ситуации мы настроили провайдер так, что он генерит ошибку. В приложении мы эту ошибку ловим и выдаем в лог.</p>
+<p>Есть несколько моментов, которые хотелось бы отдельно отметить.</p>
+<h3>managedQuery</h3>
+<p>Мы в приложении использовали методы query и startManagingCursor. У Activity есть метод, который объединяет два этих метода - <a href="http://developer.android.com/reference/android/app/Activity.html#managedQuery(android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String)" target="_blank">managedQuery</a>. Он берет на вход те же параметры, что и query и возвращает курсор, который уже находится под управлением Activity.</p>
+<h3>Константы провайдера</h3>
+<p>В приложении мы создали константы, и поместили туда значения из провайдера. Получился хардкод. А правильнее было бы использовать эти константы прямо из класса провайдера. Для этого создателю провайдера можно выделить все необходимые константы в отдельный класс, создать из него библиотеку .jar и распространять ее. Разработчики добавят ее в свой проект, и смогут оттуда использовать все необходимые им константы для работы с провайдером.</p>
+<h3>getWritableDatabase</h3>
+<p>Метод getWritableDatabase по причинам производительности не рекомендуется вызывать в onCreate методе провайдера. Поэтому мы в onCreate только создавали DBHelper, а в методах query, insert и прочих вызывали getWritableDatabase() и получали доступ к БД.</p>
+<h3>Условия выборки</h3>
+<p>Я не стал в этом уроке использовать возможности выборки и сортировки при работе с провайдером. Они полностью аналогичны тем, что мы проходили в уроках по SQLite. Не забывайте про них.</p>
+<p>Более подробную инфу об этом всем можно найти <a href="http://developer.android.com/guide/topics/providers/content-providers.html" target="_blank">на офиц.сайте</a>.</p>
+</body>
+</html>
+
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

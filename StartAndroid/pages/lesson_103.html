@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 103. MultiTouch – обработка множественных касаний</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- обрабатываем множественные касания</p>
+<p>Разобравшись с одиночным касанием на прошлом уроке, приступаем к множественному касанию, которое зовется мультитач.</p>
+<p>Система умеет обрабатывать до 10 касаний включительно. Есть мнение, что это как-то связано с количеством пальцев на руках :) При этом учитывайте, что далеко не все устройства поддерживают 10 касаний.</p>
+<p>Рассмотрим систему событий для мультитача. К событиям ACTION_DOWN, ACTION_MOVE и ACTION_UP добавляются <a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_POINTER_DOWN" target="_blank">ACTION_POINTER_DOWN </a>и <a href="http://developer.android.com/reference/android/view/MotionEvent.html#ACTION_POINTER_UP" target="_blank">ACTION_POINTER_UP</a>.</p>
+<p>ACTION_DOWN – срабатывает при касании первого пальца<br> ACTION_POINTER_DOWN – срабатывает при касании каждого последующего пальца<br> ACTION_MOVE - срабатывает при любом движении<br> ACTION_ POINTER_UP – срабатывает при отпускании каждого пальца кроме последнего<br> ACTION_ UP – срабатывает при отпускании последнего пальца</p>
+<p>Теперь надо понять, как отличить - для какого именно пальца сработали события ACTION_POINTER_DOWN и ACTION_ POINTER_UP. Для этого используются две системы нумерации – <b>индекс </b>и <b>ID</b>.</p>
+<p><b>Индекс </b>– порядковый номер пальца. Не привязан к пальцу – один палец может иметь разные индексы в течение одного касания.</p>
+<p><b>ID </b>-  привязан к пальцу от начала до конца касания.</p>
+<p>Чтобы стало понятнее, рассмотрим ситуацию с тремя пальцами. Обозначим их - П1, П2 и П3. Будем касаться ими экрана и смотреть какие индексы и ID система им присваивает.</p>
+<p>Касаемся экрана пальцем П1.</p>
+<p>Для П1: индекс = 0, ID = 0</p>
+<p>Далее касаемся экрана пальцем П2, не отпуская П1. Получим такие данные:</p>
+<p>П1: индекс = 0, ID = 0<br> П2: индекс = 1, ID = 1</p>
+<p>Далее касаемся экрана пальцем П3, не отпуская П1 и П2. Получим такие данные:</p>
+<p>П1: индекс = 0, ID = 0<br> П2: индекс = 1, ID = 1<br> П3: индекс = 2, ID = 2</p>
+<p>Теперь отпускаем палец П1. Получаем:</p>
+<p>П2: индекс = 0, ID = 1<br> П3: индекс = 1, ID = 2</p>
+<p>Видим, что П2 и П3 сохранили свои ID, а их индексы сместились.</p>
+<p>Отпустим палец П2, получим:</p>
+<p>П3: индекс = 0, ID = 2</p>
+<p>П3 сохранил свой ID, который был изначально. А индекс его сначала был 2, потом 1, теперь 0.</p>
+<p>Держим П3. Коснемся экрана пальцем П1, получим:</p>
+<p>П1: индекс = 0, ID = 0<br> П3: индекс = 1, ID = 2</p>
+<p>П1 получил первый свободный ID - 0.  Индекс его тоже стал 0. А П3 получил индекс 1.</p>
+<p>Держим П3 и П1. Коснемся экрана пальцем П2, получим:</p>
+<p>П1: индекс = 0, ID = 0<br> П2: индекс = 1, ID = 1<br> П3: индекс = 2, ID = 2</p>
+<p>П2 получил первый свободный ID - 1. И он сместил П3 в списке индексов.</p>
+<p>На этом примере мы видим, что новое касание получает минимальный свободный ID, и индексы всегда перестраиваются так, чтобы ID шли по возрастанию. На этом примере четко видно, что ID привязан к касанию (пока оно длится – ID неизменен). А индексы – это просто номера касаний, но эти номера вовсе не означают порядок касаний. Индексы и ID могут принимать значения от 0 до 9.</p>
+<p>Можно считать, что все текущие касания хранятся в некоем массиве. И ID - это их идентификаторы, а индексы - индексы этого массива касаний.</p>
+<p>Вернемся к событиям. События UP и DOWN содержат в себе индекс касания. По этому индексу мы всегда можем получить ID. Событие MOVE информации об индексах не дает. Оно просто уведомляет, что происходит какое-то движение.</p>
+<p>Напишем приложение, которое будет выводить на экран индекс последнего прикоснувшегося пальца, индекс последнего отпущенного пальца и всю таблицу индексов, ID и координат касаний.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1031_MultiTouch<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: MultiTouch<br><b>Package name</b>: ru.startandroid.develop.p1031multitouch<br><b>Create Activity</b>: MainActivity</p>
+<p>strings.xml и main.xml нам снова не понадобятся, их не трогаем.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1031multitouch;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
+import android.widget.TextView;
+
+public class MainActivity extends Activity implements OnTouchListener {
+
+  StringBuilder sb = new StringBuilder();
+  TextView tv;
+  int upPI = 0;
+  int downPI = 0;
+  boolean inTouch = false;
+  String result = "";
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    tv = new TextView(this);
+    tv.setTextSize(30);
+    tv.setOnTouchListener(this);
+    setContentView(tv);
+  }
+
+  @Override
+  public boolean onTouch(View view, MotionEvent event) {
+    // событие
+    int actionMask = event.getActionMasked();
+    // индекс касания
+    int pointerIndex = event.getActionIndex();
+    // число касаний
+    int pointerCount = event.getPointerCount();
+
+    switch (actionMask) {
+    case MotionEvent.ACTION_DOWN: // первое касание
+      inTouch = true;
+    case MotionEvent.ACTION_POINTER_DOWN: // последующие касания
+      downPI = pointerIndex;
+      break;
+
+    case MotionEvent.ACTION_UP: // прерывание последнего касания
+      inTouch = false;
+      sb.setLength(0);
+    case MotionEvent.ACTION_POINTER_UP: // прерывания касаний
+      upPI = pointerIndex;
+      break;
+
+    case MotionEvent.ACTION_MOVE: // движение
+      sb.setLength(0);
+
+      for (int i = 0; i &lt; 10; i++) {
+        sb.append("Index = " + i);
+        if (i &lt; pointerCount) {
+          sb.append(", ID = " + event.getPointerId(i));
+          sb.append(", X = " + event.getX(i));
+          sb.append(", Y = " + event.getY(i));
+        } else {
+          sb.append(", ID = ");
+          sb.append(", X = ");
+          sb.append(", Y = ");
+        }
+        sb.append("\r\n");
+      }
+      break;
+    }
+    result = "down: " + downPI + "\n" + "up: " + upPI + "\n";
+
+    if (inTouch) {
+      result += "pointerCount = " + pointerCount + "\n" + sb.toString();
+    }
+    tv.setText(result);
+    return true;
+  }
+}</code></pre>
+<p>В <b>onCreate </b>мы создаем TextView, присваиваем обработчик – текущее Activity, и помещаем в Activity.</p>
+<p>Разбираемся с <b>onTouch</b>. Если для одного касания мы использовали метод getAction, чтобы понять какое событие произошло, то с мультитачем надо использовать <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getActionMasked()" target="_blank">getActionMasked</a>. Индекс касания определяется методом <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getActionIndex()" target="_blank">getActionIndex</a>. Кол-во текущих касаний – <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getPointerCount()" target="_blank">getPointerCount</a>.</p>
+<p>Если событие - <b>ACTION_DOWN</b>, значит мы получили первое касание. Ставим метку inTouch = true. Она для нас будет означать, что есть касания. Обратите внимание, что в этой ветке case мы не ставим break – следующая case-ветка (ACTION_POINTER_DOWN) также выполнится при ACTION_DOWN.</p>
+<p>Если событие <b>ACTION_POINTER_DOWN </b>(или ACTION_DOWN), то в переменную downPI помещаем индекс касания. Это будет индекс последнего прикоснувшегося пальца.</p>
+<p>Если событие - <b>ACTION_UP</b>, значит последнее касание прервано и экрана больше ничего не касается. Ставим inTouch = false, т.е. отсутствие касаний. Очищаем StringBuilder, который содержит информацию о движениях.</p>
+<p>Если событие - <b>ACTION_POINTER_UP </b>(или ACTION_UP), то в переменную upPI помещаем индекс касания. Это будет индекс последнего прерванного касания. Т.е. когда мы одно за другим прерываем касания, эта переменная будет содержать один за другим индексы последнего из прерванных.</p>
+<p>Если событие <b>ACTION_MOVE </b>– мы перебираем все существующие индексы. С помощью pointerCount определяем, какие из них сейчас задействованы и содержат информацию о касаниях. Для них мы пишем номер индекса, ID (метод <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getPointerId(int)" target="_blank">getPointerId</a>) и координаты (<a href="http://developer.android.com/reference/android/view/MotionEvent.html#getX(int)" target="_blank">getX </a>и <a href="http://developer.android.com/reference/android/view/MotionEvent.html#getY(int)" target="_blank">getY</a>). Для незадействованных пишем только номер индекса. Пишем мы это все в StringBuilder.</p>
+<p>Далее при любом событии формируем result, пишем туда индекс последнего касания и последнего завершенного касания. Если в данный момент есть касание (inTouch), то добавляем в результат содержимое StringBuilder с подробной инфой о всех касаниях. И выводим result в TextView.</p>
+<p>Все сохраним и запустим. На эмуляторе я не знаю способов добиться мультитача, поэтому я тестирую на планшете. Скрин с него.</p>
+<p><img src="images/lesson_102_0.png" alt="" width="640" height="400"></p>
+<p>Я коснулся экрана 5-ю пальцами (последовательно от большого до мизинца, ID от 0 до 5) и потом один (указательный, ID = 1) убрал с экрана.</p>
+<p><b>down </b>показывает, что последний прикоснувшийся палец был с индексом 4</p>
+<p><b>up </b>показывает, что последний убранный с экрана палец был с индексом 1</p>
+<p><b>pointerCount </b>показывает количество действующих касаний</p>
+<p>И строки по индексам показывают подробную информацию о касаниях.</p>
+<p>Методы getActionMasked и getActionIndex доступны только с API Level 8.</p>
+<p>Для более ранних версий (с API Level 5) используется такой способ получения типа события и индекса:</p>
+<pre><code class="java">// событие
+actionMask = event.getAction() &amp; MotionEvent.ACTION_MASK;
+// индекс касания
+pointerIndex = (event.getAction() &amp; MotionEvent.ACTION_POINTER_ID_MASK) &gt;&gt; MotionEvent.ACTION_POINTER_ID_SHIFT;</code></pre>
+<p>Это битовые операции. В принципе, в нашем случае вовсе необязательно понимать, что они делают. Но для общего развития имеет смысл с битовыми операциями познакомиться. <a href="http://informatics.mccme.ru/moodle/mod/book/view.php?id=578&amp;chapterid=306" target="_blank">Тут</a> можно немного почитать об этом.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

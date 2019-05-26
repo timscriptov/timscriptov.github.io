@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 136. CursorLoader</title>
+	
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем CursorLoader</p>
+ 
+<p> </p>
+<p>В Уроке 52 использованы устаревшие на данный момент методы запроса данных от БД и связки Activity с Cursor.  Вместо них рекомендуется использовать <a href="http://developer.android.com/reference/android/content/CursorLoader.html" target="_blank" rel="noopener noreferrer">CursorLoader</a>, который будет асинхронно читать данные и возвращать Cursor. Этот урок будет являться копией Урока 52 только с использованием CursorLoader.</p>
+<p>CursorLoader представляет собой наследника класса AsyncTaskLoader&lt;Cursor&gt; и по умолчанию заточен на работу с ContentProvider, т.к. при работе требует Uri. Мы же в этом примере используем его для работы со своей БД. Для этого нам придется его расширить и вставить свою реализацию в его основной метод.</p>
+<p>Приложение урока - это список, который отображает содержимое БД. Кнопкой можно записи добавлять, а контекстным меню - удалять.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1361_CursorLoader<br/> <b>Build Target</b>: Android 4.0<br/> <b>Application name</b>: CursorLoader<br/> <b>Package name</b>: ru.startandroid.develop.p1361cursorloader<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="add_record"&gt;Добавить запись&lt;/string&gt;
+&lt;string name="delete_record"&gt;Удалить запись&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onButtonClick"
+        android:text="@string/add_record"&gt;
+    &lt;/Button&gt;
+    &lt;ListView
+        android:id="@+id/lvData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка добавления записи и список</p>
+<p> </p>
+<p>Layout пункта списка <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"&gt;
+    &lt;ImageView
+        android:id="@+id/ivImg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_launcher"&gt;
+    &lt;/ImageView&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:text=""
+        android:textSize="18sp"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Статичная картинка и текст.</p>
+<p> </p>
+<p>Работу с БД вынесем в отдельный класс <b>DB.java</b>:</p>
+<div class="java">
+<pre><code class="java">package ru.startandroid.develop.p1361cursorloader;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DB {
+  
+  private static final String DB_NAME = "mydb";
+  private static final int DB_VERSION = 1;
+  private static final String DB_TABLE = "mytab";
+  
+  public static final String COLUMN_ID = "_id";
+  public static final String COLUMN_IMG = "img";
+  public static final String COLUMN_TXT = "txt";
+  
+  private static final String DB_CREATE = 
+    "create table " + DB_TABLE + "(" +
+      COLUMN_ID + " integer primary key autoincrement, " +
+      COLUMN_IMG + " integer, " +
+      COLUMN_TXT + " text" +
+    ");";
+  
+  private final Context mCtx;
+  
+  
+  private DBHelper mDBHelper;
+  private SQLiteDatabase mDB;
+  
+  public DB(Context ctx) {
+    mCtx = ctx;
+  }
+  
+  // открыть подключение
+  public void open() {
+    mDBHelper = new DBHelper(mCtx, DB_NAME, null, DB_VERSION);
+    mDB = mDBHelper.getWritableDatabase();
+  }
+  
+  // закрыть подключение
+  public void close() {
+    if (mDBHelper!=null) mDBHelper.close();
+  }
+  
+  // получить все данные из таблицы DB_TABLE
+  public Cursor getAllData() {
+    return mDB.query(DB_TABLE, null, null, null, null, null, null);
+  }
+  
+  // добавить запись в DB_TABLE
+  public void addRec(String txt, int img) {
+    ContentValues cv = new ContentValues();
+    cv.put(COLUMN_TXT, txt);
+    cv.put(COLUMN_IMG, img);
+    mDB.insert(DB_TABLE, null, cv);
+  }
+  
+  // удалить запись из DB_TABLE
+  public void delRec(long id) {
+    mDB.delete(DB_TABLE, COLUMN_ID + " = " + id, null);
+  }
+  
+  // класс по созданию и управлению БД
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context, String name, CursorFactory factory,
+        int version) {
+      super(context, name, factory, version);
+    }
+
+    // создаем и заполняем БД
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt; 5; i++) {
+        cv.put(COLUMN_TXT, "sometext " + i);
+        cv.put(COLUMN_IMG, R.drawable.ic_launcher);
+        db.insert(DB_TABLE, null, cv);
+      }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+</div>
+<p>Здесь создание БД, управление подключением и методы по чтению/добавлению/удалению записей.</p>
+<p> </p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1361cursorloader;
+
+import java.util.concurrent.TimeUnit;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v4.widget.SimpleCursorAdapter;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ListView;
+
+public class MainActivity extends FragmentActivity implements LoaderCallbacks&lt;Cursor&gt; {
+
+  private static final int CM_DELETE_ID = 1;
+  ListView lvData;
+  DB db;
+  SimpleCursorAdapter scAdapter;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // открываем подключение к БД
+    db = new DB(this);
+    db.open();
+    
+    // формируем столбцы сопоставления
+    String[] from = new String[] { DB.COLUMN_IMG, DB.COLUMN_TXT };
+    int[] to = new int[] { R.id.ivImg, R.id.tvText };
+
+    // создаем адаптер и настраиваем список
+    scAdapter = new SimpleCursorAdapter(this, R.layout.item, null, from, to, 0);
+    lvData = (ListView) findViewById(R.id.lvData);
+    lvData.setAdapter(scAdapter);
+
+    // добавляем контекстное меню к списку
+    registerForContextMenu(lvData);
+    
+    // создаем лоадер для чтения данных
+    getSupportLoaderManager().initLoader(0, null, this);
+  }
+
+  // обработка нажатия кнопки
+  public void onButtonClick(View view) {
+    // добавляем запись
+    db.addRec("sometext " + (scAdapter.getCount() + 1), R.drawable.ic_launcher);
+    // получаем новый курсор с данными
+    getSupportLoaderManager().getLoader(0).forceLoad();
+  }
+  
+  public void onCreateContextMenu(ContextMenu menu, View v,
+      ContextMenuInfo menuInfo) {
+    super.onCreateContextMenu(menu, v, menuInfo);
+    menu.add(0, CM_DELETE_ID, 0, R.string.delete_record);
+  }
+
+  public boolean onContextItemSelected(MenuItem item) {
+    if (item.getItemId() == CM_DELETE_ID) {
+      // получаем из пункта контекстного меню данные по пункту списка
+      AdapterContextMenuInfo acmi = (AdapterContextMenuInfo) item
+          .getMenuInfo();
+      // извлекаем id записи и удаляем соответствующую запись в БД
+      db.delRec(acmi.id);
+      // получаем новый курсор с данными
+      getSupportLoaderManager().getLoader(0).forceLoad();
+      return true;
+    }
+    return super.onContextItemSelected(item);
+  }
+
+  protected void onDestroy() {
+    super.onDestroy();
+    // закрываем подключение при выходе
+    db.close();
+  }
+
+  @Override
+  public Loader&lt;Cursor&gt; onCreateLoader(int id, Bundle bndl) {
+    return new MyCursorLoader(this, db);
+  }
+
+  @Override
+  public void onLoadFinished(Loader&lt;Cursor&gt; loader, Cursor cursor) {
+    scAdapter.swapCursor(cursor);
+  }
+
+  @Override
+  public void onLoaderReset(Loader&lt;Cursor&gt; loader) {
+  }
+  
+  static class MyCursorLoader extends CursorLoader {
+
+    DB db;
+    
+    public MyCursorLoader(Context context, DB db) {
+      super(context);
+      this.db = db;
+    }
+    
+    @Override
+    public Cursor loadInBackground() {
+      Cursor cursor = db.getAllData();
+      try {
+        TimeUnit.SECONDS.sleep(3);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      return cursor;
+    }
+    
+  }
+}</code></pre>
+<p>В <b>onCreate</b> подключаемся к БД, создаем SimpleCursorAdapter, добавляем контекстное меню к списку и создаем CursorLoader. Я везде для лоадера буду использовать ID = 0.</p>
+<p>В <b>onButtonClick</b> добавляем запись в БД, получаем лоадер и просим его получить для нас новый курсор с данными.</p>
+<p><b>onCreateContextMenu</b> – создание контекстного меню.</p>
+<p>В <b>onContextItemSelected</b> мы реализуем удаление записи из БД. И после удаления снова просим лоадер дать нам новый курсор с данными.</p>
+<p>В <b>onDestroy</b> отключаемся от БД.</p>
+<p> </p>
+<p>Далее идут колбэк-методы интерфейса LoaderCallbacks.</p>
+<p>В <b>onCreateLoader</b> создаем Loader и даем ему на вход объект для работы с БД.</p>
+<p>В <b>onLoadFinished</b> мы получаем результат работы лоадера – новый курсор с данными. Этот курсор мы отдаем адаптеру методом swapCursor.</p>
+<p> </p>
+<p><b>MyCursorLoader</b> – наш лоадер, наследник класса CursorLoader. У него мы переопределяем метод <b>loadInBackground</b>, в котором просто получаем курсор с данными БД. Ну и я 3-х секундной паузой сэмулировал долгое чтение БД для наглядности асинхронной работы.</p>
+<p>Все сохраняем, запускаем пример. Работает и добавление по нажатию кнопки и удаление через контекстное меню. Работает с задержкой в 3 секунды, но при этом не тормозит интерфейс, т.к. работа выполняется асинхронно.</p>
+<p> </p>
+<p>Кроме асинхронной загрузки, CursorLoader:</p>
+<p>- закрывает старый курсор при успешном получении нового<br/>- закрывает курсор при уничтожении лоадера (т.е. и при выходе из приложения)<br/>- при переходе в состояние «стартован» проверяет метку, которую ставит Observer и запускает работу, если данные изменились<br/>- при переходе в состояние «стартован» стартует работу, если еще не было получено никаких результатов (например при первом запуске).</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

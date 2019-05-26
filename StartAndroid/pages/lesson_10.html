@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 10. Оптимизируем реализацию обработчиков.</title>
+
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+<body><p>В этом уроке мы:<br><br>- научимся использовать один обработчик для нескольких View-элементов<br>- научим Activity выступать в качестве обработчика</p>
+<p>Создадим проект:<br>
+<b>Project name</b>: P0101_Listener<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: Listener<br>
+<b>Package name</b>: ru.startandroid.develop.listener<br>
+<b>Create Activity</b>: MainActivity</p>
+<p><br>Будем работать с теми же View, что и в предыдущем уроке. Код для <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_margin="30dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:text="TextView"
+            android:layout_height="wrap_content"
+            android:id="@+id/tvOut"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="50dp"&gt;
+        &lt;/TextView&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnOk"
+            android:text="OK"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnCancel"
+            android:text="Cancel"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<h3>Один обработчик для двух кнопок</h3>
+<p>Итак, у нас есть TextView с текстом и две кнопки. Как и на прошлом уроке, мы сделаем так, чтобы по нажатию кнопки менялось содержимое TextView. По нажатию кнопки OK – будем выводить текст: «Нажата кнопка ОК», по нажатию Cancel – «Нажата кнопка Cancel». Но сейчас мы сделаем это с помощью <b>одного обработчика</b>, который будет обрабатывать нажатия <b>для обеих кнопок</b>.</p>
+<p>Напомню механизм обработки событий на примере нажатия кнопки. Сама кнопка обрабатывать нажатия не умеет, ей нужен обработчик (listener), который присваивается с помощью метода setOnClickListener. Когда на кнопку нажимают, обработчик реагирует и выполняет код из метода onClick.</p>
+<p>Соответственно для реализации необходимо выполнить следующие шаги:<br>- создаем обработчик<br>- заполняем метод onClick<br>- присваиваем обработчик кнопке</p>
+<p>В нашем случае мы будем присваивать один обработчик обеим кнопкам, а внутри обработчика надо будет определять, какая именно кнопка была нажата.</p>
+<p>Подготовим объекты и создадим обработчик:</p>
+<pre><code class="java">public class MainActivity extends Activity {
+ 
+   TextView tvOut;
+   Button btnOk;
+   Button btnCancel;
+ 
+   /** Called when the activity is first created. */
+   @Override
+   public void onCreate(Bundle savedInstanceState) {
+     super.onCreate(savedInstanceState);
+     setContentView(R.layout.main);
+ 
+     // найдем View-элементы
+     tvOut = (TextView) findViewById(R.id.tvOut);
+     btnOk = (Button) findViewById(R.id.btnOk);
+     btnCancel = (Button) findViewById(R.id.btnCancel);
+ 
+     // создание обработчика
+     OnClickListener oclBtn = new OnClickListener() {
+       @Override
+       public void onClick(View v) {
+         // TODO Auto-generated method stub
+ 
+       }
+     };
+ 
+   }
+ }</code></pre>
+<p>Давайте заполнять метод onClick. На вход ему подается объект класса <b>View</b>, это как раз то, что нам нужно. Это View на которой произошло нажатие и которая вызвала обработчик. Т.е. в нашем случае это будет либо кнопка OK либо Cancel. Нам осталось узнать <b>ID</b> этой <b>View</b> и сравнить его с нашими <b>R.id.btnOk</b> и <b>R.id.btnCancel</b>, чтобы определить какая именно это кнопка. Чтобы получить ID какой-либо View, используется метод <a href="http://developer.android.com/reference/android/view/View.html#getId()" target="_blank">getId</a>. Для перебора результатов используем java-оператор <a href="http://download.oracle.com/javase/tutorial/java/nutsandbolts/switch.html" target="_blank">switch</a>.</p>
+<p>Реализация метода onClick:</p>
+<pre><code class="java">      public void onClick(View v) {
+         // по id определеяем кнопку, вызвавшую этот обработчик
+         switch (v.getId()) {
+         case R.id.btnOk:
+           // кнопка ОК
+           tvOut.setText("Нажата кнопка ОК");
+           break;
+         case R.id.btnCancel:
+           // кнопка Cancel
+           tvOut.setText("Нажата кнопка Cancel");
+           break;
+         }
+       }</code></pre>
+<p>Если сейчас запустить приложение и проверить, то ничего не произойдет. Обработчик то мы создали, но не присвоили его кнопкам. Обеим кнопкам присваиваем один и тот же обработчик:</p>
+<pre><code class="java">    btnOk.setOnClickListener(oclBtn);
+    btnCancel.setOnClickListener(oclBtn);</code></pre>
+<p>Как вы понимаете, <b>один обработчик</b> может быть присвоен не двум, а <b>любому количеству</b> кнопок. И не только кнопкам. У остальных View-элементов тоже есть различные события, которые нуждаются в обработчиках. В дальнейшем мы еще будем с ними работать. А сейчас важно понять схему, как происходит обработка событий.</p>
+<p>Отличие способа реализации на этом уроке от прошлого урока в том, что сейчас мы создали <b>один объект-обработчик для обеих кнопок</b>, а на прошлом уроке - <b>два объекта, по одному каждой кнопке</b>. Есть правило – чем меньше объектов вы создаете, тем лучше, т.к. под каждый объект выделяется память, а это достаточно ограниченный ресурс, особенно для телефонов. Поэтому создавать один обработчик для нескольких View это правильнее с точки зрения оптимизации. К тому же кода становится меньше и читать его удобнее.</p>
+<p>Есть еще один способ создания обработчика, который вовсе не потребует создания объектов. Будет использоваться уже созданный объект – Activity</p>
+<h3>Activity, как обработчик</h3>
+<p>Кнопка присваивает себе обработчика с помощью метода <a href="http://developer.android.com/reference/android/view/View.html#setOnClickListener(android.view.View.OnClickListener)" target="_blank">setOnClickListener (View.OnClickListener l)</a>. Т.е. подойдет любой объект с <a href="http://download.oracle.com/javase/tutorial/java/IandI/createinterface.html" target="_blank">интерфейсом</a> <a href="http://developer.android.com/reference/android/view/View.OnClickListener.html" target="_blank">View.OnClickListener</a>. Почему бы классу Activity не быть таким объектом? Мы просто укажем, что Activity-класс реализует интерфейс View.OnClickListener и заполним метод onCreate.</p>
+<p>Создадим для этого новый проект:<br><b>Project name</b>: P0102_ActivityListener<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ActivityListener<br><b>Package name</b>: ru.startandroid.develop.activitylistener<br><b>Create Activity</b>: MainActivity</p>
+<p><br>Экран снова возьмем тот же самый:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="horizontal"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_margin="30dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:text="TextView"
+            android:layout_height="wrap_content"
+            android:id="@+id/tvOut"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="50dp"&gt;
+        &lt;/TextView&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnOk"
+            android:text="OK"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+        &lt;Button
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:id="@+id/btnCancel"
+            android:text="Cancel"
+            android:layout_width="100dp"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;
+</code></pre>
+<p>Подготовим объекты и добавим реализацию интерфейса (implements onClickListener)</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener {
+ 
+   TextView tvOut;
+   Button btnOk;
+   Button btnCancel;
+ 
+   /** Called when the activity is first created. */
+   @Override
+   public void onCreate(Bundle savedInstanceState) {
+     super.onCreate(savedInstanceState);
+     setContentView(R.layout.main);
+ 
+     // найдем View-элементы
+     tvOut = (TextView) findViewById(R.id.tvOut);
+     btnOk = (Button) findViewById(R.id.btnOk);
+     btnCancel = (Button) findViewById(R.id.btnCancel);
+   }
+ }</code></pre>
+<p>OnClickListener подчеркнут красным, т.к. его нет в импорте. Поэтому CTRL+SHIFT+O и выбираем View.OnClickListener.<br><br>Теперь Eclipse ругается на класс MainActivity. Это происходит потому, что для класса <b>прописан интерфейс</b>, но <b>нет реализации методов</b> этого интерфейса. Исправим это с помощью Eclipse. Наведите курсор на <b>MainAcivity</b> и выберите <b>Add unimplemented methods</b></p>
+<p><img src="images/lesson_9_0.png" alt="" border="0"></p>
+<p><br>Eclipse добавит знакомый нам метод <b>onClick</b>. Только теперь этот метод будет реализован в Activity, а не в отдельном объекте-обработчике. Соответственно Activity и будет выступать обработчиком.</p>
+<p>Заполним метод точно так же как и раньше. Ничего не изменилось. Ему на вход так же подается View (на которой произошло событие), по Id мы определим, какая именно эта View и выполним соответствующие действия:</p>
+<pre><code class="java">  public void onClick(View v) {
+     // по id определеяем кнопку, вызвавшую этот обработчик
+     switch (v.getId()) {
+     case R.id.btnOk:
+       // кнопка ОК
+       tvOut.setText("Нажата кнопка ОК");
+       break;
+     case R.id.btnCancel:
+       // кнопка Cancel
+       tvOut.setText("Нажата кнопка Cancel");
+       break;
+     }
+   }</code></pre>
+<p>Осталось в методе onCreate присвоить обработчик кнопкам. Это будет объект this, т.е. текущий объект MainActivity.</p>
+<pre><code class="java">    btnOk.setOnClickListener(this);
+    btnCancel.setOnClickListener(this);</code></pre>
+<p>При такой реализации мы не создали ни одного лишнего объекта (Activity создается в любом случае) и затраты памяти минимальны, это рекомендуемый метод. Но, возможно, такой способ покажется сложным и непонятным, особенно если мало опыта в объектно-ориентированном программировании. В таком случае используйте ту реализацию, которая вам понятна и удобна. А со временем и опытом понимание обязательно придет.</p>
+<p>Полный код:</p>
+<pre><code class="java">public class MainActivity extends Activity implements OnClickListener {
+ 
+   TextView tvOut;
+   Button btnOk;
+   Button btnCancel;
+ 
+   /** Called when the activity is first created. */
+   @Override
+   public void onCreate(Bundle savedInstanceState) {
+     super.onCreate(savedInstanceState);
+     setContentView(R.layout.main);
+ 
+     // найдем View-элементы
+     tvOut = (TextView) findViewById(R.id.tvOut);
+     btnOk = (Button) findViewById(R.id.btnOk);
+     btnCancel = (Button) findViewById(R.id.btnCancel);
+ 
+     // присваиваем обработчик кнопкам
+     btnOk.setOnClickListener(this);
+     btnCancel.setOnClickListener(this);
+   }
+ 
+   @Override
+   public void onClick(View v) {
+     // по id определеяем кнопку, вызвавшую этот обработчик
+     switch (v.getId()) {
+     case R.id.btnOk:
+       // кнопка ОК
+       tvOut.setText("Нажата кнопка ОК");
+       break;
+     case R.id.btnCancel:
+       // кнопка Cancel
+       tvOut.setText("Нажата кнопка Cancel");
+       break;
+     }
+   }
+ 
+ }</code></pre>
+<h3>Самая простая реализация обработчика</h3>
+<p>Есть еще один способ реализации. В layout-файле (main.xml) при описании кнопки пишем:</p>
+<pre><code class="xml">&lt;Button
+    android:id="@+id/btnStart"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:onClick="onClickStart"
+    android:text="start"&gt;
+&lt;/Button&gt;</code></pre>
+<p>Т.е. используем атрибут <a href="http://developer.android.com/reference/android/R.attr.html#onClick" target="_blank">onClick</a>. В нем указываем имя метода из Activity. Этот метод и сработает при нажатии на кнопку.</p>
+<p>Далее, добавляем этот метод в Activity (MainActivity.java). Требования к методу: public, void и на вход принимает View:</p>
+<pre><code class="java">  public void onClickStart(View v) {
+    // действия при нажатии на кнопку
+  }</code></pre>
+<p>В методе прописываете необходимые вам действия, и они будут выполнены при нажатии кнопки.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

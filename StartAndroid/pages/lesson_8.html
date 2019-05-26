@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 8. Работаем с элементами экрана из кода</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- научимся обращаться из кода к View-элементам на экране и менять их свойства</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0081_ViewById<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ViewById<br><b>Package name</b>: ru.startandroid.develop.viewbyid<br><b>Create Activity</b>: MainActivity</p>
+<p>Чтобы обратиться к элементу экрана из кода, нам нужен его <b>ID</b>. Он прописывается либо в <b>Properties</b>, либо в <b>layout-файлах</b>, как вам удобнее. Для ID существует четкий формат - <b>@+id/name</b>, где <b>+</b> означает, что это новый ресурс и он должен добавиться в <b>R.java</b> класс, если он там еще не существует.</p>
+<p>Давайте откроем<b> main.xml</b>, для <b>TextView </b>укажем<b> ID = @+id/myText</b> и сохраним</p>
+<p><img style="border: 1px solid black;" src="images/lesson_7_0.png" alt="" width="800" height="190" border="0"></p>
+<p>Теперь откроем <b>R.java</b> и видим, что для класса <b>id </b>появилась константа <b>myText</b>. Т.е. чтобы к ней обратиться, надо написать <b>R.id.myText</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_7_1.png" alt="" width="711" height="435" border="0"></p>
+<p>Она связана с элементом TextView и мы можем ее использовать, чтобы обратиться к элементу программно. Для этого нам понадобится метод <a href="http://developer.android.com/reference/android/app/Activity.html#findViewById(int)" target="_blank">findViewById</a>. Он по ID возвращает View. Давайте напишем вызов этого метода. Напомню, что пока мы пишем наш код в методе <b>onCreate</b>. Это метод, который вызывается при создании Activity. Если вдруг непонятно, куда писать, можно подсмотреть в конец урока, там я выложил код.</p>
+<p>Откроем MainActivity.java и после строки с вызовом метода <b>setContentView</b> напишем:</p>
+<pre><code class="java">View myTextView = findViewById(R.id.myText);</code></pre>
+<p>Если View подчеркнуто красным, то скорей всего этот класс не добавлен в секцию <a href="http://download.oracle.com/javase/tutorial/java/package/usepkgs.html" target="_blank">import</a>. Нажмите CTRL+SHIFT+O для автоматического обновления импорта.</p>
+<p>Теперь <b>myTextView </b>(типа View) – это наш TextView на экране. Но тип <a href="http://developer.android.com/reference/android/view/View.html" target="_blank">View</a> – это предок для TextView (и остальных View-элементов). И он нам не подходит, если мы хотим проделывать операции соответствующие TextView. Поэтому нам необходимо <a href="http://download.oracle.com/javase/tutorial/java/IandI/subclasses.html" target="_blank">преобразование</a> View в TextView. Изменим наш код на следующий:</p>
+<pre><code class="java">TextView myTextView = (TextView) findViewById(R.id.myText);</code></pre>
+<p>Теперь <b>myTextView </b>имеет тип <b>TextView</b>, а результат метода findViewById мы преобразуем из View в TextView. Теперь мы можем применять к myTextView <a href="http://developer.android.com/reference/android/widget/TextView.html#pubmethods" target="_blank">методы класса TextView</a>. Для примера возьмем метод <a href="http://developer.android.com/reference/android/widget/TextView.html#setText(java.lang.CharSequence)" target="_blank">setText</a>. Сейчас отображаемый текст = <em>Hello World, MainActivity!</em>. Мы его программно поменяем на <em>New text in TextView</em></p>
+<pre><code class="java">myTextView.setText("New text in TextView");</code></pre>
+<p>Сохраняем, запускаем (CTRL+F11) и видим, что текст изменился</p>
+<p><img src="images/lesson_7_2.png" alt="" width="640" height="454" border="0"></p>
+<p>Добавим на экран кнопку (Button), Id = @+id/myBtn, текст оставим по умолчанию. Сохраняем - CTRL+SHIFT+S (если не сохранить, то в R.java не появится ID).</p>
+<p>Пишем код:</p>
+<pre><code class="java">Button myBtn = (Button) findViewById(R.id.myBtn);</code></pre>
+<p>Обратите внимание, что у меня совпадает имя объекта и ID</p>
+<p><img style="border: 1px solid black;" src="images/lesson_7_3.png" alt="" width="385" height="54" border="0"></p>
+<p>Они друг другу не мешают и так делать даже логичнее. Это остается на ваше усмотрение. Так, кнопку мы нашли, теперь давайте изменим ее текст:</p>
+<pre><code class="java">myBtn.setText("My button");</code></pre>
+<p>Запустим приложение. Текст на кнопке поменялся, на кнопку можно понажимать, но ничего происходить не будет. Т.к. мы нигде не указывали, что надо делать при нажатии. Этим займемся на следующем уроке. А пока давайте сделаем кнопку неактивной.</p>
+<pre><code class="java">myBtn.setEnabled(false);</code></pre>
+<p>Мы поменяли параметр <b>Enabled</b>. Теперь на кнопку нельзя нажать. Сохраним, запустим и убедимся.</p>
+<p><img src="images/lesson_7_4.png" alt="" width="640" height="454" border="0"></p>
+<p>Добавим CheckBox, id = @+id/myChb. По умолчанию галочка не стоит. Давайте поставим ее программно, для этого используется метод setChecked, который меняет параметр Checked.</p>
+<pre><code class="java">CheckBox myChb = (CheckBox) findViewById(R.id.myChb);
+myChb.setChecked(true);</code></pre>
+<p>Запустив приложение видим, что код сработал.</p>
+<p>Как видите – все несложно. Используем метод <b>findViewById</b>,  чтобы по <b>ID </b>получить объект соответствующий какому-либо<b> View-элементу</b> (Button, TextView, CheckBox) и далее вызываем необходимые методы объектов (setText, setEnabled, setChecked).</p>
+<p>В итоге должен получиться такой код:</p>
+<pre><code class="java">package ru.startandroid.develop.viewbyid;
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        TextView myTextView = (TextView) findViewById(R.id.myText);
+        myTextView.setText("New text in TextView");
+        
+        Button myBtn = (Button) findViewById(R.id.myBtn);
+        myBtn.setText("My button");
+        myBtn.setEnabled(false);
+        
+        CheckBox myChb = (CheckBox) findViewById(R.id.myChb);
+        myChb.setChecked(true);
+    }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div> 
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

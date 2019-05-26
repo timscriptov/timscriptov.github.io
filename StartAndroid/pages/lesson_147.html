@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 147. Рисование. Region</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем Region</p>
+ 
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html" target="_blank">Region</a> - это объект, который позволяет нам совмещать несколько фигур в одну, используя различные режимы: объединение, пересечение и пр.  На словах трудновато будет объяснить подробно, поэтому давайте пример смотреть.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1471_Region<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Region<br/> <b>Package name</b>: ru.startandroid.develop.p1471region<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1471region;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
+import android.graphics.Region;
+import android.graphics.RegionIterator;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+class DrawView extends View {
+    
+    Paint p;
+    Rect rect1;
+    Rect rect2;
+    Region region;
+    RegionIterator iterator;
+    Path path;
+    
+    Region.Op op = Region.Op.UNION;
+    
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      
+      // прямоугольники
+      rect1 = new Rect(200,200,400,400);
+      rect2 = new Rect(300,300,500,500);
+      
+      // создание региона
+      region = new Region();
+      region.set(rect1);
+      region.op(rect2, op);
+      
+      // создание path из региона
+      path = region.getBoundaryPath();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      // контуры прямоугольников
+      p.setStyle(Paint.Style.STROKE);
+      p.setColor(Color.BLACK);
+      canvas.drawRect(rect1, p);
+      canvas.drawRect(rect2, p);
+      
+      // path
+      p.setStyle(Paint.Style.FILL);
+      p.setColor(Color.BLUE);
+      canvas.drawPath(path, p);
+      
+    }
+  }
+}</code></pre>
+<p>В конструкторе <b>DrawView </b>создаем объекты. У нас в примере будут участвовать два прямоугольника rect1 и rect2. Как видно по их координатам, они пересекаются. Далее создаем регион и методом <a href="http://developer.android.com/reference/android/graphics/Region.html#set(android.graphics.Rect)" target="_blank">set</a> присваиваем ему первый прямоугольник (rect). Регион теперь состоит из одного прямоугольника. Чтобы добавлять к нему дополнительные прямоугольники, необходимо использовать метод <a href="http://developer.android.com/reference/android/graphics/Region.html#op(android.graphics.Rect, android.graphics.Region.Op)" target="_blank">op</a>. Добавляем второй прямоугольник (rect2) и при этом указываем режим Region.Op.UNION (переменная op).</p>
+<p>Если при добавлении нового прямоугольника к региону используется режим UNION, то итоговый регион будет являться объединением области текущего региона и добавляемого прямоугольника. В нашем случае регион состоял из первого прямоугольника, а значит результатом добавления второго будет объединение областей первого и второго прямоугольника.</p>
+<p>Далее методом <a href="http://developer.android.com/reference/android/graphics/Region.html#getBoundaryPath()" target="_blank">getBoundaryPath</a> получаем итоговую область региона в объект Path, чтобы можно было нарисовать результат объединения.</p>
+<p>В методе <b>onDraw </b>сначала рисуем черным цветом контуры прямоугольников. Затем синим цветом с заливкой рисуем path, который представляет из себя итоговую область региона.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,UklGRtQEAABXRUJQVlA4TMgEAAAvf8JjAKfnKJJtVzlzzntk9hjAvwkssaN4PycFjiNJcpSqmdm7Q/7wBWMwmS+eaDmOI0lylK7umZPIL/4bgmEHM/+K3LZtkrSnRX9DqBhgUgACIAppPdyBEEDQsAEAaPlpPVqP1qP1+P//Wo/LsqmjIabtsMm5ZCRjinCYw6aWZCBKleGlcU/GFFKqIJJRR0NMVINjBBzRG4xDkul+WTYL/glmfOk8rxBj0tO0GJBj1Doa4ntp7+OHMUrya5c8gZiCAACqCwkTFsYEbACKTcDL+HF5ft7QwIzFwnoApOSxOMeu2EwgqitrAEAsMQQAxYYGIqD95Xp9ihGLgI0QJRbXQ6uxArxO8jl/KSjMtm06s073+dq2bdu2rc8MO520bdu2bZvPts22+x8k7+bVvZW6qfOw9z47ov8TIP6dVobgoMwxuRm1aiPLNuvSowuXlUR09cNnmq4qNqV6uh1D+gx2uHuWEvTl8xf8HIno2p8/CXrn95/zCcr149036av7t5WVKrHtO/UZTJ10LAr64gUzf0FEMTmfCrqb9ZPPLl/59KMcT0SOb99WVmQ5B/bqzojlpCGip4Lo1q+vXb/5/R3xIJ/4Rl0hWbvjsHTCOlL8De//8bqgH+7Qg/xKC1G7Xp25rQgOI/PH9MZ3RF+/RY+zKC7U2t2aQn7+nJn1X9BPvzy88e57Vx799o1QXYq241Af3GNmDBGcJ4aIKEteob5KUqU7Kr+zlN/pRFMm89Rp00Oy1kiKLSL6MnDE2MlTtGYev3TehCmsOXiqIjsRccfZk9vSvR4kt8sxb6b2IA3X6B87UZEdp/XWhQMuDlp/bNG4o3vW4vzAkUO+9buOTdfjFNnRzFvOnNrpPL/g3MHF67ZsXnZgyaod+1as2Z4+arQaGyDavHTYRT63YOGRUXM3blh8eNy0A3tnz9+d6A+osT6tt63ue8F9/Oi+hadPbMIVc07R5P0Ll+9NHu5TY71EnBSfOCw2fah34cGVQxJikxKHJcRjSrrHq8a6mZ3kIMSMNP+aJQkpTgdiBjmQyK3IksGMlESd6nAqty7l9xL4H/wP/gf/g//B/+B/8D/4H/wP/gf/g//B/+D//+B/+SoyqgyUKSIK8B/4D/wH/gP/gf/Af/8b6pUFFRMrCvAf+A/8B/4D/4H/wH/wBmFBxcSKr8B/4D/wH/gP/Af+A//9bygRGVUG8D/4H/wP/gf/g//B/+B/8D/4H/wP/gf/g//B///nlcD/qnexKlhM2ZANa1mOy3dyBUY6O5STVsnWrI3RRjaqSfsyUQHZwl/GWlyyedyY/vWLaMIxsc1KSGt07W1wSKqNGjSxZlSg3vgahQ0WlearOXh8QtPiUhARF9fx4wbWMF2Rwoa1qJJioypUKxgNKDRyxiijvp5outQu5bILg1yuU4rZZNLoUQYZ7VXlGgWiAVR/bI3CBsv16y3NllKFwkTzeasXNljBY68GT6oZFZAt/aWEwXJjCkaeqsJgaZtVv1XJqABxg+pGKo4qHOmK17dRhYpniw6E5DIVELFS3fhuwnQNK4SpLdC4gsHaXmGr+46qHkXINtiPiCNSWhYz3YCAP0waYLrYgN8gxdurjgMqRxEoe7ZgSebPrsNmsxFr4/YKGg4=" alt="" data-pagespeed-url-hash="852530215" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что регион представляет собой объединение двух прямоугольников. Объединение мы получили, т.к. использовали режим UNION.</p>
+<p>Мы рассмотрели один <a href="http://developer.android.com/reference/android/graphics/Region.Op.html" target="_blank">режим добавления</a>, а всего их 6. Смотрим остальные. Для этого в нашем коде используется переменная op:</p>
+<pre class="brush:java">Region.Op op = Region.Op.UNION;</pre>
+<p>Сейчас тут значение UNION. Просто меняйте его на рассматриваемые нами далее режимы.</p>
+<p> </p>
+<p>Помним, что регион изначально содержит первый прямоугольник. А второй прямоугольник мы добавляем с использованием определенного режима.</p>
+<p>XOR</p>
+<p><img src="data:image/webp;base64,UklGRhgFAABXRUJQVlA4TAsFAAAvf8JjAO/nIADbtpFkd5fAuJTD+DPpr/oPA7aRJDmZQVt4RPLpYJO/oeU6iCRJkaZ64RkckX8/S3fX86+2bRsGXlPoN0AERgQGAgASAAgoACgYyISAAMPOMcccc2z8D4455lh1NI51z+LY8O3G/+CYY+N/GP9De0+OOda/G8cca65h4WxAm7nNg/rsFsgOs6fMhts5Nh4BumcZvp1j/bvZ+Oequyb9u3Fs+HYzZKNafBvQ8O1WxkHJ7lme950QNiG+Iq2yKkgQGYWQwgpCJBJCZEaQFgAarGfzuZ/CBICCiJAwCzMpwzDB4Nj3fkszgDATEhZSCAjCjIgEAAFAmlEhAQDj5rU+pAURKQAyEUKQVfWeiqI6IfjNoSwf/+WvLB8Ketj/GZKj2q2Nbdu2bTtZ296Nbdu2jTWSU3BOzpezbXv+mrmee7qfebqvgl99uyL6PwHs/rTchXLy9illS2/RRmXuXb8aezMVA67e/l3ehmCTsyohef7yBSphVQ7DG3/8CWkz4NrXHwFPf/lxWaDkh988ye58J2+KKufnbNm4fIGttsyRDHf/BHCXAT4lfgO+KfryqwWFr7xQ/Ff2eQGEVZ6RrFaukckKXBPwG4AnPrvx6OPvX2ffl/3hkw9KiyrgJzbNTbXlccX+g+e+usnwwXV8X+7F0q+9LqwAW1dukNvg7Ib3S7j1LvDWU/i5yB126z2BBTsSdjCXb/4hpbT/BR99+uNjzzxb+NPn77C3v/jlEZGlytYqrp7/ViklXTiX9gGAImUYULoYhFYOUXqT8Dte+J1k275+vlMm2y7hB2kLtlLKmBQZHeLn6wdfBA0ZHegLP1/nKYJsgFId6zTonBoXL1VCYvLoCYiXcbGQUSEBgmywbXcZsbjGwl6Nhwc3adtHjops2jymV/vGk2KCBdkwKbvWrd8hqdbI2i2G9e7abXDLof07th7Yt1NqeJgYG6lUtyFza8jaI0c0xZgePYc1C57css24Ue1mREWKsTFA537LaiY0atJ6RL2G3dXAsfXr+bUaMajNtNgYMTZOKTl91oy5c1LnxY1oMWD+zDnTZ8xVs9TU1Pg4MTYBSLKTbaVS0qL6Dp05NSlZqRRbKdtOEGRtjXLqDDs9OUm4TRR+/yb/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5n/z/AP6/HJ5RZICXR2TkP/If+Y/8R/4j/5H/HhrKYUChgRnQy4BMbFC6d5D/yH/kP/If+Y/8R/57UJ1D9/+IDcyAXh7xfzQjOsh/5D/yH/mP/Ef+I/89NBTzjCID+Z/8T/4n/5P/yf/kf/I/+Z/8T/4n/5P/yf/k/4d5Bflf9K56Xiphgx86aTh+ZWNiZETS5gxulGp7t2s9aKL2b8myBPjuqCxj8dw9s0OXHKkMJUPn7M3jxli3QuP8dBO1MOCUJXA06HQljVW4/k4tCJq5L58zACrfnhW86LTuKlfSDHZ+qom6fLaCFVAxYmK41phVUnfp6zOqM43VMzZO1RufHhauUU41VxdOl7cCcCTkdCWNGUtXcL1NPQ83pf7izlTSeDneXC3wP2UJ8F1ROdCYEVrB85yDxmyTdWRnriUAfviMlkvhlTxd/hETVTG/mjXgkmddVkpdPDZrLXR36LKbMMCByxpPxMFULws/YyFUWxAlpYyeuquq7hZHRrmpFutuTqTUqGaZq02LL1gIqF7NmTP9V5duQ2+oLrWbK2o4AA==" alt="" data-pagespeed-url-hash="777314202" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Итоговая область региона: области обоих прямоугольников за исключением их пересечения.</p>
+<p>DIFFERENCE</p>
+<p><img src="data:image/webp;base64,UklGRkAFAABXRUJQVlA4TDMFAAAvf8JjAFXQgrbNlCRlVhszizbXY9u2bVutmsKUcbrGtm3rcm3rzriyvddVe3rjVFScihz8+f8JV7Jt01b/f/gi27b9Qtu237v2vcuBJEmKkqfhfugZDv//IP2fAMbdaTkxOFE8WEJ6NSTFg2jDKaQn45mOpEKQgViYibs+1nv6H9T1sZaCTR6zCOGnikWsgnAWeTBw9PFwsOd1qPuFavTxwEAs+UttI9vS2ZmBna4b6+i2YnrJLkYMTKuGS+Zm28je7q5iFCXS2vGtdmxtnItFlUqsjGAsi1iFHMsIrBDi6KPhUPcLESUD0RLSqsHm5g8DbSN7Ss2QvXHk1pSXTgqSybCdcdB+n1oN1re+GMHuZ146QWGVU4Qfms805uOHJOpC3Nz8YSA+9VZUTa6tHsrHPvMn34qFC3PTl4IR7L5nF6Md9d+pm8e5y+fsYiiqIKcFY6jDi6KWcBj/Q/fzbvXo3uqxYuDi+bnpS4HB7ntOITpQ98suhj3PujkrF2EFcRjzGQcNhRHdAB4G7w+MNve1Qpy6eepwUzEiHS9LBFua3pbwyFdWNbkKLDiIEMSIOep4ONjzUkrRf+DS2blqctE6H49/ZJ2vmu7nbUEy0Tqf1RPrzLUzY+DBsGbwXt/xbPKaiyxpDCONWD1va9vSjIgqRnRGObQEBiJaIsgqRQzEjHKYWg0YQiuHIUqPQfg9iPC7D6V2swvcw15UzN1IuQcl2CJiBB+4li3sYjdSIm7jHMfZzm5wFxi9B0F2B0Sv8TPf8jJeNMKQRoggfo5zABmGNOqRYdaxhR0IsluR8iVOsZx/WcnTfMlptvIFb3ETOsF6PuEjIjzNG3zJPiJsRZDdBOKL/Mj3vE6A3znJb3zIGW7zIi9wng84y1Ve410ucYNX8LKRTYix61HqBc5Rx79s4jdOcopP2MgxnuNZzvAxW9nLB7zDIU7wJg7WsR4xNoKUL3ONJfxDiK/4gnc5xQ98zfPQJY7wPT+wi/fBC7zDGuqJIMZqEKETGw7qsOKlBo1TfMhlqrBjxYmDOuzYIBdewmiIsSEQAyg/isiHh3Xc4Cx2XATwQ+RDESkVQpBVOn24cKDc+Akg3AYRfn966MD/4H/wP/gf/A/+B/+D/8H/4H/wP/gf/A/+B//fg//WR+VMZIlRZEDmnxAZ4D/wH/gP/Af+A/+B/+4bypnI4lBoYCRGsUEZ3pnIGMrwzkQG/gP/gf/Af+A/8B/4795ozkRm+F6FWGxgJEaRIR6diYyhEiD4D/wH/gP/gf/Af+C/e6Q5E1kC7FWIBYfEKDKA/8H/4H/wP/gf/A/+B/+D/8H/4H/wP/gf/A/+v59XBP+L3qlUQlLY4HSkOXHHKWYsQdazgQCjKYITLyn0ZDB6O2GiujKCApICnH6so4D44jxML1azmWW0JwNqj9yMlZ48BCc+JrIAnVW4MVEr2UEzkgJt2UZTMtGZBsd4tApppxu5cBiIyFHdsLGVFTTFcBlkopuwEhcmqpQnyCYZkMUG9rMRvRFmkYXh3IynCAuok+RYXBiN42QTG9GJZK4qaEoOyQBszxaakonOIpayAI7RXFSCDSTjaTQhE52lhDFXq9hJM5ICnP6sIw+GziI2k03ieRSGznxMVnsG8DBJAeR0oAl6ythIJokul/aYqCxUCsmBmJwCSiGiclpjYxIMw3WklAaqOOhMKTpboMEw1UvYSBOSCCmsYh1EtBYX/UnFcMtZzzoaqNBwVhTpVDbM1RiWU0ESAS2kEM1hGJ9Ug8loSEq/uYKGAwA=" alt="" data-pagespeed-url-hash="702098189" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Итоговая область региона: область первого прямоугольника за исключением пересечения его со вторым.</p>
+<p>REVERSE_DIFFERENCE</p>
+<p><img src="data:image/webp;base64,UklGRhoFAABXRUJQVlA4TA4FAAAvf8JjAP/nIJIkSema2eMXgBbwgH8jP+ztvxE4cBtJsqvMfG19TwBpkA42+Ttfi3XcSJIidVZP7x6TQ/Q8/z1Zxp5/tW3bMGlr6DeEFQlEGoAAGBUmJVkcQgBBAEABAIIhFMEQKuN32JVnYAwngDBEwBXDSRjOhCEoIIBgELAu/Vjtj4tgQAExxC0QwRC7mTQp6Xg8BINbLNZMAQBMB3CdAABEGoAhKGAE1K9O84tbCAiY4rhQVAxsh2IpaoDzz6SpkZLWZ9fdSa/Prhj+7rlxBviei3hvUtLvWvX+eG+GJL9rlZLivSmQTlV9HSjem8aYhPyei5TUK+5zJyV9z0W1Nt7nmDVsSnrvk4aZCLsHr210+fzd/j/X75uCAm1bxyPp6/6rbY5qbNu2bc+0XXaMqqm2bdu2bdu27c78NevPykrma7zvvi+i/xMgrk1rBNBX5I4qrBXLNsacwV078uA5BoAyj3wDxZLN/A4ef9O2zRR3mC/w3LffaVYAyn74GnD/+28UFyj06kf3iPs+eL2orDK1Ua/ubZtpxY2mCjz7ndb6WQBRBb8S+CjvE0+VKv3kYwW+FF8XePoJWcWY7VftO8GvWJsCvgJw21t33nTry9H4pPg7j75/i6wCY1yPxlkaYw3xHzz0wV3AK9HikxJvPPPu7dIK0Lt9N/QRV+Yg9+O4+yXghXvxRcnPEP2axIJ+nn4I+Py3zIx/gX7z05sfeLD0Z2+/KN576/M7ZJYVvRHo4Y+ZWQe4skgUAOQpJoCieYTUakCW7iH9VpV+a2gdExtTq6YOyLEMLdkCcGTCnhwbE8sxnPhHxYQYjo25spYkG6/U4XWbjma53FAer79iNXbD5WTYkuMl2SStj5Vruar5ma1/J23b/wMqZGzf6ThzcGsNR5IkmwocX7/xkG9N+bW7/jp7/MTvu//8+fDeX388kpWWKsdmKHXij8arsLZ8ue1plU6d/mtHUs3d+6pUOFDPliHHOpiP/tRmtWfLtr3lNmw+qX6tvHFD7J5yv+2r43TIsS6lULdBvcaNspq4yu36pWn9RnXrNVYNVO0st0uO9TD7tF8rlfmP7cc/69f2+ZXK1EppzZKsNona9XS23yfdeqXfc+R/8j/5n/xP/if/k//J/+R/8j/5n/xP/if/k/+vw//9hdAoM7AIjXLDuRDI5D/yH/mP/Ef+I/+R/65Pp9j65wUHoczAIghzBaGQG85Znsl/5D/yH/mP/Ef+I/9dH40tf16w5c9LDkGYKyT+jxaMTP4j/5H/yH/kP/If+e+GoURolBnI/+R/8j/5n/xP/if/k//J/+R/8j/5n/xP/if/38irIP/L3iungqUNY8T4oNOzunsz0n09ZxvBkm9wX7PDw6ihveZGBIyBtrnBpRcMapjSatRyNQopjQYvNIKjSzuTTbPDqObxEyICoxMnLjO5wrDehGaJ9YcsMgQArYY0SGox0XLLl5lWmFo7jJo5eUkkYGl69TSzjg5LLZfddXZ+mNTcvbbVjLqpaSahwqtpExdHAjAqmZeZnN26nWG12lNFDqdazzVpmcmZ7vCqWdyEiIAxwDZfmJydsiT0TIHJeWHWqP4LIgLQIyeZmZG2LNQtGhVGLV2ULzIQUM+dqZSaPqZBZ2G5ETNzyEEwbKbJcS6E1W3SJkUQ8jWzAbDXHrDSci0zbDlULS3XKMNmUjUIr3q0nBZBQP58Vxqwfn7OsbYaNJsPr6jh" alt="" data-pagespeed-url-hash="626882176" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Итоговая область региона: область второго прямоугольника за исключением пересечения его с первым.</p>
+<p>INTERSECT</p>
+<p><img src="data:image/webp;base64,UklGRvYEAABXRUJQVlA4TOkEAAAvf8JjAHfnuJEkSams7uHmjwP47wQu8UPMzN67FjiOJMlRqkYcmh++YAwm88UVLcZxJElS09U9A+g+X/LfEBlGMPOvyG3bJuvUwXxDqBhgUgACIAqpMzyBEEAwsCYAANH6UGfUGXVGnfH/H+qMy3pTuiGm6bDJuciIjCnCYQ6bWiIDoWfJvQwfjDMyppKsgoiM0g0xYQ2OEXBEbjAOm0znZb1Z8E8w40vn1QqByCoIxGlZDMhx1dIN8b219/nHGCXxa5e8ADEFcXYjYcJCIG2AtAl4PX7sHp8Xa2BhmGA7AFLurycbaTu5sQYISxgCxsKCBiKg4+55/zIWNmMZi+uplVgBXhf5XP8UFG5tMyRJMRM91u6Obdu2bbXt7qqxbdu2bWO9O+ux7ak/UTVZezJPnqwTgy/eiIj+TwD7PC33ob0yBuXUUok2vGSjjl1lo5IcwIU/3kJqwaZYt6T4gT0HqCRZjOHGu/fqnQZw8ek94JfH979huPj0HvDTs7s5RJUKwW3a9xyglQyuwHD9vVLqOoCg7G8YnmX++99z54Oyv2F4ne3Pf0QVXipede8CpUpxQ8AbAFcffn/pCsMb5H7Brt4RVcCrtxscq1UNjv/h9yc/MHh9+4JdvSusAK27d0Ar5u1Hxr/w421fmV6xn28KLGiR1IL5/O+dUgofwb0HLy//+psXbj16eV5kKdha+rr2XEp5zYd3riB8PE8mJrRyiNLthN+pwu8krcePw4SJ2ud4KSdowRZAWhzSR4wbLyUwasHM0eMxDt4TBNkxSm0+cWRjbEoyVFJi/MwpMhkpqRKuEWME2ZFab5jT90z/VQfnjjywfQVmuffvTVu19eCktJGC7DBg/fGjWxJOzT65Z97K9esW7p6/dPPOxcs3xQ4dJsa6lVq3YPAZnJw9Z//QGWtWz9s3cuLuHdNmbQt3ucXYNCk3Lut1OunQgZ1zjh1eqxZPP3ps3K45i3ZEpqaJsSlKISI0fHBw7KCUOXuWDAwLjggfHBaqomKTU8TYJCBBx2ul4mJcy+eHRSXEKxWnldI6SZDVBuOiwnV0fIJwmyj8niX/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5n/z/Bf4PHnsUGTzMHsWGszboIf+R/8h/5D/yH/mP/PdlOu0xfxMmLSgyeDJYkFlRNDlreg/5j/xH/iP/kf/If+S/L3FJ0zcRTuxRZLCiB2dtkPxH/iP/kf/If+Q/8t8X0qQNNhEc7FFkIP+T/8n/5H/yP/mf/E/+J/+T/8n/5H/yP/mf/P81ryD/i96FKkgIG7xuNcvx0u0T3UMS2pbiVsnSqKXReg6qQZsSAQHe1FXCWrpo45DhfWoX0ArDgxsV4dbo1MPgwGgH1X9M1YBArVFV8hssyM1XdcCosIaFOQOgVcPQkf2qmK5AfsMaFaIcVJlKeQMB+YZMHmo0rRtMF92xVFYY1KXaR5mNRwwbahDKWZWv8l0gALVHVMlvsFTvHtxsURXgpzRfSuX8BsskO6sBY6sGBHgzVzEYLDU8r/1UZAaLO6zazYsGBMDrVDZSdmh+uytc20HlK5wlMOBTlygDoFzN0M7MdHXL+KktUL+MweopzFH3Glo5gJBlgEsplR7VrJDp+rpdfrr7mi7Y7TLoDnVW7fqWDyAgaxZvDvNnVX5rs0Er486KGg4A" alt="" data-pagespeed-url-hash="551666163" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Итоговая область региона: пересечение обоих прямоугольников</p>
+<p>REPLACE</p>
+<p><img src="data:image/webp;base64,UklGRsYEAABXRUJQVlA4TLoEAAAvf8JjAB/nKpIkxeqeY/w+Le95eP4lPAnHy+TAcSTbqjLz3XcfS4N0WBM7Abjcf91GkqRIXYvH8G8Qie+/Ea8z9/yrbduGSVtDvwEUGAmgEEBhAoVQUCCg0qSImED9R+H6fWEoe0LASqrI+rJHREgoCForCCGqTcSIoDYDkM5uvtb/FgkaCw5GAKV6FVM5ESKKoehVJpURQGNBAyIAWL6G+6wtqqEcDWvWFBXBdhG1v1Bp7/bn3Ui/258xFHfcGANcv48nflTa/f/y/U/8BEnu/5dKe+LHQDyV9XmgJ34cIxLyfztTadfvwxod6/y+OaRKOz4vjhSReQ/299PndPK7Hn3POwYKs20bk6TX9dp299i2batsu9KZX+VU27ZtG8W2bdv4KZnzcuLLyPi+eI17bkT/J0A8nFaG4ZC4xq0ZcbqN3Lxg0jgs2CwF0O21b/FaN81m21ifMWjUYMM3dpvAO999z3hHAN0//1DgxU8/6izQ/fMPBd796hltpbr/9CmjBvOU6f2rBd7+npkhgMYtvxH4oukbb3bp2rjlNwKt3n9BW5GbDB4zHgZvkkrANwJ4+pNnn3hK4BsBvKevQK6eOiDIU1dJ8T+88tlzAvoLMGPMZMwUoRHEvY7nP9BjMNs3W4R96zsAb/0HPvz46ydfelmLaTED4V79EsCrYULbNBa6rIQuPVX7TdN+M5lzcpGdlRk2J5ezMzVbAK5KOItzc5iBwj+TCnKQi9BsTTaf+dLeg1eCHi/Y5zeS0v1eeNx+OIrzNdki5qvxw3YOuX3kn6Kj535EYsWxE67bF45kuoo02VLg2r4DFwO7E/ac/PvOtet/nPrrl0tnfvvpcrCsVI+tYL7+54CdpXsS4o+VJd+89ffxoqxTZ1MTz/d2VOixLuDKzyN3+Q4fPRO//9AN/JZyYH/u6fjfz/Z0u/RYD3PPXn17D+gfHOiJP/nroD79e/Ue0KcvegS9Hj3WBwTYCBhc+a/jp7/69AgYzJUBgwPs02RZsbJHb64yAtqtX/u9S/4n/5P/yf/kf/I/+Z/8T/4n/5P/yf/kf/I/+f8R/D/cj406A4vYqDfcjYFM/iP/kf/If+Q/8h/579F0P9w3/z1xPwp1Bm4UEwX5j/xH/iP/kf/If+S/x/Bh09/TTqJQM4lGJv+R/8h/5D/yH/mP/PfYUCI26gzkf/I/+Z/8T/4n/5P/yf/kf/I/+Z/8T/4n/5P/H+dVkP917+bVYG1DLl0TdbJhir+iPDBtk4yWZgtmqS6xUIumb7EF5DzHluiS2+f3Kxm+vC14eEn/BTtkdEwcrTioykINyV9rC6woXNdOsYU039rBhX0WdpICAHda2Ldo6DrTtW2n3FZU97BQ9Rs62AHtyzPKVF1j25uuatKmJkKxyaYpPcwme5WWKZb2sFY16zraAVhevK6d4qYRo6XZelSLCKvN51nfTrHea60G5621BeRcxzahuKmkQ+zZCMWtFmv5nO22AOSy9Sp1Ze1iXaflFqp9p2b2QFi5pZ6Za1f2nSBMt7Q+QkTB4nrF1R5hqUeWrbcRmg12AHD2mNvcdMMqHBHyMNP1r3Aocl9rNXVYjY2AJs1CpTB/k2YRw2xowurWihoO" alt="" data-pagespeed-url-hash="476450150" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Итоговая область региона: второй прямоугольник.Т.е. содержимое региона заменилось вторым прямоугольником.</p>
+<p>В документацие можно увидеть, что метод op имеет несколько вариантов, но в целом смысл везде одинаков – добавление прямоугольника или целого региона к текущему региону с использованием режимов.</p>
+<h3>RegionIterator</h3>
+<p>Итоговая область региона может быть разбита на набор непересекающихся прямоугольников. Для этого используется <a href="http://developer.android.com/reference/android/graphics/RegionIterator.html" target="_blank">RegionIterator</a> – итератор региона. При создании указываете ему регион и методом <a href="http://developer.android.com/reference/android/graphics/RegionIterator.html#next(android.graphics.Rect)" target="_blank">next</a> перебираете прямоугольники, из которых состоит регион.</p>
+<p>Ради интереса повесьте лог в цикл итератора и выведите (Rect.toShortString) координаты областей, из которых состоит регион в примерах выше. Вы увидите, как итератор разбивает регион на непересекающиеся прямоугольники.</p>
+<p>В случае с UNION, например, лог будет следующим:</p>
+<p><i>rect = [200,200][400,300]<br/> rect = [200,300][500,400]<br/> rect = [300,400][500,500]</i></p>
+<p> </p>
+<h3>Прочие методы</h3>
+<p>Рассмотрим еще несколько полезных методов региона.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#contains(int, int)" target="_blank">contains</a> – позволяет определить, содержится ли указанная точка в регионе</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#getBounds()" target="_blank">getBounds</a> – вернет нам прямоугольник, который является общими границами региона</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#isComplex()" target="_blank">isComplex</a> – вернет true, если регион состоит из более, чем одного прямоугольников. Причем имеется ввиду вовсе не количество добавленных к региону прямоугольников. Здесь речь о том, сколько прямоугольников содержит итератор региона.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#isRect()" target="_blank">isRect</a> – вернет true, если итоговая область региона является единым прямоугольником</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#quickContains(android.graphics.Rect)" target="_blank">quickContains</a> – вернет true если регион является единым прямоугольником и содержит в себе переданный ему прямоугольник. При этом false вовсе не означает, что переданный прямоугольник обязательно НЕ содержится в этом регионе.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#quickReject(android.graphics.Rect)" target="_blank">quickReject</a> – вернет true, если регион пуст или не пересекается с переданным прямоугольником/регионом. При этом false вовсе не означает, что переданный прямоугольник/регион обязательно НЕ пересекаются с текущим.</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Region.html#setPath(android.graphics.Path, android.graphics.Region)" target="_blank">setPath</a> – позволяет нам отсекать от переданного Path кусок, ограниченный переданным регионом. Отсеченный кусок будет итоговой областью текущего региона.</p>
+<p>Посмотрим на примере, перепишем <b>DravView</b>:<code class="java"></code></p>
+<pre><code class="java">  class DrawView extends View {
+
+    Paint p;
+    Region region;
+    Region clipRegion;
+    Path path;
+    Path pathDst;
+    Rect rect;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      // path, треугольник
+      path = new Path();
+      path.moveTo(100, 100);
+      path.lineTo(150, 150);
+      path.lineTo(100, 200);
+      path.close();
+
+      // регион из прямоугольника обрезки
+      rect = new Rect(100, 100, 150, 150);
+      clipRegion = new Region(rect);
+
+      // итоговый регион
+      region = new Region();
+      // отсекаем от path область clipRegion
+      region.setPath(path, clipRegion);
+      // получаем path из региона
+      pathDst = region.getBoundaryPath();
+
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // треугольник
+      p.setColor(Color.GREEN);
+      canvas.drawPath(path, p);
+
+      canvas.translate(200, 0);
+
+      // верхняя часть треугольника
+      p.setColor(Color.BLUE);
+      canvas.drawPath(pathDst, p);
+
+    }
+  }</code></pre>
+<p>Все основные операции происходят в конструкторе <b>DrawView</b>. Сначала создаем path, в виде треугольника. Затем создаем прямоугольник rect, который, как видно по координатам, заключает в себе верхнюю половину треугольника. Именно эту часть мы сейчас и будет отделять от path. Создаем регион clipRegion, итоговой областью которого будет являться rect.</p>
+<p>Далее создаем новый регион и выполняем для него метод setPath. На вход передаем path, от которого надо отделить часть, и регион в пределах которого, находится эта отделяемая часть. В итоге переменная region у нас теперь содержит верхнюю отделенную часть треугольника. Формируем из него новый Path в переменную pathDst методом getBoundaryPath.</p>
+<p>В <b>onDraw</b> выводим зеленым цветом изначальный треугольник, а синим цветом рисуем его отрезанный верхний кусок.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,UklGRu4FAABXRUJQVlA4TOEFAAAvf8JjAM/nILZtVTnnykNbEJVq/BAEcTvfLYHb2LatZO/7fkBMMXZksxLagQWYEelxFUm2q+ycc9N7BCn4QBXacIAUPl/e+Vfktm2TpD0t+htAgQkYgEIAhQFKKCjwg2JmgsLATQAE2E6KKaaYYjmqHBVFv61C75y35C31EVbBKvQt3hJF9KJ9qdu9pT4kekHhLeWoKHqq1tEB1ugZxjZJf99uw4i/h+le2qyOoktaZtMiu6g5Korbu6ouubxQXaLP25fD/zZh/1yAfXP4c0Lsk40wYYr9OQhBRFze/4Wwb3bChHkPp/kCcOxPJKQNDyOA4ndzaE9GotjVDQlmcBMAQFrRQASAhE11AASlOoKwcRNNxc7PS1ZHcP3+nB9/cX09nh9KUtC2jeTwp73dwyAiJoCQNCtJ8q2CQmG2teOV9Fbd77I1aNu2bdt9zbDTSdu2bdu2Nfb02Lan+QeS+TL1pbq+1Dt4nvO+Ef2fAMgR2EhSyvzIPxrjwBAZXN6PuGQpov8TIP6d1gjBQTGxBRlatjHKNuvSo4suywDevn6fNSSbUj3djiF9BjvcPUsJfPzgoYIWwBs/fCFw87uvnhSI/+Xnr8Qnv74grVRJbt+pz2B0Usks8NFDpdRHAGLz3RX4Mf79D9568843Asj/2W1pxSjn4F7dNXM5wxRwF8CL3zz3ykvP//nTLYFP5RUYtTsOywXXMcTf8O73zwq8fvupe7FSC9CuV2fdVgSHEfMenvkceO1V/FFAckFrd2uE/PABAPUX+OLr316+8c6d37/9UsguSe2SQl17pLVWIYILxQoAMU9AfjUgS3eUfmdJv9OBKZP11GnTQ2qlGJItM/vyeMTYyVOU0nr80nkTpmilg6dKshOZd5w9uS3X62G4XY55M5WHMVyxf+xESXacUlsXDrg4aP2xReOO7lnL8wNHDvnW7zo2XY2TZEdrveXMqZ3O8wvOHVy8bsvmZQeWrNqxb8Wa7bmjRsuxAWDz0mEX9bkFC4+Mmrtxw+LD46Yd2Dt7/u50f0CO9Sm1bXXfC+7jR/ctPH1iE6+YcwqT9y9cvjdzuE+O9QI6IzV9WHLuUO/CgyuHpCVnpA9LS+WsXI9XjnVr7YQDzHk5/jVL0rKcDuY8OBhwS7IwmZeVrrIdTunWJf1eIv+T/8n/5H/yP/mf/P+/Dd/o5xWPoF+aGZ7wAF7qmhmMh3BNDLAewNQ1LwTWfpm65oXA2i9T17wQWPtl6poXAmu/TF3zQmDtl6lrXgis/TJ1zQuBtV+mrnkhsPbL1DUvBNZ+mbrmhcDaL1PXvBBY+2XqmhcCa79MXfNCYO2XqWteCKz9MnXNC4G1X6aueSGw9svUNS8E1n6ZuuaFwNovU9e8EFj7ZeqaFwJrv0xd80Jg7Zepa14IrFX0zndHMx/IC7BCsu8FK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9QDK9xjhHwQ8kHI9y3//if/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5n/xP/if/k//J/+R/8j/5354L8r/snVhFz7RhNKwVcVy+kysw0tmhHEdKQrM2ZhvZqCbty0QFjBb+MpFllGyeMqZ//WKM/mOSm5UwIqNrb5NDsm3UoIk1owL1xtcoajLJsF7NwePTmhY3BAAurlLHDaxhuWJFTTOqZNmoCtUKRwOKjJwxyqyvZxHLZXcpFydMKt0py2pGxuhRJnWWvapc4+loAOqP1UVNluvX27BaVhWEydbzVi9qsoLHXg2eVDMqYLT0lxImy40p/PipKkyWtln1W5WMCsBoUN1MxVFFH3fF69uoIsUTogMhjTIVmLlS3dRuwnINK4SpIqBxBZO1vcJW9x1VPYqQMNjPzCOyWiZabkDAHyYGWC454DeJVHvVcUDlKALiEoINWF/psJXVoLR5e0UNBwA=" alt="" data-pagespeed-url-hash="401234137" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Я ради интереса создал итератор для верхней половины треугольника и вот, что получил</p>
+<p><em>[300,100][301,101]<br/> [300,101][302,102]<br/> [300,102][303,103]</em></p>
+<p><em>...</em></p>
+<p><em>[300,147][348,148]<br/> [300,148][349,149]<br/> [300,149][350,150]</em></p>
+<p>Видно, что регион разбил треугольник на множество прямоугольников с высотой = 1.</p>
+<p>В общем, регион - штука специфическая, и для некоторых операций - незаменимая. Мне, например, совсем недавно он пригодился, чтобы для картинки сделать карту изображений.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

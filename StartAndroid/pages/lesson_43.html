@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 43. Одиночный и множественный выбор в ListView</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем список ListView для одиночного и множественного выбора элементов</p>
+<p>Бывает необходимость предоставить пользователю возможность выбрать один или несколько элементов из списка. Давайте посмотрим, как это можно реализовать.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0431_SimpleListChoice<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleListChoice<br><b>Package name</b>: ru.startandroid.develop.p0431simplelistchoice<br><b>Create Activity</b>: MainActivity</p>
+<p>Нарисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/btnChecked"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get checked items"&gt;
+    &lt;/Button&gt;
+    &lt;ListView
+        android:id="@+id/lvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Список <b>lvMain </b>и кнопка <b>btnChecked</b>, по нажатию, на которую будем выводить в лог отмеченные в списке элементы.</p>
+<p>Предлагаю вспомнить, что у нас есть файлы ресурсов и мы можем их использовать. Найдем в нашем проекте файл с ресурсами <b>res/values/strings.xml</b> и добавим туда массив строк с именами. В итоге у меня получился файл с таким содержимым:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="hello"&gt;Hello World, MainActivity!&lt;/string&gt;
+    &lt;string name="app_name"&gt;SimpleListChoice&lt;/string&gt;
+    &lt;string-array name="names"&gt;
+        &lt;item&gt;Иван&lt;/item&gt;
+        &lt;item&gt;Марья&lt;/item&gt;
+        &lt;item&gt;Петр&lt;/item&gt;
+        &lt;item&gt;Антон&lt;/item&gt;
+        &lt;item&gt;Даша&lt;/item&gt;
+        &lt;item&gt;Борис&lt;/item&gt;
+        &lt;item&gt;Костя&lt;/item&gt;
+        &lt;item&gt;Игорь&lt;/item&gt;
+        &lt;item&gt;Анна&lt;/item&gt;
+        &lt;item&gt;Денис&lt;/item&gt;
+        &lt;item&gt;Вадим&lt;/item&gt;
+        &lt;item&gt;Ольга&lt;/item&gt;
+        &lt;item&gt;Сергей&lt;/item&gt;
+    &lt;/string-array&gt;
+&lt;/resources&gt;</code></pre>
+<p>Из этого списка мы будем получать массив имен. Это удобнее и правильнее, чем перечислять все элементы массива в java-коде.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0431simplelistchoice;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  ListView lvMain;
+  String[] names;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    lvMain = (ListView) findViewById(R.id.lvMain);
+    // устанавливаем режим выбора пунктов списка 
+    lvMain.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+    // Создаем адаптер, используя массив из файла ресурсов
+    ArrayAdapter&lt;CharSequence&gt; adapter = ArrayAdapter.createFromResource(
+        this, R.array.names,
+        android.R.layout.simple_list_item_single_choice);
+    lvMain.setAdapter(adapter);
+
+    Button btnChecked = (Button) findViewById(R.id.btnChecked);
+    btnChecked.setOnClickListener(this);
+
+    // получаем массив из файла ресурсов
+    names = getResources().getStringArray(R.array.names);
+  }
+
+  public void onClick(View arg0) {
+    // пишем в лог выделенный элемент
+    Log.d(LOG_TAG, "checked: " + names[lvMain.getCheckedItemPosition()]);
+  }
+}</code></pre>
+<p>Мы устанавливаем для списка режим выбора - <b>CHOICE_MODE_SINGLE</b>. Это значит, что список будет хранить <b>позицию </b>последнего <b>нажатого </b>пункта и мы всегда можем запросить у него эту информацию. Далее мы создаем <b>адаптер</b>, но не через обычный конструктор, а с использованием метода <a href="http://developer.android.com/reference/android/widget/ArrayAdapter.html#createFromResource(android.content.Context, int, int)" target="_blank">createFromResource</a>. Параметры на вход почти те же, что и в обычном конструкторе, только вместо массива данных, мы указываем <b>массив строк в ресурсах</b>, который мы создали чуть раньше. В качестве layout-ресурса для пунктов используем системный <b>simple_list_item_single_choice</b>. Он как раз заточен под такое использование.</p>
+<p>Далее мы, находим кнопку <b>btnChecked </b>и присваиваем ей <b>Activity </b>в качестве <b>обработчика</b>. И в конце считываем наш <b>массив имен</b> из <b>файла-ресурса</b> в массив строк.</p>
+<p>В <b>обработчике </b>нажатия кнопки мы выводим в <b>лог имя </b>из массива. В качестве индекса используем позицию пункта в списке. Последовательность элементов в массиве и в списке совпадают.</p>
+<p>Все сохраняем, запускаем и видим список. Выделяем какой-нить пункт:</p>
+<p><img src="images/lesson_42_0.png" alt="" width="640" height="454"></p>
+<p>Жмем кнопку <b>Get checked items</b> и смотрим лог:</p>
+<p><i>checked: Даша</i></p>
+<p>Все верно.</p>
+<p>Теперь чуть изменим код программы и получим список с множественным выбором.</p>
+<pre><code class="java">    // устанавливаем режим выбора пунктов списка 
+    lvMain.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+    // Создаем адаптер, используя массив из файла ресурсов
+    ArrayAdapter&lt;CharSequence&gt; adapter = ArrayAdapter.createFromResource(
+        this, R.array.names,
+        android.R.layout.simple_list_item_multiple_choice);</code></pre>
+<p>Мы заменили <b>CHOICE_MODE_SINGLE </b>на <b>CHOICE_MODE_MULTIPLE </b>и теперь список будет хранить позиции выделенных элементов. Также мы заменили <b>simple_list_item_single_choice </b>на <b>simple_list_item_multiple_choice </b>– пункты списка теперь будут позволять множественный выбор.</p>
+<p>Метод <b>onClick</b> перепишем следующим образом:</p>
+<pre><code class="java">  public void onClick(View arg0) {
+    // пишем в лог выделенные элементы
+    Log.d(LOG_TAG, "checked: ");
+    SparseBooleanArray sbArray = lvMain.getCheckedItemPositions();
+    for (int i = 0; i &lt; sbArray.size(); i++) {
+      int key = sbArray.keyAt(i);
+      if (sbArray.get(key))
+        Log.d(LOG_TAG, names[key]);
+    }
+  }</code></pre>
+<p>Мы получаем позиции выделенных элементов в виде объекта <a href="http://developer.android.com/reference/android/util/SparseBooleanArray.html" target="_blank">SparseBooleanArray</a>. Он представляет собой <b>Map(int, boolean)</b>. <b>Ключ </b>(int) – это позиция элемента, а <b>значение </b>(boolean) – это выделен пункт списка или нет. Причем <b>SparseBooleanArray </b>хранит инфу<b> не о всех</b> пунктах, а только о тех, с которыми проводили <b>действие </b>(выделяли и снимали выделение). Мы перебираем его содержимое, получаем <b>позицию </b>пункта и, если пункт <b>выделен</b>, то выводим в лог <b>имя </b>из массива, соответствующее позиции пункта.</p>
+<p>Все сохраняем, запускаем приложение. Выделяем несколько элементов:</p>
+<p><img src="images/lesson_42_1.png" alt="" width="640" height="454"></p>
+<p>Жмем кнопку <b>Get checked items</b> и смотрим лог:</p>
+<p><i>checked:<br></i><i>Марья<br></i><i>Антон<br></i><i>Костя</i></p>
+<p>Что мы выделили, то нам список и вернул.</p>
+<p>Как видим, отличие обычного списка от списка с возможностью выделения пунктов заключается только в разных режимах <b>ChoiceMode </b>и в использовании разных<b> layout-ресурсов</b> для пунктов списка.</p>
+<p>Кстати, здесь мы снова видим, зачем нужен <b>Context </b>при создании <b>адаптера</b>. Без него адаптер не смог бы добраться до <b>файла ресурсов</b>. Метода <b>getResources </b>у адаптера <b>нет</b>, и он использует указанный <b>контекст</b>, который содержит такой метод.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

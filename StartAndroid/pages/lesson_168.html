@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 168. OpenGL. Введение.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- создаем простейший пример с OpenGL</p>
+<p>Продолжаем тему графики, и переходим на следующий уровень, который называется OpenGL ES. Расшифровывается это как OpenGL for Embedded Systems, т.е. OpenGL для встраиваемых систем (android-девайсы в нашем случае).</p>
+<p>Пару лет назад я читал книгу по этой теме, делал из нее примеры и, в целом, без особых проблем понял, все что там было написано. Но та книжка была по OpenGL ES версии 1.0. Cейчас эта версия уже устарела и используются версии 2.0, 3.0 и 3.1.  Эти версии по API существенно отличаются от 1.0 и несовместимы с ней. Поэтому мне самому придется изучать тему почти заново.</p>
+<p>Первый урок будет похож на Урок 141. Мы выполним минимальный набор действий, чтобы заполнить экран каким-либо цветом, но в этот раз сделаем это с помощью OpenGL. Кстати, сразу хочу предупредить, что OpenGL это не обязательно 3D. Сначала мы немного порисуем 2D, а потом добавим объем.</p>
+<p>Ну и как обычно, поначалу, скорее всего, мало что будет понятно, но по мере погружения в тему общая картина будет проясняться.</p>
+<p>Приступим к созданию нашего первого минимального примера. Обсудим его ключевые элементы.</p>
+<p>1) Изображение надо на чем-то показывать. Для этого мы будем использовать компонент <a href="http://developer.android.com/reference/android/opengl/GLSurfaceView.html" target="_blank" rel="noopener noreferrer">GLSurfaceView</a> (далее - surface).</p>
+<p>2) Изображение кто-то должен создавать, т.е. принимать от нас инструкции, что и как рисовать. Этим будет заниматься <a href="http://developer.android.com/reference/android/opengl/GLSurfaceView.Renderer.html" target="_blank" rel="noopener noreferrer">Renderer</a> (далее - рендер).</p>
+<p>3) Ну и нужна будет проверка, что девайс поддерживает OpenGL 2.0, иначе ничего не будет работать.</p>
+<p>Начнем с создания класса рендера. Объект этого рендер-класса мы потом будем передавать в surface, которое в процессе своей работы будет вызывать методы рендера.</p>
+<p>Рендер имеет три метода:</p>
+<p><a href="http://developer.android.com/reference/android/opengl/GLSurfaceView.Renderer.html#onSurfaceCreated(javax.microedition.khronos.opengles.GL10, javax.microedition.khronos.egl.EGLConfig)" target="_blank" rel="noopener noreferrer">onSurfaceCreated</a> - вызывается при создании/пересоздании surface. Т.е. метод будет вызываться при запуске приложения или, например, в уже запущенном приложении при выходе девайса из сна. Здесь будет выполняться установка OpenGL параметров и инициализация графических объектов.</p>
+<p><a href="http://developer.android.com/reference/android/opengl/GLSurfaceView.Renderer.html#onSurfaceChanged(javax.microedition.khronos.opengles.GL10, int, int)" target="_blank" rel="noopener noreferrer">onSurfaceChanged</a> - вызывается при изменении размера surface. Самый распространенный пример - смена ориентации экрана.</p>
+<p><a href="http://developer.android.com/reference/android/opengl/GLSurfaceView.Renderer.html#onDrawFrame(javax.microedition.khronos.opengles.GL10)" target="_blank" rel="noopener noreferrer">onDrawFrame</a> - вызывается, когда surface готово отобразить очередной кадр. В этом методе мы и будем создавать изображение.</p>
+<p>Создаем класс <b>OpenGLRenderer</b>, который реализует интерфейс Renderer:</p>
+<pre><code class="java">import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
+import static android.opengl.GLES20.glClear;
+import static android.opengl.GLES20.glClearColor;
+import static android.opengl.GLES20.glViewport;
+
+import android.opengl.GLSurfaceView.Renderer;
+
+public class OpenGLRenderer implements Renderer
+{
+
+	@Override
+	public void onDrawFrame(GL10 arg0)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
+
+	@Override
+	public void onSurfaceChanged(GL10 arg0, int width, int height)
+	{
+		glViewport(0, 0, width, height);
+	}
+
+	@Override
+	public void onSurfaceCreated(GL10 arg0, EGLConfig arg1)
+	{
+		glClearColor(0f, 1f, 0f, 1f);
+	}
+}
+</code></pre>
+<p>В <b>onSurfaceCreated</b> мы вызываем метод <a href="https://www.khronos.org/opengles/sdk/docs/man/xhtml/glClearColor.xml" target="_blank" rel="noopener noreferrer">glClearColor</a> и передаем ему RGBA-компоненты в диапазоне от 0 до 1. Тем самым мы устанавливаем дефолтный цвет, который будет отображаться после полной очистки surface.</p>
+<p>А в методе <b>onDrawFrame</b> мы как раз выполняем эту очистку. Метод <a href="https://www.khronos.org/opengles/sdk/docs/man/xhtml/glClear.xml" target="_blank" rel="noopener noreferrer">glClear</a> с параметром GL_COLOR_BUFFER_BIT очистит все цвета на экране, и установит цвет, заданный методом glClearColor.</p>
+<p>В методе <b>onSurfaceChanged</b> мы методом <a href="https://www.khronos.org/opengles/sdk/docs/man/xhtml/glViewport.xml" target="_blank" rel="noopener noreferrer">glViewPort</a> задаем область surface, которая будет доступна для вывода изображения. Мы указываем левую нижнюю точку - (0,0) и размеры области - (width, height), т.е.  изображение будет выведено на все surface.</p>
+<p>Рендер готов. Теперь надо в Activity повесить surface и настроить его.</p>
+          
+<pre><code class="java">import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.ConfigurationInfo;
+import android.opengl.GLSurfaceView;
+import android.os.Bundle;
+import android.widget.Toast;
+
+public class MainActivity extends Activity
+{
+
+	private GLSurfaceView glSurfaceView;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState)
+	{
+		super.onCreate(savedInstanceState);
+		if (!supportES2())
+		{
+			Toast.makeText(this, "OpenGl ES 2.0 is not supported", Toast.LENGTH_LONG).show();
+			finish();
+			return;
+		}
+		glSurfaceView = new GLSurfaceView(this);
+		glSurfaceView.setEGLContextClientVersion(2);
+		glSurfaceView.setRenderer(new OpenGLRenderer());
+		setContentView(glSurfaceView);
+	}
+
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		glSurfaceView.onPause();
+	}
+
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		glSurfaceView.onResume();
+	}
+
+	private boolean supportES2()
+	{
+		ActivityManager activityManager =
+			(ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+		ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
+		return (configurationInfo.reqGlEsVersion >= 0x20000);
+	}
+}
+</code></pre>
+<p>В <b>onCreate</b> мы сначала нашим методом supportES2 определяем, что девайс поддерживает OpenGL ES 2.0 и выше. Если нет, то закрываемся.</p>
+<p>Если же все ок, то  <br/>- создаем GLSurfaceView,  <br/>- методом setEGLContextClientVersion говорим ему, что будем использовать OpenGL ES версии 2  <br/>- методом setRenderer передаем экземпляр нашего класса OpenGLRenderer. Теперь этот рендер будет отвечать за то, что будет нарисовано на surface<br/>- методом setContentView ставим surface как основное View для Activity</p>
+<p>Кроме этого, необходимо привязать surface к lifecycle-методам Activity: <b>onPause</b> и <b>onResume</b>, вызвав в них одноименные surface-методы.</p>
+<p>Все готово. Запускаем</p>
+<p><img src="images/lesson168/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Экран заполнен зеленым цветом. Первое простейшее OpenGL-приложение готово. Не Need For Speed конечно, но с чего то ж надо начинать )</p>
+<p>Три момента, на которых я хотел бы еще остановиться</p>
+<p>1) Почему-то не работает alpha-компонент в методе glClearColor. Т.е. передаете последним параметром хоть 0 хоть 1, прозрачность не добавляется. На этот вопрос у меня пока ответа нет.</p>
+<p>2) Координаты viewport, которые мы задаем методом glViewport никак не влияют на результат, и даже если задать область viewport только в половину surface, все равно в зеленый цвет будет закрашена все surface. По этому поводу я вычитал, что это норма. Метод glClear работает на все surface, независимо от размера viewport.</p>
+<p>3) По поводу запуска приложений. Обычно пишут, что OpenGL ES не пашет на эмуляторах. Я не проверял на стандартном эмуляторе, но на Genymotion запуcкается без проблем. На крайняк всегда есть реальный девайс, можно тестить на нем.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

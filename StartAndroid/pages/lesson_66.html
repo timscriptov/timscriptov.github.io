@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 66. Диалоги. Обработчики и операции</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассматриваем обработчики событий диалога<br> - программно закрываем и показываем диалог</p>
+<p>Мы закрываем диалог нажатием на кнопку, на пункт списка или кнопкой Назад. Давайте рассмотрим, какие есть программные способы закрытия. Также узнаем, какие обработчики диалога можно использовать, чтобы отследить закрытие.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0661_AlertDialogOperations<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogOperations<br><b>Package name</b>: ru.startandroid.develop.p0661alertdialogoperations<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="dialog"&gt;Диалог&lt;/string&gt;
+    &lt;string name="app_name"&gt;P0661_AlertDialogOperations&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0661alertdialogoperations;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnDismissListener;
+import android.content.DialogInterface.OnShowListener;
+import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+  final int DIALOG = 1;
+
+  Dialog dialog;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  @Override
+  protected Dialog onCreateDialog(int id) {
+    if (id == DIALOG) {
+      Log.d(LOG_TAG, "Create");
+      AlertDialog.Builder adb = new AlertDialog.Builder(this);
+      adb.setTitle("Title");
+      adb.setMessage("Message");
+      adb.setPositiveButton("OK", null);
+      dialog = adb.create();
+
+      // обработчик отображения
+      dialog.setOnShowListener(new OnShowListener() {
+        public void onShow(DialogInterface dialog) {
+          Log.d(LOG_TAG, "Show");
+        }
+      });
+
+      // обработчик отмены
+      dialog.setOnCancelListener(new OnCancelListener() {
+        public void onCancel(DialogInterface dialog) {
+          Log.d(LOG_TAG, "Cancel");
+        }
+      });
+
+      // обработчик закрытия
+      dialog.setOnDismissListener(new OnDismissListener() {
+        public void onDismiss(DialogInterface dialog) {
+          Log.d(LOG_TAG, "Dismiss");
+        }
+      });
+      return dialog;
+    }
+    return super.onCreateDialog(id);
+  }
+
+  public void onclick(View v) {
+    showDialog(DIALOG);
+  }
+}</code></pre>
+<p>Код в основном должен быть понятен по прошлым урокам. Создаем диалог, настраиваем заголовок, сообщение и одну кнопку без обработчика (нам он сейчас не нужен). Далее для диалога указываем три обработчика: отображения, отмены и закрытия диалога. Все они пишут о себе в лог.</p>
+<p><b>onclick</b> – обработчик кнопки из main.xml. Здесь мы просто запускаем диалог.</p>
+<h3>Обработчики</h3>
+<p>Давайте смотреть, когда и какие обработчики событий диалога будут срабатывать. Все сохраним и запустим. Жмем кнопку Диалог, появляется диалог.</p>
+<p><img src="images/lesson_65_0.png" alt="" width="640"></p>
+<p>В логе видим:</p>
+<p><em>Create<br> Show</em></p>
+<p>Диалог <b>создался </b>и сработал <b>обработчик отображения</b> диалога. Нажмем кнопку ОК. Диалог закрылся, а лог показал следующее:</p>
+<p><em>Dismiss</em></p>
+<p>Сработал <b>обработчик закрытия</b> диалога.</p>
+<p>Теперь еще раз запустим диалог кнопкой Диалог. В логе видим:</p>
+<p><em>Show</em></p>
+<p>Метод onCreateDialog не отработал, т.к. диалог уже создан. Это мы подробно рассматривали в прошлых уроках. Сработал обработчик отображения.</p>
+<p>Для закрытия диалога нажмем кнопку Back (Назад) на эмуляторе. В логе появились следующие строки:</p>
+<p><em>Cancel</em><em><br></em><em>Dismiss</em></p>
+<p>Перед обработчиком закрытия (Dismiss) сработал <b>обработчик отмены</b> (Cancel), т.к. диалог был отменен.</p>
+<h3>Операции</h3>
+<p>Разберем программные методы управления диалогом. Для этого немного изменим код MainActivity.java. Добавим два пустых пока метода <b>method1 </b>и <b>method2</b>, и перепишем <b>onclick</b>:</p>
+<pre><code class="java">  void method1() {
+  }
+
+  void method2() {
+  }
+
+  public void onclick(View v) {
+    showDialog(DIALOG);
+
+    Handler h = new Handler();
+
+    h.postDelayed(new Runnable() {
+      public void run() {
+        method1();
+      }
+    }, 2000);
+
+    h.postDelayed(new Runnable() {
+      public void run() {
+        method2();
+      }
+    }, 4000);
+  }</code></pre>
+<p>Handler мы пока не проходили, его понимать необязательно. Сейчас просто надо принять, что вся эта конструкция в <b>onclick </b>покажет диалог, затем через 2 секунды выполнит метод method1 и еще через 2 секунды выполнит метод method2. Т.е. получится такая последовательность:</p>
+<p><i>отображение диалога<br> 2 сек <br> выполнение method1<br> 2 сек <br> выполнение method2</i></p>
+<p>Мы будем работать с method1 и method2. Начнем с метода <a href="http://developer.android.com/reference/android/app/Dialog.html#dismiss()" target="_blank">dismiss</a> – он закрывает диалог. Перепишем метод method1:</p>
+<pre><code class="java">  void method1() {
+    dialog.dismiss();
+  }</code></pre>
+<p>method2 пока не трогаем. Запустим приложение и нажмем кнопку Диалог. Диалог появился, повисел две секунды и закрылся. Это нам обеспечил <b>dismiss</b>, вызванный через 2 секунды после отображения диалога. Смотрим лог:</p>
+<p><em>Create</em><em><br></em><em>Show</em><em><br></em><em>Dismiss</em></p>
+<p>Все верно. Диалог создался, отобразился и закрылся. Обратите внимание на время записей в логе. Между <em>Show</em> и <em>Dismiss</em> должно быть примерно 2 секунды.</p>
+<p>Теперь используем метод <a href="http://developer.android.com/reference/android/app/Dialog.html#cancel()" target="_blank">cancel</a>. Перепишем method1:</p>
+<pre><code class="java">  void method1() {
+    dialog.cancel();
+  }</code></pre>
+<p><code class="java"></code>Все сохраним, запустим приложение и вызовем диалог. Снова диалог появился и закрылся через две секунды. Сработал метод <b>cancel</b>. Логи:</p>
+<p><i>Create<br> Show<br> Cancel<br> Dismiss</i></p>
+<p>Все так же, как при закрытии диалога кнопкой Back.</p>
+<p>Снова перепишем method1, используя метод <a href="http://developer.android.com/reference/android/app/Dialog.html#hide()" target="_blank">hide</a>:</p>
+<pre><code class="java">  void method1() {
+    dialog.hide();
+  }</code></pre>
+<p>Запустим приложение, вызовем диалог. Он отобразился и закрылся. Смотрим лог:</p>
+<p><em>Create</em><em><br></em><em>Show</em></p>
+<p>На этот раз <b>обработчик закрытия</b> не сработал. Диалог просто скрылся. Зачем это нужно, я не знаю, но метод такой есть, поэтому я рассказал о нем.</p>
+<h3>Управление из Activity</h3>
+<p>Мы работали напрямую с объектом Dialog и вызывали его методы. Есть еще другой способ. Сначала немного теории о механизме взаимодействия Activity и диалога. Когда мы первый выполняем метод showDialog, мы передаем туда ID. Это ID далее передается в onCreateDialog.  В итоге onCreateDialog возвращает созданный диалог, и Activity для себя увязывает его с ID.  И если мы захотим обратиться к этому диалогу, нам нужен будет только ID, Activity сама по нему определит, какой диалог нам нужен.</p>
+<p>Когда мы, например, следующие разы вызываем showDialog, мы передаем туда ID, но диалог не создается. Activity по ID находит ранее созданный диалог и показывает его. У Activity также есть методы по закрытию диалога – это <a href="http://developer.android.com/reference/android/app/Activity.html#dismissDialog(int)" target="_blank">dismissDialog</a> и <a href="http://developer.android.com/reference/android/app/Activity.html#removeDialog(int)" target="_blank">removeDialog</a>. Первый просто закрывает диалог, а второй закрывает и заставляет Activity забыть про него. Т.е. когда мы в след.раз захотим показать этот диалог, Activity будет заново создавать его, а не брать уже готовый. Проверим это.</p>
+<p>Перепишем методы:</p>
+<pre><code class="java">  void method1() {
+    dismissDialog(DIALOG);
+  }
+
+  void method2() {
+    showDialog(DIALOG);
+  }</code></pre>
+<p>Все сохраним и запустим. Вызовем диалог и ждем. Диалог отобразился, через 2 секунды закрылся, и еще через 2 снова открылся. Смотрим лог:</p>
+<p><em>Create</em><em><br></em><em>Show</em><em><br></em><em>Dismiss</em><em><br></em><em>Show</em></p>
+<p>Когда диалог отобразился второй раз, не сработал метод его создания, т.к. Activity использовало созданный при первом вызове объект.</p>
+<p>Перепишем метод method1:</p>
+<pre><code class="java">  void method1() {
+    removeDialog(DIALOG);
+  }</code></pre>
+<p>Будем не только закрывать диалог, но и «забывать» его. method2 оставляем без изменений, он будет показывать диалог.</p>
+<p>Запустим приложение, запустим диалог и ждем. Диалог открылся, закрылся и открылся снова. Смотрим лог:</p>
+<p><i>Create<br> Show<br> Dismiss<br> Create<br> Show</i></p>
+<p>Но на этот раз при втором показе он снова создавался, т.к. Activity его забыло благодаря методу removeDialog.</p>
+<p>У объекта Dialog есть еще метод <a href="http://developer.android.com/reference/android/app/Dialog.html#show()" target="_blank">show</a>. Чем он отличается от метода Activity showDialog? show просто покажет созданный диалог, а showDialog, начинает проверять был ли уже создан диалог, создает его, если необходимо, и вызывает для него метод onPrepareDialog.</p>
+</body>
+</html>
+
+            </div>
+     </div>               
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

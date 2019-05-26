@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 157. Рисование. Bitmap. BitmapFactory. Чтение, вывод на канву, основная информация</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- читаем Bitmap<br/>- выводим его на канву<br/>- получаем информацию о нем</p>
+<p>Начинаем тему Bitmap. Без нее в рисовании никуда, т.к. Bitmap – это объект, который хранит в себе изображение. Та же канва, с которой мы обычно работаем, это обертка, которая принимает команды от нас и рисует их на Bitmap, который мы видим в результате.</p>
+<p>Мы рассмотрим все основные операции с Bitmap и обязательно разберем интересные материалы с официального сайта по этой теме.</p>
+<p>В этом уроке начнем с основ. Посмотрим какие методы есть для создания Bitmap из файла, как вывести его на канву и какую инфу о себе может рассказать Bitmap.</p>
+<p>Для получения изображения из файла используется фабрика <a href="http://developer.android.com/reference/android/graphics/BitmapFactory.html" target="_blank" rel="noopener noreferrer">BitmapFactory</a>. У нее есть несколько decode* методов, которые принимают на вход массив байтов, путь к файлу, поток, файловый дескриптор или идентификатор ресурса. И на выходе мы получаем Bitmap.</p>
+<p>Можно заметить, что все эти методы имеют также версии с использованием объекта <a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html" target="_blank" rel="noopener noreferrer">BitmapFactory.Options</a>. Это очень полезная штука, о ней мы отдельно еще поговорим в одном из следующих уроков.</p>
+<p>Самые используемые из методов чтения это, конечно, следующие:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.html#decodeFile(java.lang.String)" target="_blank" rel="noopener noreferrer">decodeFile(String pathName)</a> – получить Bitmap из файла, указав его путь. Т.е. этим методом можем считать картинку с SD-карты. (getExternalStorageDirectory)</p>
+<p><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.html#decodeResource(android.content.res.Resources, int)" target="_blank" rel="noopener noreferrer">decodeResource(Resources res, int id)</a> – получить Bitmap из drawable-ресурса, указав его ID. Этот метод вернет нам картинку из папок res/drawable нашего приложения.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1571_BitmapRead <br/> <b>Build Target</b>: Android 4.4 <br/> <b>Application name</b>: BitmapRead<br/> <b>Package name</b>: ru.startandroid.develop.p1571bitmapread<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1571bitmapread;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    Rect rectSrc;
+    Rect rectDst;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+      bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+      
+      String info = 
+          String.format("Info: size = %s x %s, bytes = %s (%s), config = %s",
+              bitmap.getWidth(), 
+              bitmap.getHeight(),
+              bitmap.getByteCount(), 
+              bitmap.getRowBytes(),
+              bitmap.getConfig());
+      Log.d("log", info);
+
+      matrix = new Matrix();
+      matrix.postRotate(45);
+      matrix.postScale(2, 3);
+      matrix.postTranslate(200, 50);
+      
+      rectSrc = new Rect(0, 0, bitmap.getWidth() / 2, bitmap.getHeight() / 2);
+      rectDst = new Rect(300, 100, 500, 200);      
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      canvas.drawBitmap(bitmap, 50, 50, paint);
+      canvas.drawBitmap(bitmap, matrix, paint);
+      canvas.drawBitmap(bitmap, rectSrc, rectDst, paint);
+    }
+
+  }
+}</code></pre>
+<p>В конструкторе <b>DrawView</b> мы получаем Bitmap из drawable-ресурса ic_launcher. На вход методу decodeResource мы передали объект ресурсов и ID требуемого ресурса.</p>
+<p>Далее в переменную <b>info</b> сформируем строку с инфой о картинке:<br/><a href="http://developer.android.com/reference/android/graphics/Bitmap.html#getWidth()" target="_blank" rel="noopener noreferrer">getWidth</a> – ширина картинки в px<br/><a href="http://developer.android.com/reference/android/graphics/Bitmap.html#getHeight()" target="_blank" rel="noopener noreferrer">getHeight</a> – высота картинки в px<br/><a href="http://developer.android.com/reference/android/graphics/Bitmap.html#getByteCount()" target="_blank" rel="noopener noreferrer">getByteCount</a> – число байт, которое занимает картинка (доступен только с API Level 12)<br/><a href="http://developer.android.com/reference/android/graphics/Bitmap.html#getRowBytes()" target="_blank" rel="noopener noreferrer">getRowBytes</a> – число байт в одной строке картинки<br/><a href="http://developer.android.com/reference/android/graphics/Bitmap.html#getConfig()" target="_blank" rel="noopener noreferrer">getConfig</a> – инфа о способе хранения данных о пикселах</p>
+<p>И выводим эту инфу в лог.</p>
+<p>Настраиваем матрицу, которая <span style="line-height: 15.8079996109009px;">повернет картинку на 45 градусов, </span>растянет картинку в два раза в ширину и в три раза в высоту, и переместит ее на 200 вправо и 50 вниз.</p>
+<p>Создаем два <b>Rect </b>объекта. <b>rectSrc </b>со сторонами равными половине сторон картинки. Т.е. этот прямоугольник охватывает левую верхнюю четверть картинки. Эту часть мы будем брать для вывода на экран далее в примере. А выводить мы ее будем в прямоугольник <b>rectDst</b>, это просто произвольная область на экране.</p>
+<p>В методе <b>onDraw </b>рисуем картинку на канве тремя разными версиями метода drawBitmap. В первом случае просто <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawBitmap(android.graphics.Bitmap, float, float, android.graphics.Paint)" target="_blank" rel="noopener noreferrer">выводим</a> картинку как есть в точке (50,50). Во втором <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawBitmap(android.graphics.Bitmap, android.graphics.Matrix, android.graphics.Paint)" target="_blank" rel="noopener noreferrer">применяем</a> матрицу, в которой мы уже настроили поворот, трансформацию и перемещение. И третий вариант <a href="http://developer.android.com/reference/android/graphics/Canvas.html#drawBitmap(android.graphics.Bitmap, android.graphics.Rect, android.graphics.Rect, android.graphics.Paint)" target="_blank" rel="noopener noreferrer">возьмет</a> от картинки часть, входящую в область rectSrc (мы там задали левую верхнюю четверть) и нарисует ее на канве в области rectDst, применив необходимые трансформации и перемещения.</p>
+<p>Запускаем приложение.</p>
+<p><img src="images/lesson157/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Слева-направо видим все три варианта вывода. В первом случае без изменений и в указанной точке. Во втором случае преобразования были описаны в матрице. В третьем случае мы отсекли от картинки часть и нарисовали ее в указанной области, канва сама при этом растянула изображение под размеры области.</p>
+<p>Смотрим лог</p>
+<p><i>Info: size = 48 x 48, bytes = 9216 (192), config = ARGB_8888</i></p>
+<p><b>Размер картинки</b> = 48 (ширина) на 48 (высота). У вас тут могут быть другие цифры, т.к. метод decodeResource учитывает density устройства и вытаскивает картинку из необходимой папки. В моем случае он взял ее из drawable-mdpi.</p>
+<p>Далее мы вывели <b>вес</b> картинки в байтах - 9216, и кол-во <b>байтов в одной строке</b> - 192. Тут понятно, что вес картинки = кол-во байтов в строке * высоту = 192 * 48 = 9126.</p>
+<p>А если мы разделим кол-во байтов строки на ширину, то получим сколько байтов занимает один пиксел: 192 / 48 = 4 байта.</p>
+<p>Это же подтверждает и config = ARGB_8888. Это означает, что на каждый из 4-х ARGB-компонентов пиксела (альфа, красный, зеленый, голубой) выделяется по 8 бит (= 1 байт). Следовательно, пиксел будет весить 4 байта.</p>
+<p>Кроме ARGB_8888 есть еще несколько <a href="http://developer.android.com/reference/android/graphics/Bitmap.Config.html" target="_blank" rel="noopener noreferrer">конфигураций</a>:</p>
+<p>ALPHA_8 – пиксел содержит в себе инфу только о прозрачности, о цвете здесь инфы нет. Каждый пиксел требует 8 бит (1 байт).</p>
+<p>ARGB_4444 - аналог ARGB_8888, только каждому ARGB-компоненту отведено не по 8, а по 4 бита. Соответственно пиксел весит 16 бит (2 байта). С API Level 13 эта конфигурация объявлена устаревшей.</p>
+<p>RGB_565 – здесь нет инфы о прозрачности, а трем RGB-компонентам выделено, соответственно по 5,6 и 5 бит. Каждый пиксел будет весить 16 бит или 2 байта.</p>
+<p>Все вышенаписанное - это достаточно важные вещи, которые надо понимать и учитывать в разработке. Если, например, ваше приложение работает с картинками, и вы точно знаете, что они будут без прозрачности, то лучше использовать RGB_565. Все ваши картинки в памяти займут в два раза меньше места, чем при использовании дефолтового ARGB_8888. При большом кол-ве картинок это существенная оптимизация!</p>
+<p>На размер (а следовательно и вес) изображения также следует обращать внимание. Следите, чтобы ваши картинки в памяти не были размера больше, чем вам нужно. Приведу пример из практики. Как-то пришлось оптимизировать приложение, в котором был экран со списком юзеров с аватарками. Аватарки эти изначально грузились с сайта и кешировались на SD. Для списка использовался memory-кэш, но он переполнялся мгновенно и постоянно подчитывал инфу с SD.</p>
+<p>Вскрытие показало, что с сайта картинки грузились в разрешении 200 х 200 и прямо так и сохранялись на SD. В memory-кэш они помещались в том же разрешении, занимая, соответственно, по 200 * 200 * 4 = 160 000 байт каждая! Т.е. 6 картинок в кэше и уже метр памяти занят. А список там на сотни позиций. Конечно, никакого кэша не хватит при скроллинге.</p>
+<p>Глянули на layout строки списка. Каждый ImageView, который отображал аватарку, был размером всего 32х32 dp. Т.е. в случае mdpi нам требовалась картинка 32х32 пиксела. Т.е. 32 * 32 * 4 = 4096 байт. Получается, что вместо одной аватарки 200х200 в кэше свободно могли бы разместиться почти 40 аватарок 32х32.</p>
+<p>В итоге, при чтении картинок с сайта и сохранении их на SD поставили сразу изменение размера до необходимого, и стало значительно лучше. Еще как вариант, у сайта сразу просить требуемый размер картинки.</p>
+<p>В общем, старайтесь использовать минимально-требуемый вам формат и размер. А о том как выбрать формат, поменять размер и использовать кэши мы обязательно поговорим в следующих уроках.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

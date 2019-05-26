@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 121. Виджеты. Список</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем виджет со списком</p>
+<p>В третьей версии Андроид у виджетов появилась возможность работать с наборами данных типа списка или грида. Рассмотрим эту технологию на примере списка.  В качестве view-компонента используется обычный ListView. Для межпроцессной работы с ним используется, как обычно в виджетах, RemoteViews. Но для заполнения нам придется создать два класса в дополнение к стандартному классу провайдера.</p>
+<p>Первый – этот класс будет наполнять наш список значениями. Класс является реализацией интерфейса <a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html" target="_blank">RemoteViewsService.RemoteViewsFactory</a>, и его методы очень схожи с методами стандартного адаптера. Его обычно везде называют factory. Я же в этом уроке буду называть его просто адаптером.</p>
+<p>Второй – класс сервиса, наследующий <a href="http://developer.android.com/reference/android/widget/RemoteViewsService.html" target="_blank">RemoteViewsService</a>. В нем мы реализуем только один метод, который будет создавать и возвращать экземпляр (первого) класса, который будет заполнять список.</p>
+<p>При создании и работе со списком в виджете необходимо понимать, как реализованы два момента: заполнение данными и реакция на нажатия.</p>
+<p>Опишу вкратце схему заполнения данными. При подготовке виджета в классе провайдера мы для списка присваиваем Intent, который содержит данные для вызова нашего второго класса-сервиса. Когда система хочет обновить данные в списке (в виджете) она достает этот интент, биндится к указанному сервису и берет у него адаптер. И этот адаптер уже используется для наполнения и формирования пунктов списка.</p>
+<p>Теперь о реализации нажатий на пункты списка. В обычном виджете использовались PendingIntent. Здесь чуть по-другому. Для каждого пункта в списке НЕ создается свой отдельный PendingIntent. Вместо этого списку дается общий, шаблонный PendingIntent. А для каждого пункта списка мы указываем отдельный Intent с extra-данными. Далее, при создании, каждому пункту списка система присваивает обработчик нажатия, который при срабатывании берет этот общий PendingIntent, добавляет к нему данные из персонального Intent, и отправляет по назначению сформированный таким образом PendingIntent. Т.е. в итоге по клику все равно срабатывает PendingIntent.</p>
+<p>Сделаем пример и рассмотрим на практике все эти теоретические выкладки.</p>
+<p>Создадим проект без Activity:</p>
+<p><b>Project name</b>: P1211_ListWidget<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: ListWidget<br><b>Package name</b>: ru.startandroid.develop.p1211listwidget<br><br></p>
+<p>Создаем layout-виджета - <b>widget.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#9999"
+	android:padding="5dp"&gt;
+	&lt;TextView
+		android:id="@+id/tvUpdate"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentTop="true"
+		android:background="#3300ff00"
+		android:gravity="center"
+		android:textAppearance="?android:attr/textAppearanceLarge"&gt;
+	&lt;/TextView&gt;
+	&lt;ListView
+		android:id="@+id/lvList"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_below="@id/tvUpdate"&gt;
+	&lt;/ListView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Текст будет использован для отображения время обновления. Он же собственно и будет кнопкой обновления. В списке будем показывать данные.</p>
+<p>Теперь layout строки списка – <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"&gt;
+	&lt;TextView
+		android:id="@+id/tvItemText"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textAppearance="?android:attr/textAppearanceMedium"&gt;
+	&lt;/TextView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>В каждом пункте списка у нас будет только текст.</p>
+<p>Создаем класс-адаптер - <b>MyFactory.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1211listwidget;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.RemoteViews;
+import android.widget.RemoteViewsService.RemoteViewsFactory;
+
+public class MyFactory implements RemoteViewsFactory {
+
+  ArrayList&lt;String&gt; data;
+  Context context;
+  SimpleDateFormat sdf;
+  int widgetID;
+
+  MyFactory(Context ctx, Intent intent) {
+    context = ctx;
+    sdf = new SimpleDateFormat("HH:mm:ss");
+    widgetID = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
+        AppWidgetManager.INVALID_APPWIDGET_ID);
+  }
+
+  @Override
+  public void onCreate() {
+    data = new ArrayList&lt;String&gt;();
+  }
+
+  @Override
+  public int getCount() {
+    return data.size();
+  }
+
+  @Override
+  public long getItemId(int position) {
+    return position;
+  }
+
+  @Override
+  public RemoteViews getLoadingView() {
+    return null;
+  }
+
+  @Override
+  public RemoteViews getViewAt(int position) {
+    RemoteViews rView = new RemoteViews(context.getPackageName(),
+        R.layout.item);
+    rView.setTextViewText(R.id.tvItemText, data.get(position));
+    return rView;
+  }
+
+  @Override
+  public int getViewTypeCount() {
+    return 1;
+  }
+
+  @Override
+  public boolean hasStableIds() {
+    return true;
+  }
+
+  @Override
+  public void onDataSetChanged() {
+    data.clear();
+    data.add(sdf.format(new Date(System.currentTimeMillis())));
+    data.add(String.valueOf(hashCode()));
+    data.add(String.valueOf(widgetID));
+    for (int i = 3; i &lt; 15; i++) {
+      data.add("Item " + i);
+    }
+  }
+
+  @Override
+  public void onDestroy() {
+
+  }
+
+}</code></pre>
+<p>Методы очень похожи на методы обычного адаптера. Обсудим некоторые.</p>
+<p><b>MyFactory</b> – конструктор. Здесь никаких требований. Я, например, использую конструктор с двумя параметрами – Context и Intent. Этот Intent будет передавать нам сервис при создании адаптера. В нем я передаю адаптеру ID виджета.</p>
+<p><a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html#onCreate()" target="_blank">onCreate</a> – создание адаптера.</p>
+<p><a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html#getLoadingView()" target="_blank">getLoadingView</a> – здесь вам предлагается возвращать View, которое система будет показывать вместо пунктов списка, пока они создаются. Если ничего здесь не создавать, то система использует некое дефолтное View.</p>
+<p><a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html#getViewAt(int)" target="_blank">getViewAt</a> – создание пунктов списка. Здесь идет стандартное использование RemoteViews</p>
+<p><a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html#onDataSetChanged()" target="_blank">onDataSetChanged</a> – вызывается, когда поступил запрос на обновление данных в списке. Т.е. в этом методе мы подготавливаем данные для списка. Метод заточен под выполнение тяжелого долгого кода. В трех первых пунктах списка мы выводим текущее время, хэш-код адаптера и ID-виджета. Позже станет понятно, зачем.</p>
+<p><a href="http://developer.android.com/reference/android/widget/RemoteViewsService.RemoteViewsFactory.html#onDestroy()" target="_blank">onDestroy</a> – вызывается при удалении последнего списка, который использовал адаптер (один адаптер может использоваться несколькими списками).</p>
+<p>Создаем сервис – <b>MyService.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1211listwidget;
+
+import android.content.Intent;
+import android.widget.RemoteViewsService;
+
+public class MyService extends RemoteViewsService {
+
+  @Override
+  public RemoteViewsFactory onGetViewFactory(Intent intent) {
+    return new MyFactory(getApplicationContext(), intent);
+  }
+
+}</code></pre>
+<p>В нем мы просто реализуем метод <a href="http://developer.android.com/reference/android/widget/RemoteViewsService.html#onGetViewFactory(android.content.Intent)" target="_blank">onGetViewFactory</a>, который создает адаптер, передает ему Context и Intent, и возвращает этот созданный адаптер системе.</p>
+<p>Класс провайдер – <b>MyProvider.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1211listwidget;
+
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+
+import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.RemoteViews;
+
+public class MyProvider extends AppWidgetProvider {
+
+  SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+
+  @Override
+  public void onUpdate(Context context, AppWidgetManager appWidgetManager,
+      int[] appWidgetIds) {
+    super.onUpdate(context, appWidgetManager, appWidgetIds);
+    for (int i : appWidgetIds) {
+      updateWidget(context, appWidgetManager, i);
+    }
+  }
+
+  void updateWidget(Context context, AppWidgetManager appWidgetManager,
+      int appWidgetId) {
+    RemoteViews rv = new RemoteViews(context.getPackageName(),
+        R.layout.widget);
+
+    setUpdateTV(rv, context, appWidgetId);
+
+    setList(rv, context, appWidgetId);
+
+    setListClick(rv, context, appWidgetId);
+
+    appWidgetManager.updateAppWidget(appWidgetId, rv);
+  }
+
+  void setUpdateTV(RemoteViews rv, Context context, int appWidgetId) {
+    rv.setTextViewText(R.id.tvUpdate,
+        sdf.format(new Date(System.currentTimeMillis())));
+    Intent updIntent = new Intent(context, MyProvider.class);
+    updIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+    updIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS,
+        new int[] { appWidgetId });
+    PendingIntent updPIntent = PendingIntent.getBroadcast(context,
+        appWidgetId, updIntent, 0);
+    rv.setOnClickPendingIntent(R.id.tvUpdate, updPIntent);
+  }
+
+  void setList(RemoteViews rv, Context context, int appWidgetId) {
+    Intent adapter = new Intent(context, MyService.class);
+    adapter.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+    rv.setRemoteAdapter(R.id.lvList, adapter);
+  }
+
+  void setListClick(RemoteViews rv, Context context, int appWidgetId) {
+
+  }
+
+}</code></pre>
+<p><b>onUpdate</b> вызывается, когда поступает запрос на обновление виджетов. В нем мы перебираем ID, и для каждого вызываем метод updateWidget.</p>
+<p><b>updateWidget</b> – здесь вызываем три метода для формирования виджета и затем метод updateAppWidget, чтобы применить все изменения к виджету.</p>
+<p><b>setUpdateTV</b> – в этом  методе работаем с TextView (который над списком). Ставим ему время в качестве текста и вешаем обновление виджета по нажатию.</p>
+<p><b>setList</b> – с помощью метода <a href="http://developer.android.com/reference/android/widget/RemoteViews.html#setRemoteAdapter(int, android.content.Intent)" target="_blank">setRemoteAdapter</a> указываем списку, что для получения адаптера ему надо будет обратиться к нашему сервису MyService.</p>
+<p>Также обратите внимание, что в Intent мы помещаем ID виджета. Зачем? Этот Intent будет передан в метод сервиса onGetViewFactory. Этот метод мы реализовывали, в нем мы создаем адаптер и передаем ему тот же Intent. А уже в адаптере достаем этот ID и используем (третья строка в списке). Т.е. этот Intent пройдет через сервис и попадет в адаптер, поэтому если хотите что-то передать адаптеру, используйте этот Intent.</p>
+<p>Но, повторюсь, это вовсе необязательно. Вы можете создать конструктор адаптера и без Intent-а на вход. Просто мне надо было как-то передать адаптеру ID виджета, поэтому я использую Intent.</p>
+<p><b>setListClick</b> – пока пустой. Чуть позже будем писать в нем обработку нажатий на пункты списка.</p>
+<p>Файл метаданных виджета - res/xml/<b>widget_metadata.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;appwidget-provider
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:initialLayout="@layout/widget"
+	android:minHeight="180dp"
+	android:minWidth="110dp"
+	android:updatePeriodMillis="1800000"&gt;
+&lt;/appwidget-provider&gt;</code></pre>
+<p>Фрагмент манифеста, описывающий сервис и бродкаст:</p>
+<pre><code class="xml">&lt;service
+	android:name="MyService"
+	android:permission="android.permission.BIND_REMOTEVIEWS"&gt;
+&lt;/service&gt;
+&lt;receiver
+	android:name="MyProvider"&gt;
+	&lt;intent-filter&gt;
+		&lt;action
+			android:name="android.appwidget.action.APPWIDGET_UPDATE"&gt;
+		&lt;/action&gt;
+	&lt;/intent-filter&gt;
+	&lt;meta-data
+		android:name="android.appwidget.provider"
+		android:resource="@xml/widget_metadata"&gt;
+	&lt;/meta-data&gt;
+&lt;/receiver&gt;</code></pre>
+<p>Для сервиса, необходимо установить разрешение <a href="http://developer.android.com/reference/android/Manifest.permission.html#BIND_REMOTEVIEWS" target="_blank">BIND_REMOTEVIEWS</a>. Это мы не наделяем сервис полномочиями, а наоборот, указываем, что этими полномочиями должен быть наделен тот, кто будет этот сервис вызывать. Система имеет такие полномочия, поэтому сможет использовать сервис для заполнения списка в адаптере.</p>
+<p>Непростая это штука – виджеты, правда? Столько телодвижений из-за простого списка :)</p>
+<p>Все сохраняем, инсталлим виджет. Добавим на экран. В списке он будет называться ListWidget.</p>
+<p><img src="images/lesson_120_0.png" alt="" width="384" height="640"></p>
+<p>Видим время обновления виджета, время формирования данных в списке, хэш-код адаптера, ID виджета.</p>
+<p>Жмем зеленую зону для обновления.</p>
+<p>Время обновления виджета поменялось, а вот список не обновился, время формирования данных осталось прежним.</p>
+<p><img src="images/lesson_120_1.png" alt="" width="384" height="640"></p>
+<p>Чтобы обновить данные в списке виджета, необходимо явно вызвать метод <a href="http://developer.android.com/reference/android/appwidget/AppWidgetManager.html#notifyAppWidgetViewDataChanged(int, int)" target="_blank">notifyAppWidgetViewDataChanged</a> и передать ему ID виджета и ID списка.</p>
+<p>Давайте сделаем это. Перепишем <b>updateWidget</b> в <b>MyProvider.java</b>:</p>
+<pre><code class="java; highlight"> void updateWidget(Context context, AppWidgetManager appWidgetManager,
+      int appWidgetId) {
+    RemoteViews rv = new RemoteViews(context.getPackageName(),
+        R.layout.widget);
+
+    setUpdateTV(rv, context, appWidgetId);
+
+    setList(rv, context, appWidgetId);
+
+    setListClick(rv, context, appWidgetId);
+
+    appWidgetManager.updateAppWidget(appWidgetId, rv);
+    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId,
+        R.id.lvList);
+  }</code></pre>
+<p>Добавили вызов обновления данных списка.</p>
+<p>Сохраняем, инсталлим. Теперь нажатие на зеленую зону будет обновлять и список.</p>
+<p><img src="images/lesson_120_2.png" alt="" width="384" height="640"></p>
+<p>Теперь давайте добавим второй виджет. У них внезапно совпадают ID виджета и хэш-коды адаптеров.</p>
+<p><img src="images/lesson_120_3.png" alt="" width="384" height="640"></p>
+<p>Вывод: они используют один адаптер. Почему так?</p>
+<p>Когда система создает список в виджете, она использует Intent, который мы передавали в метод setRemoteAdapter. В этом Intent мы указали, что надо использовать сервис MyService. Система биндится к MyService и передает ему этот Intent. Сервис проверяет, не был ли уже создан адаптер для такого Intent. Если был – то он и возвращается системе. Если по такому Intent еще не создавался адаптер, то он создается (используется метод onGetViewFactory, который мы реализовали) и возвращается системе. Т.е. некая система кэширования адаптеров по Intent.</p>
+<p>Теперь наложим эту логику на нашу ситуацию. Мы создали первый виджет. В метод setRemoteAdapter передавали Intent с указанием класса нашего сервиса и  с ID виджета в extra-данных. Сервис создал адаптер, отдал его списку первого виджета и связал эту пару – Intent и адаптер. Далее мы создаем второй виджет. Для его списка, мы использовали такой же Intent. Отличие только в extra-данных – ID виджета. Но сервис сверяет Intent-ы только по основным данным, без extra. Поэтому для него два этих Intent от разных виджетов получились одинаковы. И когда список второго виджета дал Intent и попросил выделить ему адаптер, сервис взял Intent, увидел, что по подобному Intent уже был выдан адаптер и его и использовал вместо того, чтобы новый городить. Т.е. список второго виджета получил тот же адаптер, что и список первого виджета.</p>
+<p>Поэтому список второго виджета и показывает те же данные адаптера (ID виджета и хэш-код), что и список первого. Как это пофиксить? Сделать Intent-ы разными. Для этого будем добавлять к ним <b>data</b>, в который поместим все данные Intent. В этом случае у нас в data попадут extra-данные и Intent-ы будут разными.</p>
+<p>Перепишем метод <b>setList</b> в <b>MyProvider.java</b>:</p>
+<pre><code class="java; highlight">  void setList(RemoteViews rv, Context context, int appWidgetId) {
+    Intent adapter = new Intent(context, MyService.class);
+    adapter.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+    Uri data = Uri.parse(adapter.toUri(Intent.URI_INTENT_SCHEME));
+    adapter.setData(data);
+    rv.setRemoteAdapter(R.id.lvList, adapter);
+  }</code></pre>
+<p>Теперь все ок. Для разных виджетов получатся разные Intent и списки получат разные адаптеры.</p>
+<p>Для чистоты эксперимента удалите пару ранее созданных виджетов с экрана.</p>
+<p>Все сохраняем, инсталлим. Размещаем пару виджетов</p>
+<p><img src="images/lesson_120_4.png" alt="" width="384" height="640"></p>
+<p>Все ок, видим, что теперь списки используют разные адаптеры.</p>
+<p>Осталось разобраться с реагированием на нажатия пунктов списка.</p>
+<p>Добавим пару констант в класс <b>MyProvider.java</b>:</p>
+<pre><code class="java">  final String ACTION_ON_CLICK = "ru.startandroid.develop.p1211listwidget.itemonclick";
+  final static String ITEM_POSITION = "item_position"; </code></pre>
+<p>Заполним метод <b>setListClick</b> в <b>MyProvider.java</b>:</p>
+<pre><code class="java">  void setListClick(RemoteViews rv, Context context, int appWidgetId) {
+    Intent listClickIntent = new Intent(context, MyProvider.class);
+    listClickIntent.setAction(ACTION_ON_CLICK);
+    PendingIntent listClickPIntent = PendingIntent.getBroadcast(context, 0,
+        listClickIntent, 0);
+    rv.setPendingIntentTemplate(R.id.lvList, listClickPIntent);
+  }</code></pre>
+<p>Здесь используется обычный алгоритм послания бродкаста. Мы с помощью метода <a href="http://developer.android.com/reference/android/widget/RemoteViews.html#setPendingIntentTemplate(int, android.app.PendingIntent)" target="_blank">setPendingIntentTemplate</a> устанавливаем шаблонный PendingIntent, который затем будет использоваться всеми пунктами списка. В нем мы указываем, что необходимо будет вызвать наш класс провайдера (он же BroadcastReceiver) с action = ACTION_ON_CLICK.</p>
+<p>Теперь нам надо сделать обработку этого action. Добавим метод <b>onReceive</b> в <b>MyProvider.java</b>:</p>
+<pre><code class="java">  @Override
+  public void onReceive(Context context, Intent intent) {
+    super.onReceive(context, intent);
+    if (intent.getAction().equalsIgnoreCase(ACTION_ON_CLICK)) {
+      int itemPos = intent.getIntExtra(ITEM_POSITION, -1);
+      if (itemPos != -1) {
+        Toast.makeText(context, "Clicked on item " + itemPos,
+            Toast.LENGTH_SHORT).show();
+      }
+    }
+  }</code></pre>
+<p>Вызываем метод родителя, чтобы не нарушать работу провайдера. Далее проверяем, что action тот, что нам нужен - ACTION_ON_CLICK, вытаскиваем позицию нажатого пункта в списке и выводим сообщение на экран.</p>
+<p>Осталось допилить адаптер. Перепишем <b>getViewAt</b> в <b>MyFactory.java</b>:</p>
+<pre><code class="java; highlight">  @Override
+  public RemoteViews getViewAt(int position) {
+    RemoteViews rView = new RemoteViews(context.getPackageName(),
+        R.layout.item);
+    rView.setTextViewText(R.id.tvItemText, data.get(position));
+    Intent clickIntent = new Intent();
+    clickIntent.putExtra(MyProvider.ITEM_POSITION, position);
+    rView.setOnClickFillInIntent(R.id.tvItemText, clickIntent);
+
+    return rView;
+  }</code></pre>
+<p>Для каждого пункта списка мы создаем Intent, помещаем в него позицию пункта и вызываем <a href="http://developer.android.com/reference/android/widget/RemoteViews.html#setOnClickFillInIntent(int, android.content.Intent)" target="_blank">setOnClickFillInIntent</a>. Этот метод получает на вход ID View и Intent. Что он с ними делает?</p>
+<p>Для View с полученным на вход ID он создает обработчик нажатия, который будет дергать PendingIntent, который получается следующим образом. Берется шаблонный PendingIntent, который был привязан к списку методом setPendingIntentTemplate (в классе провайдера) и к нему добавляется данные полученного на вход Intent-а. Т.е. получится PendingIntent, Intent которого будет содержать action = ACTION_ON_CLICK (это мы сделали еще в провайдере) и данные по позиции пункта списка. При нажатии на пункт списка, этот Intent попадет в onReceive нашего MyProvider и будет обработан, как я уже чуть ранее описывал.</p>
+<p>Все сохраняем, инсталлим. Проверяем – нажимаем на какой либо пункт:</p>
+<p><img src="images/lesson_120_5.png" alt="" width="384" height="640"></p>
+<p>Сообщение отображается.</p>
+<p>Подытожим про LifeCycle-методы. Метод onCreate для адаптера вызывается, когда он создается для первого своего списка. А метод onDestory вызывается, когда удаляется последний список, использующий этот адаптер.</p>
+<p>Мы использовали метод setRemoteAdapter. который на вход берет ID View и Intent, этот метод появился только в API 14. А изначально в API 11 была такая реализация - <a href="http://developer.android.com/reference/android/widget/RemoteViews.html#setRemoteAdapter(int, int, android.content.Intent)" target="_blank">setRemoteAdapter (int appWidgetId, int viewId, Intent intent)</a>. Он на вход требовал еще ID виджета. Используйте этот вариант метода, если ваш виджет должен будет работать в Android 3.</p>
+<p>У обычного ListView есть возможность установить View, которое будет отображаться если данных в списке нет - метод setEmptyView. RemoteViews также предоставляет вам такую возможность - <a href="http://developer.android.com/reference/android/widget/RemoteViews.html#setEmptyView(int, int)" target="_blank">setEmptyView</a>. На вход передаете ID списка и ID пустого View.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 108. Android 3. ActionBar. Навигация - табы и выпадающий список</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p> В этом уроке:</p>
+<p>- используем навигацию в ActionBar</p>
+<p>На прошлом уроке мы рассмотрели добавление элементов ActionBar. Пользователю эти элементы удобно использовать для совершения каких-либо операций в приложении. Например, в почтовой программе это может быть удаление письма, пересылка, ответ и т.д.</p>
+<p>Теперь рассмотрим, как добавить элементы для навигации по приложению. Есть два типа элементов для навигации: табы и выпадающий список. Создадим простое приложение и реализуем в нем сначала один, затем второй способ.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1081_ActionBarNavigation<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: ActionBarItems<br><b>Package name</b>: ru.startandroid.develop.p1081actionbarnavigation<br><b>Create Activity</b>: MainActivity</p>
+<p>Никакие строки не добавляем, основной layout не трогаем.</p>
+<h3>Табы</h3>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1081actionbarnavigation;
+
+import android.app.ActionBar;
+import android.app.ActionBar.Tab;
+import android.app.Activity;
+import android.app.FragmentTransaction;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity implements ActionBar.TabListener {
+
+  final String LOG_TAG = "myLogs";
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    ActionBar bar = getActionBar();
+
+    bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+
+    Tab tab = bar.newTab();
+    tab.setText("tab1");
+    tab.setTabListener(this);
+    bar.addTab(tab);
+
+    tab = bar.newTab();
+    tab.setText("tab2");
+    tab.setTabListener(this);
+    bar.addTab(tab);
+
+  }
+
+  @Override
+  public void onTabReselected(Tab tab, FragmentTransaction ft) {
+    Log.d(LOG_TAG, "reselected tab: " + tab.getText());
+  }
+
+  @Override
+  public void onTabSelected(Tab tab, FragmentTransaction ft) {
+    Log.d(LOG_TAG, "selected tab: " + tab.getText());
+  }
+
+  @Override
+  public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+    Log.d(LOG_TAG, "unselected tab: " + tab.getText());
+  }
+}</code></pre>
+<p>Смотрим, что нам нужно, чтобы включить табы.</p>
+<p>В <b>onCreate</b> мы получаем доступ к ActionBar и устанавливаем для него режим навигации в <a href="http://developer.android.com/reference/android/app/ActionBar.html#NAVIGATION_MODE_TABS" target="_blank">NAVIGATION_MODE_TABS</a>. Далее идет добавление табов. Тут все несложно – создаем, пишем текст, присваиваем обработчика, добавляем в ActionBar.</p>
+<p>Обработчиком для табов мы сделали MainActivity, оно реализует методы интерфейса <a href="http://developer.android.com/reference/android/app/ActionBar.TabListener.html" target="_blank">ActionBar.TabListener</a>:</p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.TabListener.html#onTabReselected(android.app.ActionBar.Tab, android.app.FragmentTransaction)" target="_blank">onTabReselected </a>– выбран уже выбранный таб</p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.TabListener.html#onTabSelected(android.app.ActionBar.Tab, android.app.FragmentTransaction)" target="_blank">onTabSelected </a>– таб выбран</p>
+<p><a href="http://developer.android.com/reference/android/app/ActionBar.TabListener.html#onTabUnselected(android.app.ActionBar.Tab, android.app.FragmentTransaction)" target="_blank">onTabUnselected </a>– таб более не выбран</p>
+<p>В эти методы поместим запись в лог и посмотрим, как оно все там работает.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p>Видим табы</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_0.png" alt="" width="384" height="640"></p>
+<p>Сейчас выбран первый таб и лог сразу об этом сообщает:</p>
+<p><i>selected tab: tab1</i></p>
+<p>Нажмем на второй таб,</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_1.png" alt="" width="384" height="640"></p>
+<p>смотрим логи:</p>
+<p><i>unselected tab: tab1<br></i><i>selected tab: tab</i>2</p>
+<p>Первый таб «развыбран», а второй выбран.</p>
+<p>Еще раз нажмем на второй таб:</p>
+<p><i>reselected tab: tab2</i></p>
+<p>Второй таб перевыбран. Все логично и понятно.</p>
+<p>Я, чтобы не перегружать урок, не стал реализовывать какие-либо операции по навигации в приложении. А, вообще, подразумевается, что в методах обработчика мы кодим операции с фрагментами. Нам даже любезно предоставляют объект <b>FragmentTransaction </b>для этих целей. При этом документация предупреждает, что в этих методах нам не надо самим вызывать метод <b>commit</b>, а также мы не можем добавлять транзакцию в <b>BackStack</b>.</p>
+<h3>Выпадающий список</h3>
+<p>Теперь посмотрим, как работает навигация с выпадающим списком.</p>
+<p>Перепишем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1081actionbarnavigation;
+
+import android.app.ActionBar;
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.ArrayAdapter;
+
+public class MainActivity extends Activity implements
+    ActionBar.OnNavigationListener {
+
+  String[] data = new String[] { "one", "two", "three" };
+
+  final String LOG_TAG = "myLogs";
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    ActionBar bar = getActionBar();
+    bar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+        android.R.layout.simple_spinner_item, data);
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    bar.setListNavigationCallbacks(adapter, this);
+  }
+
+  @Override
+  public boolean onNavigationItemSelected(int itemPosition, long itemId) {
+    Log.d(LOG_TAG, "selected: position = " + itemPosition + ", id = "
+        + itemId + ", " + data[itemPosition]);
+    return false;
+  }
+}</code></pre>
+<p>В <b>onCreate</b> получаем ActionBar и включаем ему режим навигации <a href="http://developer.android.com/reference/android/app/ActionBar.html#NAVIGATION_MODE_LIST" target="_blank">NAVIGATION_MODE_LIST</a>. Для выпадающего списка необходимо создать адаптер, реализующий SpinnerAdapter. Пусть это будет ArrayAdapter. При создании используем массив из трех строк. Далее вызываем метод <a href="http://developer.android.com/reference/android/app/ActionBar.html#setListNavigationCallbacks(android.widget.SpinnerAdapter, android.app.ActionBar.OnNavigationListener)" target="_blank">setListNavigationCallbacks</a>, в который передаем адаптер и обработчик.</p>
+<p>Обработчиком у нас снова является Activity, реализует метод <a href="http://developer.android.com/reference/android/app/ActionBar.OnNavigationListener.html#onNavigationItemSelected(int, long)" target="_blank">onNavigationItemSelected</a> интерфейса <a href="http://developer.android.com/reference/android/app/ActionBar.OnNavigationListener.html" target="_blank">ActionBar.OnNavigationListener</a>. Этот метод дает нам позицию и id выбранного из списка элемента. Выводим в лог эту инфу и соответствующий элемент массива.</p>
+<p>В манифесте я прописал для MainActivity атрибут темы: android:theme="@android:style/Theme.Holo.Light". Иначе был темный текст на темном фоне.</p>
+<p>Все сохраняем и запускаем.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_2.png" alt="" width="384" height="640"></p>
+<p>Первый элемент сразу выбран. В логах видим:</p>
+<p><i>selected: position = 0, id = 0, one</i></p>
+<p>Выберем какой-нить другой элемент из списка</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_3.png" alt="" width="384" height="640"></p>
+<p>В логах:</p>
+<p><i>selected: position = 2, id = 2, three</i></p>
+<p>Снова все логично и понятно.</p>
+<p>Для обоих видов навигации мы всегда можем получить текущий выбранный элемент с помощью метода <a href="http://developer.android.com/reference/android/app/ActionBar.html#getSelectedNavigationIndex()" target="_blank">getSelectedNavigationIndex</a>. А для навигации с табами есть также метод <a href="http://developer.android.com/reference/android/app/ActionBar.html#getSelectedTab()" target="_blank">getSelectedTab</a>, возвращающий текущий выбранный таб.</p>
+<p>Разумеется, что вместе с навигацией мы можем добавлять в ActionBar и обычные элементы, которые были рассмотрены на прошлом уроке.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_4.png" alt="" width="640" height="384"></p>
+<p>При этом, если места будет недостаточно, то ActionBar разделит все свои элементы на две полосы.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_5.png" alt="" width="384" height="640"></p>
+<p>Начиная с четвертой версии Андроид, можно использовать атрибут <b>uiOptions</b> для Activity или Application в манифесте. Если присвоить ему значение <b>splitActionBarWhenNarrow</b>, то результат при нехватке места получится такой:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_107_6.png" alt="" width="384" height="640"></p>
+<p>Элементы ушли вниз. Правда, при этом почему-то перестает работать withText в showAsAction.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

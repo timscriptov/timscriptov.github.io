@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 110. Android 3. Fragments. DialogFragment - диалог</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с DialogFragment</p>
+<p>Продолжаем рассматривать наследников Fragment. <a href="http://developer.android.com/reference/android/app/DialogFragment.html" target="_blank">DialogFragment</a> – отличается от обычного фрагмента тем, что отображается как диалог и имеет соответствующие методы.</p>
+<p>Построить диалог можно двумя способами: используя свой layout-файл и через AlertDialog.Builder. Нарисуем приложение, которое будет вызывать два диалога, построенных разными способами.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1101_DialogFragment<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: DialogFragment<br><b>Package name</b>: ru.startandroid.develop.p1101dialogfragment<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="dialog_1"&gt;Dialog 1&lt;/string&gt;
+&lt;string name="dialog_2"&gt;Dialog 2&lt;/string&gt;
+&lt;string name="message_text"&gt;Text of your message&lt;/string&gt;
+&lt;string name="yes"&gt;Yes&lt;/string&gt;
+&lt;string name="no"&gt;No&lt;/string&gt;
+&lt;string name="maybe"&gt;Maybe&lt;/string&gt;</code></pre>
+<p>Мы будем создавать два диалога, соответственно нам понадобятся два фрагмента.</p>
+<p>Создадим layout-файл для первого фрагмента.</p>
+<p><b>dialog1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="wrap_content"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/textView1"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:layout_margin="20dp"
+		android:text="@string/message_text"
+		android:textAppearance="?android:attr/textAppearanceLarge"&gt;
+	&lt;/TextView&gt;
+	&lt;LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"&gt;
+		&lt;Button
+			android:id="@+id/btnYes"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_margin="10dp"
+			android:text="@string/yes"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnNo"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_margin="10dp"
+			android:text="@string/no"&gt;
+		&lt;/Button&gt;
+		&lt;Button
+			android:id="@+id/btnMaybe"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_margin="10dp"
+			android:text="@string/maybe"&gt;
+		&lt;/Button&gt;
+	&lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Так будет выглядеть наш диалог – текст сообщения и три кнопки.</p>
+<p>Создаем класс <b>Dialog1.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1101dialogfragment;
+
+import android.app.DialogFragment;
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+public class Dialog1 extends DialogFragment implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    getDialog().setTitle("Title!");
+    View v = inflater.inflate(R.layout.dialog1, null);
+    v.findViewById(R.id.btnYes).setOnClickListener(this);
+    v.findViewById(R.id.btnNo).setOnClickListener(this);
+    v.findViewById(R.id.btnMaybe).setOnClickListener(this);
+    return v;
+  }
+
+  public void onClick(View v) {
+    Log.d(LOG_TAG, "Dialog 1: " + ((Button) v).getText());
+    dismiss();
+  }
+
+  public void onDismiss(DialogInterface dialog) {
+    super.onDismiss(dialog);
+    Log.d(LOG_TAG, "Dialog 1: onDismiss");
+  }
+
+  public void onCancel(DialogInterface dialog) {
+    super.onCancel(dialog);
+    Log.d(LOG_TAG, "Dialog 1: onCancel");
+  }
+}</code></pre>
+<p>В <b>onCreateView</b> мы получаем объект Dialog с помощью метода <a href="http://developer.android.com/reference/android/app/DialogFragment.html#getDialog()" target="_blank">getDialog</a> и устанавливаем заголовок диалога. Далее мы создаем view из layout, находим в нем кнопки и ставим им текущий фрагмент в качестве обработчика.</p>
+<p>В <b>onClick</b> выводим в лог текст нажатой кнопки и сами явно закрываем диалог методом <a href="http://developer.android.com/reference/android/app/DialogFragment.html#dismiss()" target="_blank">dismiss</a>.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/app/DialogFragment.html#onDismiss(android.content.DialogInterface)" target="_blank">onDismiss</a> срабатывает, когда диалог закрывается. Пишем об этом в лог.</p>
+<p>Метод <a href="http://developer.android.com/reference/android/app/DialogFragment.html#onCancel(android.content.DialogInterface)" target="_blank">onCancel</a> срабатывает, когда диалог отменяют кнопкой Назад. Пишем об этом в лог.</p>
+<p>Создаем второй фрагмент. Здесь мы будем строить диалог с помощью билдера, поэтому layout-файл не понадобится. Создаем только класс <b>Dialog2.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1101dialogfragment;
+
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.os.Bundle;
+import android.util.Log;
+
+public class Dialog2 extends DialogFragment implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  public Dialog onCreateDialog(Bundle savedInstanceState) {
+    AlertDialog.Builder adb = new AlertDialog.Builder(getActivity())
+        .setTitle("Title!").setPositiveButton(R.string.yes, this)
+        .setNegativeButton(R.string.no, this)
+        .setNeutralButton(R.string.maybe, this)
+        .setMessage(R.string.message_text);
+    return adb.create();
+  }
+
+  public void onClick(DialogInterface dialog, int which) {
+    int i = 0;
+    switch (which) {
+    case Dialog.BUTTON_POSITIVE:
+      i = R.string.yes;
+      break;
+    case Dialog.BUTTON_NEGATIVE:
+      i = R.string.no;
+      break;
+    case Dialog.BUTTON_NEUTRAL:
+      i = R.string.maybe;
+      break;
+    }
+    if (i &gt; 0)
+      Log.d(LOG_TAG, "Dialog 2: " + getResources().getString(i));
+  }
+
+  public void onDismiss(DialogInterface dialog) {
+    super.onDismiss(dialog);
+    Log.d(LOG_TAG, "Dialog 2: onDismiss");
+  }
+
+  public void onCancel(DialogInterface dialog) {
+    super.onCancel(dialog);
+    Log.d(LOG_TAG, "Dialog 2: onCancel");
+  }
+}</code></pre>
+<p>Обычно для заполнения фрагмента содержимым мы использовали метод onCreateView. Для создания диалога с помощью билдера используется <a href="http://developer.android.com/reference/android/app/DialogFragment.html#onCreateDialog(android.os.Bundle)" target="_blank">onCreateDialog</a>. Создаем диалог с заголовком, сообщением и тремя кнопками. Обработчиком для кнопок назначаем текущий фрагмент.</p>
+<p>В <b>onClick</b> определяем, какая кнопка была нажата и выводим соответствующий текст в лог. В случае создания диалога через билдер, диалог сам закроется по нажатию на кнопку, метод dismiss здесь не нужен.</p>
+<p>Методы <b>onDismiss</b> и <b>onCancel</b> – это закрытие и отмена диалога, аналогично первому фрагменту.</p>
+<p>Меняем layout-файл для MainActivity - <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnDlg1"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/dialog_1"&gt;
+	&lt;/Button&gt;
+	&lt;Button
+		android:id="@+id/btnDlg2"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/dialog_2"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Здесь только две кнопки.</p>
+<p>Кодим <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1101dialogfragment;
+
+import android.app.Activity;
+import android.app.DialogFragment;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  DialogFragment dlg1;
+  DialogFragment dlg2;
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    dlg1 = new Dialog1();
+    dlg2 = new Dialog2();
+  }
+
+  public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.btnDlg1:
+      dlg1.show(getFragmentManager(), "dlg1");
+      break;
+    case R.id.btnDlg2:
+      dlg2.show(getFragmentManager(), "dlg2");
+      break;
+    default:
+      break;
+    }
+
+  }
+}</code></pre>
+<p>Создаем диалоги и запускаем их методом <a href="http://developer.android.com/reference/android/app/DialogFragment.html#show(android.app.FragmentManager, java.lang.String)" target="_blank">show</a>, который на вход требует FragmentManager и строку-тэг. Транзакция и коммит происходят внутри этого метода, нам об этом думать не надо.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_109_0.png" alt="" width="384" height="640"></p>
+<p>Жмем <b>Dialog1</b></p>
+<p><img src="images/lesson_109_1.png" alt="" width="384" height="640"></p>
+<p>Отобразился наш простенький диалог.</p>
+<p>Жмем какую-нибудь кнопку, например, <b>Yes </b>- диалог закрылся. Смотрим логи:</p>
+<p><em>Dialog 1: Yes<br> Dialog 1: onDismiss</em></p>
+<p>Все верно.</p>
+<p>Снова запустим первый диалог и нажмем клавишу <b>Назад </b>(<b>Back</b>). Смотрим лог:</p>
+<p><em>Dialog</em><em> 1: </em><em>onCancel</em><em><br> Dialog 1: onDismiss</em></p>
+<p>Сработал onCancel – диалог был отменен, и onDismiss – диалог закрылся.</p>
+<p>Если мы будем поворачивать экран, то каждый раз будет отрабатывать onDismiss, но диалог снова будет отображен после поворота.</p>
+<p>Запустим второй диалог – нажмем кнопку <b>Dialog 2</b>.</p>
+<p><img src="images/lesson_109_2.png" alt="" width="384" height="640"></p>
+<p>Отобразился стандартный сконструированный нами диалог. Жмем, например, <b>No </b>– диалог закрылся. В логах:</p>
+<p><em>Dialog 2: No<br> Dialog 2: onDismiss</em></p>
+<p>Снова запустим второй диалог и нажмем <b>Назад</b>. В логах:</p>
+<p><em>Dialog</em><em> 2: </em><em>onCancel</em><em><br> Dialog 2: onDismiss</em></p>
+<p>Все так же, как и в первом случае.</p>
+<p>Еще несколько слов по теме.</p>
+<p>Если вы не хотите, чтобы ваш диалог можно было закрыть кнопкой, используйте для вашего диалог-фрагмента метод <a href="http://developer.android.com/reference/android/app/DialogFragment.html#setCancelable(boolean)" target="_blank">setCancelable</a> с параметром false.</p>
+<p>Есть еще один вариант вызова диалога. Это метод <a href="http://developer.android.com/reference/android/app/DialogFragment.html#show(android.app.FragmentTransaction, java.lang.String)" target="_blank">show</a>, но на вход он уже принимает не FragmentManager, а FragmentTransaction. В этом случае система также сама вызовет commit внутри show, но мы можем предварительно поместить в созданную нами транзакцию какие-либо еще операции или отправить ее в BackStack.</p>
+<p>Вы можете использовать диалог-фрагменты, как обычные фрагменты и отображать их на Activity, а не в виде диалога. Но при этом будьте аккуратнее с использованием <b>getDialog</b>. Я так понял, что он возвращает null в этом случае.</p>
+<p>Если <b>AlertDialog.Builder</b> вам незнаком, то посмотрите Урок 60 и несколько следующих за ним. Там достаточно подробно описано, как создавать различные диалоги.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

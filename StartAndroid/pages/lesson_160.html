@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 160. Рисование. Bitmap. Чтение изображений большого размера</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- читаем и отображаем большие изображения</p>
+<p>Когда мы читаем изображение с SD-карты в Bitmap, оно в памяти занимает значительно больше, чем размер файла на SD. Потому что на диске оно хранится в сжатом JPG или PNG формате. А мы при чтении его распаковываем и получаем полновесный Bitmap.</p>
+<p>Для примера возьмем изображение размером 5712х2986. Нам необходимо отобразить его в приложении.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1601_BitmapLarge <br/> <b>Build Target</b>: Android 4.4 <br/> <b>Application name</b>: BitmapLarge<br/> <b>Package name</b>: ru.startandroid.develop.p1601bitmaplarge<br/> <b>Create Activity</b>: MainActivity</p>
+<p>res/values/<b>dimens.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;dimen name="image_size"&gt;300dp&lt;/dimen&gt;
+&lt;/resources&gt;</code></pre>
+<p>res/layout/<b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"&gt;
+	&lt;ImageView
+		android:id="@+id/imageView"
+		android:layout_width="@dimen/image_size"
+		android:layout_height="@dimen/image_size"
+		android:layout_centerInParent="true"&gt;
+	&lt;/ImageView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>На экране только ImageView размером в 300dp</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1601bitmaplarge;
+
+import java.io.File;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.widget.ImageView;
+
+public class MainActivity extends Activity {
+
+  ImageView mImageView;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    mImageView = (ImageView) findViewById(R.id.imageView);
+    logMemory();
+    readImage();
+    logMemory();
+  }
+
+  private void readImage() {
+    File file = new File(Environment.
+        getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"map.jpg");
+    Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+    Log.d("log", String.format("bitmap size = %sx%s, byteCount = %s", 
+        bitmap.getWidth(), bitmap.getHeight(),
+        (int) (bitmap.getByteCount() / 1024)));
+    mImageView.setImageBitmap(bitmap);
+  }
+
+  private void logMemory() {
+    Log.i("log", String.format("Total memory = %s", 
+        (int) (Runtime.getRuntime().totalMemory() / 1024)));
+  }
+}</code></pre>
+<p>Метод <b>readImage</b> – читает Bitmap из файла и отображает его в ImageView.</p>
+<p>Метод <b>logMemory</b> показывает сколько КБ памяти занимает наше приложение. Будем вызывать этот метод до и после отображения, чтобы увидеть сколько памяти заняла картинка.</p>
+<p>В папку Download на вашем девайсе или эмуляторе закиньте файл <a href="/images/stories/lessons/L0160/map.jpg" target="_blank" rel="noopener noreferrer">map.jpg</a>.</p>
+<p>Запускаем:</p>
+<p><img src="images/lesson160/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Смотрим лог:</p>
+<p><i>Total memory = 3184<br/>bitmap size = 5712x2986, byteCount = 66625<br/>Total memory = 69832</i></p>
+<p>Впечатляет! Наше изображение заняло в памяти 66 мегабайт! Т.е. чтобы на экране отобразить изображение размером 300dp, мы держим в памяти изображение размером 5712х2986 и весит оно 66 мегабайт. Крайне неудачная реализация. А уж если придется выводить на экран несколько таких картинок, то OutOfMemory нам не избежать.</p>
+<p>Надо картинку срочно уменьшать до необходимых нам размеров. Какие тут есть варианты?</p>
+<p>Можно, например, ее читать так же, как мы это делаем сейчас, а перед тем, как помещать ее в ImageView, вызывать метод <a href="http://developer.android.com/reference/android/graphics/Bitmap.html#createScaledBitmap(android.graphics.Bitmap, int, int, boolean)" target="_blank" rel="noopener noreferrer">createScaledBitmap</a> (Урок 158), чтобы привести к нужному размеру. В принципе, конечно, получится то, что надо. Но все равно в какой-то момент приложение займет в памяти эти 66 метров, чтобы получить оригинальную картинку. А значит, мы все равно можем словить OutOfMemory, если у нас с памятью напряги.</p>
+<p>Тут нам помогут два параметра BitmapFactory.Options:</p>
+<p><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inJustDecodeBounds" target="_blank" rel="noopener noreferrer">inJustDecodeBounds</a> – поможет нам узнать размер изображения, не занимая память</p>
+<p><a href="http://developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inSampleSize" target="_blank" rel="noopener noreferrer">inSampleSize</a> – при чтении изображения уменьшит его размер в требуемое кол-во раз, и на выходе мы получим уже уменьшенную копию, что значительно сэкономит нам память. Этот коэффициент должен быть кратным двум.</p>
+<p>Подробнее про эти параметры можно прочесть в Уроке 159.</p>
+<p>Т.е. алгоритм таков:<br/>- выясняем размер изображения<br/>- определяем во сколько раз надо его уменьшить, чтобы получить нужный нам размер<br/>- читаем его, сразу уменьшая до нужных нам размеров</p>
+<p>Документация Google любезно <a href="http://developer.android.com/training/displaying-bitmaps/load-bitmap.html" target="_blank" rel="noopener noreferrer">предоставляет</a> нам готовые методы с реализацией этого алгоритма.</p>
+<p>Скопируем их оттуда в <b>MainActivity.java</b>, немного изменив, чтобы они читали файл не из ресурсов, а с SD:</p>
+<pre><code class="java">  public static Bitmap decodeSampledBitmapFromResource(String path,
+      int reqWidth, int reqHeight) {
+
+    // Читаем с inJustDecodeBounds=true для определения размеров
+    final BitmapFactory.Options options = new BitmapFactory.Options();
+    options.inJustDecodeBounds = true;
+    BitmapFactory.decodeFile(path, options);
+
+    // Вычисляем inSampleSize
+    options.inSampleSize = calculateInSampleSize(options, reqWidth,
+        reqHeight);
+
+    // Читаем с использованием inSampleSize коэффициента
+    options.inJustDecodeBounds = false;
+    return BitmapFactory.decodeFile(path, options);
+  }
+
+  public static int calculateInSampleSize(BitmapFactory.Options options,
+      int reqWidth, int reqHeight) {
+    // Реальные размеры изображения 
+    final int height = options.outHeight;
+    final int width = options.outWidth;
+    int inSampleSize = 1;
+
+    if (height &gt; reqHeight || width &gt; reqWidth) {
+
+      final int halfHeight = height / 2;
+      final int halfWidth = width / 2;
+
+      // Вычисляем наибольший inSampleSize, который будет кратным двум
+      // и оставит полученные размеры больше, чем требуемые 
+      while ((halfHeight / inSampleSize) &gt; reqHeight
+          &amp;&amp; (halfWidth / inSampleSize) &gt; reqWidth) {
+        inSampleSize *= 2;
+      }
+    }
+
+    return inSampleSize;
+  }</code></pre>
+<p>В методе <b>decodeSampledBitmapFromResource</b> мы просто читаем изображение с включенным inJustDecodeBounds. Тем самым, в options помещаются данные о размере изображения, но само изображение не читается. Собственно, тут-то мы и экономим 66 метров. Далее объект options с данными о размере изображения мы передаем в метод calculateInSampleSize. А также передаем туда ширину и высоту изображения, которые нам нужно получить на выходе. Метод calculateInSampleSize вычисляет (и помещает в inSampleSize) коэффициент уменьшения изображения. Далее мы отключаем inJustDecodeBounds и получаем bitmap, который будет уменьшен до необходимых нам размеров.</p>
+<p>Метод <b>calculateInSampleSize</b> на вход получает объект options, который содержит данные о реальном размере изображения. Также на вход идут reqWidth и reqHeight, в которые мы передаем желаемые нам размеры изображения.</p>
+<p>Сначала метод проверяет, что реальные размеры изображения больше требуемых нам. Затем начинает подгонять коэффициент. Для этого он вычисляет половину ширины и высоты изображения, делит их на коэффициент и проверяет, что результат влезает в требуемые нами размеры. Если не влезает, то коэффициент увеличивается на два и снова идет проверка. Этот цикл выполняется пока половина ширины и высоты изображения, поделенные на коэффициент не влезут в требуемые нами размеры.</p>
+<p>Либо можно трактовать логику чуть по-другому. Цикл находит нам коэффициент, использование которого даст нам размер, который вместится в требуемый. А мы потом этот коэффициент откатываем на шаг назад, чтобы получить размер, который будет чуть больше требуемого.</p>
+<p>В результате этот метод определит нам коэффициент так, чтобы изображение получилось максимально близко к требуемым размерам, но было бы больше их, а не меньше. Размер должен получится больше требуемого, чтобы не потерять в качестве изображения при отображении. Меньшее изображение пришлось бы растягивать, а это скажется на качестве.</p>
+<p>Получить точно требуемые нам размеры мы не сможем, т.к. коэффициент должен быть кратным двум.</p>
+<p>Перепишем метод <b>readImage</b> с использованием этих методов:</p>
+<pre><code class="java">  private void readImage() {
+      int px = getResources().getDimensionPixelSize(R.dimen.image_size);
+      File file = new File(Environment.
+        getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"map.jpg");
+      Bitmap bitmap = decodeSampledBitmapFromResource(file.getAbsolutePath(), px, px);
+      Log.d("log", String.format("Required size = %s, bitmap size = %sx%s, byteCount = %s", 
+          px, bitmap.getWidth(), bitmap.getHeight(), bitmap.getByteCount()));
+      mImageView.setImageBitmap(bitmap);
+    }</code></pre>
+<p>Запускаем, смотрим лог:</p>
+<p><i>Total memory = 3204<br/>Required size = 600, bitmap size = 1428x747, byteCount = 4166<br/>Total memory = 7412</i></p>
+<p>Стало значительно лучше. С учетом density наш ImageView имеет размер 600 px. И при чтении изображения был учтен этот размер. Теперь в памяти изображение размером 1428х747 и весом в 4 мегабайта. Это вполне приемлемый результат.</p>
+<p>Кстати, если не очень понятен алгоритм метода calculateInSampleSize, то возьмите реальные цифры и попробуйте сами на бумажке по шагам все посчитать. Исходный размер был 5712х2986, а требуемый размер – 600х600.</p>
+<p>Итак, мы получили 4 мегабайта вместо 66. Но этот результат можно еще немного улучшить. Нашему изображению не нужна прозрачность. Поэтому мы можем использовать RGB_565 конфигурацию вместо дефолтовой ARGB_8888. Это уменьшит вес bitmap еще в два раза (Урок 157).</p>
+<p>В метод <b>decodeSampledBitmapFromResource</b> добавим перед return следующую строку:</p>
+<pre><code class="java">options.inPreferredConfig = Bitmap.Config.RGB_565;</code></pre>
+<p>Запускаем, смотрим лог:</p>
+<p><i>Total memory = 3172<br/>Required size = 600, bitmap size = 1428x747, byteCount = 2083<br/>Total memory = 5296</i></p>
+<p>Стало еще лучше, всего 2 мегабайта вместо 66, а результат визуально тот же самый.</p>
+<p>В принципе, можно еще и createScaledBitmap применить, чтобы получить уж совсем необходимый вам размер. Это может еще раза в два снизить вес Bitmap.</p>
+<p>Если мы теперь, например, уменьшим размер ImageView до 100 dp, то получим такие данные в логе:</p>
+<p><i>Total memory = 3176<br/>Required size = 200, bitmap size = 714x374, byteCount = 521<br/>Total memory = 3740</i></p>
+<p>Изображение весит уже пол-мегабайта всего, а размер = 714х374.</p>
+<p>И напоследок пара важных замечаний.</p>
+<p>Если вы пишете, например, приложение - графический редактор, то ему реально нужно будет много памяти. В этом случае можно в <span style="line-height: 15.8079996109009px;">манифесте в тег &lt;application&gt; добавить параметр </span><span style="line-height: 15.8079996109009px;"><b>largeHeap</b>="true". Вашему приложению будет выделено памяти больше, чем обычно. Но </span>это должно быть реально последним средством перед которым вы оптимизировали все, что можно. Не стоит злоупотреблять этим параметром и включать его просто, чтобы быстро избавиться от OutOfMemory.</p>
+<p>Обратите внимание на разницу во времени логов, которые у нас получались в приложении. Видно, что декодирование изображения может занять от нескольких сотен мсек. до нескольких секунд. Это слишком большая длительность для выполнения операции в основном потоке. Если на экран требуется выводить несколько таких картинок, то задержка UI будет весьма ощутима. Поэтому декодирование рекомендуется проводить в <b>отдельном потоке</b>. AsyncTask (Урок 86) и AsyncTaskLoader (Урок 135) вам в помощь.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

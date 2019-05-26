@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 165. Графика. BitmapShader, LinearGradient, RadialGradient, SweepGradient</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- изучаем подклассы Shader</p>
+<p>Используя подклассы класса <a href="http://developer.android.com/reference/android/graphics/Shader.html" target="_blank" rel="noopener noreferrer">Shader</a> мы получаем возможность "рисовать рисунком". Для этого необходимо передать объект Shader в метод кисти <a href="http://developer.android.com/reference/android/graphics/Paint.html#setShader(android.graphics.Shader)" target="_blank" rel="noopener noreferrer">setShader</a> и кисть будет использовать рисунок шейдера для рисования объектов. Рассмотрим существующих наследников класса Shader.</p>
+<p>Примеры я буду делать в Activity. Вся графика будет реализована в классе DrawView.</p>
+<pre><code class="java">public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    public DrawView(Context context) {
+      super(context);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+    }
+
+  }
+}</code></pre>
+<p><a href="http://developer.android.com/reference/android/graphics/BitmapShader.html" target="_blank" rel="noopener noreferrer">BitmapShader</a></p>
+<p>Для создания этого шейдера необходимо передать ему Bitmap и указать вертикальный и горизонтальный <a href="http://developer.android.com/reference/android/graphics/Shader.TileMode.html" target="_blank" rel="noopener noreferrer">TileMode</a>. Подробно про режимы TileMode можно посмотреть в Уроке 163.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">  class DrawView extends View {
+
+    Paint paint;
+    Bitmap bitmap;
+    Bitmap scaledBitmap;
+
+    public DrawView(Context context) {
+      super(context);
+      Shader shader = createShader();
+      paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      paint.setShader(shader);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      canvas.drawRect(100, 100, 400, 300, paint);
+      canvas.drawCircle(300, 400, 100, paint);
+    }
+
+    private Shader createShader() {
+      bitmap = BitmapFactory.decodeResource(getResources(),
+          R.drawable.ic_launcher);
+      BitmapShader shader = new BitmapShader(bitmap,
+          Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+      return shader;
+    }
+
+  }</code></pre>
+<p>Читаем ic_launcher в Bitmap, создаем шейдер и передаем этот шейдер в метод кисти setShader. И используя эту кисть рисуем квадрат и круг.</p>
+<p><img src="images/lesson165/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Мы использовали TileMode.REPEAT, поэтому изображение повторяется по всему доступному пространству.</p>
+<p>К шейдеру можно применить преобразования, используя матрицу (о матрицах был Урок 144).</p>
+<p>Перепишем метод <b>createShader</b>:</p>
+<pre><code class="java">    private Shader createShader() {
+      bitmap = BitmapFactory.decodeResource(getResources(),
+          R.drawable.ic_launcher);
+      BitmapShader shader = new BitmapShader(bitmap,
+          Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+      Matrix matrix = new Matrix();
+      matrix.postScale(2, 1.5f);
+      matrix.postRotate(45);
+      shader.setLocalMatrix(matrix);
+      return shader;
+    }</code></pre>
+<p>В матрице настраиваем растяжение и поворот и передаем ее в шейдер методом <a href="http://developer.android.com/reference/android/graphics/Shader.html#setLocalMatrix(android.graphics.Matrix)" target="_blank" rel="noopener noreferrer">setLocalMatrix</a>. Смотрим результат</p>
+<p><img src="images/lesson165/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Можно растянуть Bitmap на всю канву</p>
+<pre><code class="java">    private Shader createShader() {
+      bitmap = BitmapFactory.decodeResource(getResources(),
+          R.drawable.ic_launcher);
+      bitmap = Bitmap.createScaledBitmap(bitmap, 480, 680, true);
+      BitmapShader shader = new BitmapShader(bitmap,
+          Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+      return shader;
+    }</code></pre>
+<p>Методом createScaledBitmap создаем копию bitmap размером с канву.</p>
+<p><img src="images/lesson165/lesson3.png" alt="" width="640" height="385"/></p>
+<p><a href="http://developer.android.com/reference/android/graphics/LinearGradient.html" target="_blank" rel="noopener noreferrer">LinearGradient</a></p>
+<p>Этот шейдер позволяет нам получить градиент. У его класса есть два конструктора. Оба просят от нас указать им TileMode и координаты линии, которая будет задавать одновременно направление, начало и размер градиента.</p>
+<p>Разница заключается в способе указания цветов для градиента. Один конструктор просит от нас указать ему два цвета. По ним он и нарисует градиент.</p>
+<pre><code class="java">    private Shader createShader() {
+      LinearGradient shader = new LinearGradient(0, 0, 100, 20,
+          Color.RED, Color.GREEN, Shader.TileMode.MIRROR);
+      return shader;
+    }</code></pre>
+<p>Указываем красный и зеленый цвета. Линию указываем (0,0)-(100,20). Градиент будет идти в направлении линии и будет размером с длину этой линии. В качестве TileMode передаем MIRROR.</p>
+<p><img src="images/lesson165/lesson4.png" alt="" width="640" height="385"/></p>
+<p>Другой конструктор позволяет задать массив цветов и их положений в градиенте.</p>
+<pre><code class="java">    private Shader createShader() {
+      LinearGradient shader = new LinearGradient(0, 0, 100, 20,
+          new int[] { Color.RED, Color.BLUE, Color.GREEN }, null,
+          Shader.TileMode.MIRROR);
+      return shader;
+    }</code></pre>
+<p>Передаем массив цветов, а вместо массива позиций передаем null – градиент сам равномерно распределит цвета..</p>
+<p><img src="images/lesson165/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Теперь попробуем задать позиции вручную.</p>
+<pre><code class="xml">    private Shader createShader() {
+      LinearGradient shader = new LinearGradient(120, 0, 380, 0,
+          new int[] { Color.RED, Color.BLUE, Color.GREEN },
+          new float[] { 0f, 0.5f, 1f }, Shader.TileMode.REPEAT);
+      return shader;
+    }</code></pre>
+<p>Обратите внимание, что я здесь использовал TileMode REPEAT. В таком режиме лучше будет видно распределение цветов по градиенту. Также, я немного изменил координаты линии, чтобы градиент стал побольше и чисто горизонтальным.</p>
+<p>В массиве позиций передаем три позиции (соответственно количеству цветов). Чтобы понять, что означают эти позиции, давайте примем за единицу размер градиента (в нашем случае это ширина). А позиции будут обозначать в каком месте градиента будет максимальное насыщение соответствующим цветом.</p>
+<p>В нашем примере три цвета: красный синий, зеленый. И три позиции: 0, 0.5, 1. Т.е. красный будет располагаться в начале градиента (0), синий – в середине (0.5), а зеленый – в конце (1). Пространство между цветами будет заполнено соответствующим градиентом.</p>
+<p><img src="images/lesson165/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Немного изменим позиции и сместим синий правее, тем самым увеличивая зону красно-синего градиента и уменьшая зону сине-зеленого.</p>
+<pre><code class="java">    private Shader createShader() {
+      LinearGradient shader = new LinearGradient(120, 0, 380, 0,
+          new int[] { Color.RED, Color.BLUE, Color.GREEN },
+          new float[] { 0f, 0.7f, 1f }, Shader.TileMode.REPEAT);
+      return shader;
+    }</code></pre>
+<p>Для синего позиция стала равной 0.7 и он ушел правее.</p>
+<p><img src="images/lesson165/lesson7.png" alt="" width="640" height="385"/></p>
+<p>Для класса <a href="http://developer.android.com/reference/android/graphics/RadialGradient.html" target="_blank" rel="noopener noreferrer">RadialGradient</a> указываем центр и радиус и градиент пойдет от центра к краям. А <a href="http://developer.android.com/reference/android/graphics/SweepGradient.html" target="_blank" rel="noopener noreferrer">SweepGradient</a> – градиент, который идет по кругу вокруг центра. У этих двух классов, аналогично LinearGradient, есть простой конструктор, где можно указать два цвета, а есть посложнее - с возможностью указания массива цветов и их соотношений.</p>
+<p>Примеры использования xml-вариантов RadialGradient и SweepGradient можно посмотреть в уроке 162.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

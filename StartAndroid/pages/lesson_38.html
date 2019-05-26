@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 38. Транзакции в SQLite. Небольшой FAQ по SQLite.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем транзакции при работе с БД</p>
+<p>Что такое БД-<b>транзакция</b>, думаю объяснять особо не надо. Она используется при работе с данными по принципу «<b>все или ничего</b>». Т.е., например, вам нужно вставить пачку данных. Но вставить надо так, чтобы или все вставилось или ничего не вставилось.  И если в процессе половина записей прошла, а другая нет – должна быть возможность <b>откатить </b>изменения.</p>
+<p>Напишем простое приложение и исследуем возможности <b>SQLite </b>в этом плане.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0381_SQLiteTransaction<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SQLiteTransaction<br><b>Package name</b>: ru.startandroid.develop.p0381sqlitetransaction<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем<b> MainActivity.java</b> и пишем:</p>
+<pre><code class="java">package ru.startandroid.develop.p0381sqlitetransaction;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  DBHelper dbh;
+  SQLiteDatabase db;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d(LOG_TAG, "--- onCreate Activity ---");
+    dbh = new DBHelper(this);
+    myActions();
+  }
+
+  void myActions() {
+    db = dbh.getWritableDatabase();
+    delete(db, "mytable");
+    insert(db, "mytable", "val1");
+    read(db, "mytable");
+    dbh.close();
+  }
+
+  void insert(SQLiteDatabase db, String table, String value) {
+    Log.d(LOG_TAG, "Insert in table " + table + " value = " + value);
+    ContentValues cv = new ContentValues();
+    cv.put("val", value);
+    db.insert(table, null, cv);
+  }
+
+  void read(SQLiteDatabase db, String table) {
+    Log.d(LOG_TAG, "Read table " + table);
+    Cursor c = db.query(table, null, null, null, null, null, null);
+    if (c != null) {
+      Log.d(LOG_TAG, "Records count = " + c.getCount());
+      if (c.moveToFirst()) {
+        do {
+          Log.d(LOG_TAG, c.getString(c.getColumnIndex("val")));
+        } while (c.moveToNext());
+      }
+      c.close();
+    }
+  }
+
+  void delete(SQLiteDatabase db, String table) {
+    Log.d(LOG_TAG, "Delete all from table " + table);
+    db.delete(table, null, null);
+  }
+
+  // класс для работы с БД
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      super(context, "myDB", null, 1);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, "--- onCreate database ---");
+
+      db.execSQL("create table mytable ("
+          + "id integer primary key autoincrement," 
+          + "val text"
+          + ");");
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+
+}</code></pre>
+<p>Разбираем код. Я создал несколько методов, где сгруппировал операции: <b>insert </b>– набор операций для вставки записи, <b>read </b>– чтение всех записей, <b>delete </b>– удаление всех записей. Класс <b>DBHelper </b>– для управления БД. Интересовать нас будет метод <b>myActions</b>. Сейчас в нем мы подключаемся к БД, очищаем таблицу mytable, вставляем строку с значением <em>val1</em>, выводим в лог все записи из таблицы и отключаемся.</p>
+<p>Все сохраним, запустим приложение. Смотрим лог:</p>
+<p><em>--- onCreate Activity ---<br> --- onCreate database ---<br> Delete all from table mytable<br> Insert in table mytable value = val1<br> Read table mytable<br> Records count = 1<br> val1</em></p>
+<p>Все верно, запись вставилась и отобразилась.</p>
+<p>Теперь попробуем использовать транзакцию. Поправим код <b>myActions</b> на этот:</p>
+<pre><code class="java">  void myActions() {
+    db = dbh.getWritableDatabase();
+    delete(db, "mytable");
+    db.beginTransaction();
+    insert(db, "mytable", "val1");
+    db.endTransaction();
+    insert(db, "mytable", "val2");
+    read(db, "mytable");
+    dbh.close();
+  }</code></pre>
+<p>Мы подключаемся к базе, чистим таблицу, открываем транзакцию методом <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#beginTransaction()" target="_blank">beginTransaction</a>, вставляем <em>val1</em>, закрываем транзакцию методом <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#endTransaction()" target="_blank">endTransaction</a>, вставляем <em>val2</em>, выводим содержимое в лог и отключаемся. Все сохраняем, запускаем и смотрим лог:</p>
+<p><em>--- onCreate Activity ---<br> Delete all from table mytable<br> Insert in table mytable value = val1<br> Insert in table mytable value = val2<br> Read table mytable<br> Records count = 1<br> val2</em></p>
+<p>По логу видно, что вставляли мы <b>две </b>записи, но прошла только <b>вторая</b>. Та, которая была в <b>транзакции </b>– не записалась. Это произошло потому, что мы явно не указали, что транзакция должна быть успешно <b>закрыта</b>. Если этого не сделать, то при закрытии транзакции все операции <b>отменятся</b>. Давайте исправимся. Снова перепишем <b>myActions</b>:</p>
+<pre><code class="java">  void myActions() {
+    db = dbh.getWritableDatabase();
+    delete(db, "mytable");
+    db.beginTransaction();
+    insert(db, "mytable", "val1");
+    db.setTransactionSuccessful();
+    insert(db, "mytable", "val2");
+    db.endTransaction();
+    insert(db, "mytable", "val3");
+    read(db, "mytable");
+    dbh.close();
+  }</code></pre>
+<p>Подключаемся к БД, чистим таблицу, открываем транзакцию, вставляем <em>val1</em>, подтверждаем успешность транзакции методом <a href="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html#setTransactionSuccessful()" target="_blank">setTransactionSuccessful</a>, вставляем <em>val2</em>, закрываем транзакцию, вставляем <em>val3</em>, выводим содержимое и отключаемся.</p>
+<p>Сохраняем, запускаем, смотрим лог:</p>
+<p><em>--- onCreate Activity ---<br> Delete all from table mytable<br> Insert in table mytable value = val1<br> Insert in table mytable value = val2<br> Insert in table mytable value = val3<br> Read table mytable<br> Records count = 3<br> val1<br> val2<br> val3</em></p>
+<p>Вставились все три записи. Обратите внимание - несмотря на то, что <em>val2 </em>мы вставляли уже после подтверждения успешности транзакции, запись вставилась, вошла в эту транзакцию. Но проводить операции после подтверждения транзакции не рекомендуется документацией. </p>
+<p><b>Транзакция </b>при открытии ставит <b>блокировку </b>на базу. Убедимся в этом, попробуем создать новое подключение к БД во время транзакции. Перепишем <b>myActions</b>:</p>
+<pre><code class="java">  void myActions() {
+    try {
+      db = dbh.getWritableDatabase();
+      delete(db, "mytable");
+
+      db.beginTransaction();
+      insert(db, "mytable", "val1");
+
+      Log.d(LOG_TAG, "create DBHelper");
+      DBHelper dbh2 = new DBHelper(this);
+      Log.d(LOG_TAG, "get db");
+      SQLiteDatabase db2 = dbh2.getWritableDatabase();
+      read(db2, "mytable");
+      dbh2.close();
+
+      db.setTransactionSuccessful();
+      db.endTransaction();
+
+      read(db, "mytable");
+      dbh.close();
+
+    } catch (Exception ex) {
+      Log.d(LOG_TAG, ex.getClass() + " error: " + ex.getMessage());
+    }
+  }</code></pre>
+<p>Подключаемся к базе, чистим таблицу, открываем транзакцию, вставляем запись, создаем новое подключение к БД - <b>db2</b>, читаем содержимое вторым подключением, закрываем второе подключение, успешно закрываем транзакцию, читаем содержимое первым подключением, закрываем первое подключение.</p>
+<p>Все сохраним и запустим. Смотрим лог:</p>
+<p><em>--- onCreate Activity ---<br> Delete all from table mytable<br> Insert in table mytable value = val1<br> create DBHelper<br> get db<br> class android.database.sqlite.SQLiteException error: database is locked</em></p>
+<p>Мы видим, что при попытке создать второе подключение к базе произошла ошибка <b>SQLiteException </b>– база <b>заблокирована </b>открытой транзакцией. Если вы теперь закоментите или удалите строки управления транзакцией и снова выполните код, то все пройдет успешно, т.к. никаких блокировок не будет.</p>
+<p>Наверняка есть некоторые вопросы по этой теме. Попробую здесь же ответить на некоторые.</p>
+<h3>close</h3>
+<p>Метод <b>close </b>есть и у <b>SQLiteDatabase </b>и у <b>SQLiteOpenHelper</b>. Какая между ними разница? Каким из них пользоваться для закрытия подключения?</p>
+<p>Тут надо понимать один момент – объект <b>SQLiteOpenHelper </b>всегда предоставляет только <b>одно </b>подключение. Попробую объяснить этот механизм. У объекта <b>SQLiteOpenHelper </b>есть внутренний атрибут <b>mDatabase </b>типа <b>SQLiteDatabase</b>. Когда мы вызываем метод <b>getWritableDatabase</b>, объект <b>SQLiteOpenHelper </b>проверяет: если <b>mDatabase </b>не null и не закрыт, то он и идет в качестве <b>return</b>. Иначе  <b>SQLiteOpenHelper </b>выполняет подключение к БД, записывает новый <b>SQLiteDatabase</b>-объект в <b>mDatabase </b>и возвращает нам его. Т.е. метод <b>getWritableDatabase </b>либо возвращает <b>существующее подключение </b>к БД, либо создает новое в случае отсутствия подключения. Когда же выполняется метод <b>close </b>для <b>SQLiteOpenHelper</b>, то происходит вызов <b>close </b>для <b>mDatabase </b>и выполняется код <b>mDatabase = null</b>.</p>
+<p>Рассмотрим на примере. Снова меняем метод myActions:</p>
+<pre><code class="java">  void myActions() {
+    db = dbh.getWritableDatabase();
+    SQLiteDatabase db2 = dbh.getWritableDatabase();
+    Log.d(LOG_TAG, "db = db2 - " + db.equals(db2));
+    Log.d(LOG_TAG, "db open - " + db.isOpen() + ", db2 open - " + db2.isOpen());
+    db2.close();
+    Log.d(LOG_TAG, "db open - " + db.isOpen() + ", db2 open - " + db2.isOpen());
+  }</code></pre>
+<p>Сначала мы получаем <b>db</b>. При этом <b>dbh </b>проверяет свой внутренний атрибут <b>mDatabase</b>. Т.к. это первая попытка подключения, то <b>mDatabase </b>пуст, поэтому внутри <b>dbh </b>производится подключение и в <b>mDatabase </b>записывается свежесозданный <b>SQLiteDatabase</b>, и он же и возвращается в <b>db </b>из метода <b>getWritableDatabse </b>.</p>
+<p>Затем мы из того же <b>dbh </b>получаем <b>db2</b>. <b>dbh </b>снова проверяет свой внутренний <b>mDatabse</b>, видит, что он уже <b>не null и не закрыт</b>, и возвращает нам его в наш <b>db2</b>. В итоге <b>db </b>и <b>db2 </b>равны и ссылаются на один и тот же объект. Проверяем это с помощью метода <b>equals</b>. Далее проверим, что <b>db </b>и <b>db2 открыты</b>. Потом <b>закроем </b>только <b>db2</b>, и еще раз проверим на <b>открытость оба </b>объекта.</p>
+<p>Сохраняем, запускаем, смотрим лог:</p>
+<p><em>--- onCreate Activity ---<br> db = db2 – true<br> db open - true, db2 open – true<br> db open - false, db2 open - false</em></p>
+<p>Видим, что <b>equals </b>вернул <b>true</b>. Затем видно, что <b>db</b> и <b>db2 открыты</b>. А после закрытия <b>db2 </b>видим, что закрыты оба объекта. Все оттого, что «оба объекта» – это всего лишь <b>две ссылки </b>на <b>один объект</b>.</p>
+<p>Если в коде вместо <b>db2.close()</b> поставить<b> dbh.close()</b> - эффект будет тот же. <b>dbh </b>вызовет метод <b>close </b>для <b>mDatabase </b>и обнулит его -<b> mDatabase = null</b>. А <b>db </b>и <b>db2 </b>будут ссылаться на закрытый <b>SQLiteDatabase</b>.</p>
+<p>Я думаю, что правильнее вызывать <b>close </b>для <b>SQLiteOpenHelper</b>, а не для <b>SQLiteDatabase</b>. Т.к. гарантировано <b>закрывается </b>текущее открытое соединение и <b>обнуляется </b>внутренняя ссылка на объект.</p>
+<p>Если вам надо получить второе открытое подключение к БД, то надо создавать новый экземпляр <b>DBHelper </b>и вызывать <b>getWritableDatabase</b>. Мы так делали чуть выше в примере с блокировкой транзакции.</p>
+<h3>read write</h3>
+<p>В чем разница между <b>getWritableDatabase </b>и <b>getReadableDatabase</b>? Судя по документацие, в обычной ситуации <b>оба </b>метода возвращают<b> одно и то же</b>. И оба позволят <b>читать </b>и <b>менять </b>БД. В случае же, например, проблемы<b> отсутствия свободного места</b> на устройстве, метод <b>getReadableDatabase </b>вернет БД только <b>для чтения</b>, а <b>getWritableDatabase </b>выдаст <b>ошибку</b>.</p>
+<h3>_id, как имя поля-идентификатора</h3>
+<p>В различных источниках при работе с БД в качестве наименования поля-идентификатора в таблице используют не просто id, а _id. Почему?</p>
+<p>Ответ нашелся в доках по Cursor-адаптерам. Цитата: "The Cursor must include a column named "_id" or this class will not work.". Т.е. если вы планируете использовать Cursor-адаптеры, то необходимо, чтобы таблица содержала поле _id, иначе адаптер не будет работать. </p>
+<h3>Блокировка</h3>
+<p>Метод открытия транзакции <b>beginTransaction </b>ставит блокировку в режиме <b>EXCLUSIVE</b>. Т.е. БД блокируется и на чтение и на запись для других подключений. В SDK Android версии старше 4.0 появился метод <b>beginTransactionNonExclusive</b>, который ставит блокировку в режиме <b>IMMEDIATE</b>. Я подозреваю, что это позволит читать данные другим подключениям.</p>
+<p>Если есть желание подробнее погрузиться в тему, вам <a href="http://www.enterra.ru/blog/android_issues_with_sqlite/" target="_blank">сюда</a>.</p>
+<h3>Синтаксис</h3>
+<p>И кстати, рекомендуемая форма для использования транзакций такая:</p>
+<pre><code class="java">    db.beginTransaction();
+    try {
+      ...
+      db.setTransactionSuccessful();
+    } finally {
+      db.endTransaction();
+    }</code></pre>
+<p>Это очень важно! Т.е. если вы <b>открыли </b>транзакцию, <b>выполнили </b>какие-либо действия и<b> не закрыли</b> транзакцию, то все операции будут считаться <b>неуспешными </b>и изменения не будут внесены в БД. Поэтому <b>закрытие</b> транзакции <b>необходимо </b>выполнять и <b>finally </b>нам это гарантирует.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

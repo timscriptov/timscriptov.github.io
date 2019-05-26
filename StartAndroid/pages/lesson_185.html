@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 185. Notifications. Кастомные уведомления.</title>
+ <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+          <p><img src="images/lesson185/lesson1.webp" alt="" width="640" height="454" border="0"></p>
+<p>Android предоставляет нам возможность самим создать layout для уведомлений</p>
+<p>Рассмотрим простой пример:</p>
+<p>layout/notification.xml</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   android:id="@+id/root"
+   android:layout_width="match_parent"
+   android:layout_height="64dp"
+   android:orientation="horizontal"&gt;
+
+   &lt;TextView
+       android:id="@+id/textView"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:layout_marginStart="8dp"
+       android:layout_marginTop="8dp"
+       android:text="TextView"
+       android:textAppearance="@style/TextAppearance.Compat.Notification.Title" /&gt;
+
+&lt;/LinearLayout&gt;
+</code></pre>
+<p>Высота 64dp - стандартная высота уведомления.</p>
+<p>Будем показывать только TextView. Рекомендуется использовать @style/TextAppearance.Compat.Notification.* стили, чтобы ваш текст корректно отображался на любой версии Android.</p>
+<p>Код билдера уведомления выглядит так:</p>
+<pre><code class="java">RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification);
+remoteViews.setTextViewText(R.id.textView, "Custom notification text");
+remoteViews.setOnClickPendingIntent(R.id.root, rootPendingIntent);
+
+NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+       .setSmallIcon(R.mipmap.ic_launcher)
+       .setContent(remoteViews);
+</code></pre>
+<p>Создаем <a href="https://developer.android.com/reference/android/widget/RemoteViews.html" target="_blank" rel="noopener noreferrer">RemoteViews</a> из layout файла.</p>
+<p>Методом <a href="https://developer.android.com/reference/android/widget/RemoteViews.html#setTextViewText(int, java.lang.CharSequence)" target="_blank" rel="noopener noreferrer">setTextViewText</a> помещаем текст в View c id = R.id.textView.</p>
+<p>А методом <a href="https://developer.android.com/reference/android/widget/RemoteViews.html#setOnClickPendingIntent(int, android.app.PendingIntent)" target="_blank" rel="noopener noreferrer">setOnClickPendingIntent</a> указываем PendingIntent, который будет вызван при нажатии на View с id = R.id.root. В нашем примере root - это корневой LinearLayout. Соответственно при нажатии на уведомление, будет использован этот PendingIntent, чтобы запустить Activity/Service/BroadcastReceiver.</p>
+<p>В билдере остается необходимость указать иконку, которая будет видна в области уведомлений. А вот методы setContentTitle и setContentText не нужны. Вместо них используем <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setContent(android.widget.RemoteViews)" target="_blank" rel="noopener noreferrer">setContent</a> и передаем туда созданный RemoteViews.</p>
+<p>В результате увидим свое уведомление</p>
+<p><img src="images/lesson185/lesson2.webp" alt="" width="640" height="454" border="0"></p>
+<p>Для сравнения рядом отображено стандартное уведомление.</p>
+<p>Есть еще один, более новый, способ создания кастомного уведомления - использование стиля DecoratedCustomViewStyle.</p>
+<pre><code class="java">RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification);
+remoteViews.setTextViewText(R.id.textView, "Custom notification text");
+remoteViews.setOnClickPendingIntent(R.id.root, rootPendingIntent);
+
+NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+       .setSmallIcon(R.mipmap.ic_launcher)
+       .setCustomContentView(remoteViews)
+       .setStyle(new NotificationCompat.DecoratedCustomViewStyle());
+</code></pre>
+<p>Отличие от старого способа в том, что мы вызываем метод <a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setCustomContentView(android.widget.RemoteViews)" target="_blank" rel="noopener noreferrer">setCustomContentView</a>, а не setContent, и используем стиль DecoratedCustomViewStyle.</p>
+<p>Результат:</p>
+<p><img src="images/lesson185/lesson3.webp" alt="" width="640" height="454" border="0"></p>
+<p>Обратите внимание, что в этом случае кастомизируется уже не все уведомление, а только его содержание. А остальные части уведомления, такие как иконка, время или action кнопки останутся на своих местах.</p>
+<p>Использование DecoratedCustomViewStyle дает нам возможность кастомизировать и расширенное уведомление.</p>
+<p>Пример</p>
+<pre><code class="java">RemoteViews remoteViews = new RemoteViews(getPackageName(), R.layout.notification);
+remoteViews.setTextViewText(R.id.textView, "Custom notification text");
+remoteViews.setOnClickPendingIntent(R.id.root, rootPendingIntent);
+
+RemoteViews remoteViewsExtended = new RemoteViews(getPackageName(), R.layout.extended_notification);
+remoteViewsExtended.setTextViewText(R.id.textView, "Extended custom notification text");
+remoteViewsExtended.setOnClickPendingIntent(R.id.root, rootPendingIntent);
+
+NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+       .setSmallIcon(R.mipmap.ic_launcher)
+       .setCustomContentView(remoteViews)
+       .setCustomBigContentView(remoteViewsExtended)
+       .setStyle(new NotificationCompat.DecoratedCustomViewStyle());
+</code></pre>
+<p>Здесь мы кастомизируем и обычный вид уведомления (setCustomContentView) и расширенный (<a href="https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#setCustomBigContentView(android.widget.RemoteViews)" target="_blank" rel="noopener noreferrer">setCustomBigContentView</a>).</p>
+<p>Результат:</p>
+<p><img src="images/lesson185/lesson4.gif" alt="" width="640" height="454" border="0"></p>
+<p>Высота layout расширенного уведомления должна быть не больше 256dp.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

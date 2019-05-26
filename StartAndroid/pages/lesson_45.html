@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+	<meta name="author" content=""/>
+	<title>Урок 45. Список-дерево ExpandableListView</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- строим список-дерево ExpandableListView</p>
+<p>Если список элементов получается большой, имеет смысл разбить его на <b>группы</b> для упрощения навигации. Для этих целей можно использовать <a href="http://developer.android.com/reference/android/widget/ExpandableListView.html" target="_blank">ExpandableListView</a>. Это список в виде двухуровневого дерева. Первый уровень – <b>группа</b>, а в ней второй – <b>элемент</b>.</p>
+<p>Чтобы построить такой список нам нужно как-то передать адаптеру данные по группам и элементам.</p>
+<p>Каждая группа представляет из себя <b>Map&lt;String, ?&gt;</b>. Этот Map содержит <b>атрибуты</b>, которые вам нужны для каждой группы. Потом все эти Map (группы) собираются в List-<b>коллекцию</b>, например ArrayList. В итоге мы получили упакованные в один объект группы.</p>
+<p>Каждый элемент группы также представлен объектом <b>Map&lt;String, ?&gt;</b>. Мы собираем все Map (элементы) для каждой группы в отдельную <b>коллекцию</b>. Получается, каждой группе соответствует коллекция с элементами. Далее эти коллекции мы теперь помещаем в общую коллекцию. Т.е. получается подобие двумерного массива. И в итоге пункты упакованы в один объект.</p>
+<p>Сейчас начнем писать пример и там станет понятнее.</p>
+<p><i>List-коллекции называются обычно «список». Но т.к. список в контексте последних уроков - это набор пунктов на экране (ListView), то чтобы не путаться я буду использовать слово «коллекция».</i></p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0451_ExpandableList<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ExpandableList<br><b>Package name</b>: ru.startandroid.develop.p0451expandablelist<br><b>Create Activity</b>: MainActivity</p>
+<p>Нарисуем экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;ExpandableListView
+        android:id="@+id/elvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ExpandableListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p> Только <b>ExpandableList </b>на экране.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0451expandablelist;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.ExpandableListView;
+import android.widget.SimpleExpandableListAdapter;
+
+public class MainActivity extends Activity {
+  
+  // названия компаний (групп)
+  String[] groups = new String[] {"HTC", "Samsung", "LG"};
+  
+  // названия телефонов (элементов)
+  String[] phonesHTC = new String[] {"Sensation", "Desire", "Wildfire", "Hero"};
+  String[] phonesSams = new String[] {"Galaxy S II", "Galaxy Nexus", "Wave"};
+  String[] phonesLG = new String[] {"Optimus", "Optimus Link", "Optimus Black", "Optimus One"};
+  
+  // коллекция для групп
+  ArrayList&lt;Map&lt;String, String&gt;&gt; groupData;
+  
+  // коллекция для элементов одной группы
+  ArrayList&lt;Map&lt;String, String&gt;&gt; childDataItem;
+
+  // общая коллекция для коллекций элементов
+  ArrayList&lt;ArrayList&lt;Map&lt;String, String&gt;&gt;&gt; childData;
+  // в итоге получится childData = ArrayList&lt;childDataItem&gt;
+  
+  // список атрибутов группы или элемента
+  Map&lt;String, String&gt; m;
+
+  ExpandableListView elvMain;
+
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        // заполняем коллекцию групп из массива с названиями групп
+        groupData = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String group : groups) {
+          // заполняем список атрибутов для каждой группы
+          m = new HashMap&lt;String, String&gt;();
+            m.put("groupName", group); // имя компании
+            groupData.add(m);
+        }
+
+        // список атрибутов групп для чтения
+        String groupFrom[] = new String[] {"groupName"};
+        // список ID view-элементов, в которые будет помещены атрибуты групп
+        int groupTo[] = new int[] {android.R.id.text1};
+
+        // создаем коллекцию для коллекций элементов
+        childData = new ArrayList&lt;ArrayList&lt;Map&lt;String, String&gt;&gt;&gt;();
+        
+        // создаем коллекцию элементов для первой группы
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        // заполняем список атрибутов для каждого элемента
+        for (String phone : phonesHTC) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put("phoneName", phone); // название телефона
+            childDataItem.add(m);
+        }
+        // добавляем в коллекцию коллекций
+        childData.add(childDataItem);
+
+        // создаем коллекцию элементов для второй группы
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String phone : phonesSams) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put("phoneName", phone);
+            childDataItem.add(m);
+        }
+        childData.add(childDataItem);
+
+        // создаем коллекцию элементов для третьей группы
+        childDataItem = new ArrayList&lt;Map&lt;String, String&gt;&gt;();
+        for (String phone : phonesLG) {
+          m = new HashMap&lt;String, String&gt;();
+            m.put("phoneName", phone);
+            childDataItem.add(m);
+        }
+        childData.add(childDataItem);
+
+        // список атрибутов элементов для чтения
+        String childFrom[] = new String[] {"phoneName"};
+        // список ID view-элементов, в которые будет помещены атрибуты элементов
+        int childTo[] = new int[] {android.R.id.text1};
+        
+        SimpleExpandableListAdapter adapter = new SimpleExpandableListAdapter(
+            this,
+            groupData,
+            android.R.layout.simple_expandable_list_item_1,
+            groupFrom,
+            groupTo,
+            childData,
+            android.R.layout.simple_list_item_1,
+            childFrom,
+            childTo);
+            
+        elvMain = (ExpandableListView) findViewById(R.id.elvMain);
+        elvMain.setAdapter(adapter);
+    }
+}</code></pre>
+<p>Код громоздкий и сложный, давайте разбираться.</p>
+<p>Сначала мы в классе описываем массивы <b>данных</b> – это названия <b>групп</b> и названия <b>элементов</b> для них. Я решил в качестве данных выбрать смартфоны. <b>Группы </b>в нашем списке – это будут <b>компании</b>, а <b>элементы </b>– <b>смартфоны</b> этих компаний.</p>
+<p>Затем описываем коллекцию для групп, коллекции для элементов и Map для атрибутов.</p>
+<p>В методе onCreate заполняем <b>groupData</b>. Это коллекция групп. Каждая группа представляет собой <b>Map</b>. А в Map мы пишем необходимые нам <b>атрибуты </b>для каждой группы. В нашем случае, для каждой группы мы укажем всего один атрибут <b>groupName</b> - это <b>название</b> компании из массива <b>groups</b>.</p>
+<p>Как мы помним, <b>адаптер </b>обычно использует <b>layout</b>-ресурс для отображения пункта списка. В нашем случае <b>пунктами </b>ListView являются и <b>группа </b>и <b>элемент</b>.  В layout-ресурсе могут быть какие-либо <b>TextView</b>. Мы можем заполнить их значениями из <b>атрибутов</b> элементов или групп, которые собраны в Map. Для этого нам надо указать сначала <b>имена</b> <b>атрибутов</b>, которые хотим использовать, а затем <b>ID TextView</b>-элементов, в которые хотим поместить значения этих атрибутов. Речь сейчас идет о текстовых атрибутах. (Хотя вообще атрибут вовсе не обязан быть класса String)</p>
+<p>Для связки <b>атрибутов </b>и <b>TextView</b>-элементов мы используем два массива:</p>
+<p><b>groupFrom </b>– список имен атрибутов, которые будут считаны. В нашем случае – это <b>groupName</b>, который мы добавили к группе с помощью Map чуть выше в коде, когда собирали группы в groupData.<br><b> groupTo </b>– список ID View-элементов, в которые будут помещены считанные значения атрибутов. Наш используемый layout будет содержать TextView с ID = <b>android.R.id.text1</b>.</p>
+<p>Два этих массива сопоставляются по порядку элементов. В итоге, в <b>layout</b>-ресурсе группы найдется элемент с ID = <b>android.R.id.text1</b> и в него запишется текст из атрибута <b>groupName</b>. Тем самым мы получим отображение имени группы (компании) в списке.</p>
+<p>Далее формируем <b>коллекции элементов</b>. Создаем общую <b>коллекцию коллекций</b>. А затем создаем коллекции элементов каждой группы. Принцип тот же, что и с группами – создаем <b>Map </b>и в него пишем атрибут <b>phoneName </b>со значением равным <b>имени </b>элемента (телефона). Коллекцию элементов для каждой группы добавляем в общую коллекцию.</p>
+<p>Формируем два массива для сопоставления <b>TextView </b>из layout и <b>атрибутов </b>элементов. Полностью аналогично, как выше мы уже проделали с группами. В итоге при отображении элемента, найдется TextView с ID = android.R.id.text1 и туда запишется текст из атрибута phoneName. И мы увидим текст нашего элемента (телефона) в списке.</p>
+<p>В конце кода мы создаем адаптер <a href="http://developer.android.com/reference/android/widget/SimpleExpandableListAdapter.html" target="_blank">SimpleExpandableListAdapter</a> и присваиваем его списку.</p>
+<p>На вход при создании адаптера идут элементы:</p>
+<p><b>this </b>– контекст <br><b> groupData </b>– коллекция групп<br><b> android.R.layout.simple_expandable_list_item_1</b> – layout-ресурс, который будет использован для отображения группы в списке. Соответственно, запросто можно использовать свой layout-файл.<br><b> groupFrom </b>– массив имен атрибутов групп<br><b> groupTo </b>– массив ID TextView из layout для групп<br><b> childData </b>– коллекция коллекций элементов по группам<br><b> android.R.layout.simple_list_item_1</b> - layout-ресурс, который будет использован для отображения элемента в списке. Можно использовать свой layout-файл<br><b> childFrom </b>– массив имен атрибутов элементов<br><b> childTo </b>- массив ID TextView из layout для элементов.</p>
+<p>В общем непростая, на мой взгляд, реализация дерева получилась. Возможно, не сразу получится понять.  Но я попытался расписать все досконально и как можно подробнее.</p>
+<p>Layout <b>simple_expandable_list_item_1</b>, который мы использовали для отображения групп – это TextView с отступом от левого края, чтобы осталось место для кнопки раскрытия/сворачивания списка.  Для эксперимента вы можете попробовать использовать для групп layout <b>simple_list_item_1</b>, который мы использовали для элементов. В этом случае текст будет пересекаться с кнопкой.</p>
+<p>А вообще вы можете создать для элементов свой <b>layout</b>, например, с тремя <b>TextView</b>. И к каждому элементу списка (Map) добавить еще по два атрибута: цена и цвет. Далее указываете ваш layout в конструкторе, формируете соответственно массивы <b>childFrom </b>и <b>childTo</b> чтобы сопоставить атрибуты и TextView, и получится, что каждый элемент группы содержит более подробную информацию о смартфоне.</p>
+</body>
+</html>
+
+</div>
+</div>  
+</div>
+
+	  <script src="../js/highlight.pack.js"></script>
+	  <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 16. Программное создание экрана. LayoutParams</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- рисуем экран программно, а не через layout-файл</p>
+<p>До этого мы создавали экран с помощью<b> layout-файлов</b>. Но то же самое мы можем делать и <b>программно</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0161_DynamicLayout<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: DynamicLayout<br><b>Package name</b>: ru.startandroid.develop.dinamiclayout<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем <b>MainActivity.java</b> и обратим внимание на строку:</p>
+<pre><code class="java">setContentView(R.layout.main);</code></pre>
+<p>Напомню, что в этой строке мы указываем, что <b>Activity </b>в качестве экрана будет использовать <b>layout-файл main.xml</b>. Есть другая реализация этого метода, которая на вход принимает не layout-файл, а <b>View</b>-элемент и делает его корневым. В layout-файлах корневой элемент обычно <b>LinearLayout</b>, мы тоже используем его.</p>
+<pre><code class="java">    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // создание LinearLayout
+        LinearLayout linLayout = new LinearLayout(this);
+        // установим вертикальную ориентацию
+        linLayout.setOrientation(LinearLayout.VERTICAL);
+        // создаем LayoutParams  
+        LayoutParams linLayoutParam = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT); 
+        // устанавливаем linLayout как корневой элемент экрана 
+        setContentView(linLayout, linLayoutParam);
+    }</code></pre>
+<p>Обновим импорт – <b>CTRL+SHIFT+O</b>. Eclipse предложит нам выбрать, какой именно <b>LayoutParams </b>мы будем использовать. Тут надо остановиться подробнее. Вспомним теорию про экраны. Экран <a href="http://developer.android.com/guide/topics/ui/index.html#ViewHierarchy" target="_blank">состоит</a> из ViewGroup и вложенных в них View.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_15_0.png" alt="" width="312" height="211" border="0"></p>
+<p>Известные нам примеры <b>ViewGroup </b>– это <b>LinearLayout</b>, <b>TableLayout</b>, <b>RelativeLayout </b>и т.д. Каждая из этих ViewGroup <a href="http://developer.android.com/guide/topics/ui/declaring-layout.html#layout-params" target="_blank">имеет вложенный класс LayoutParams</a>. Базовым для этих LayoutParams является <a href="http://developer.android.com/reference/android/view/ViewGroup.LayoutParams.html" target="_blank">ViewGroup.LayoutParams</a>.</p>
+<p><b>ViewGroup</b>.<b>LayoutParams </b>имеет всего два атрибута: <b>height </b>и <b>width</b>. Его подкласс <a href="http://developer.android.com/reference/android/view/ViewGroup.MarginLayoutParams.html" target="_blank">ViewGroup.MarginLayoutParams</a> наследует два этих атрибута и имеет свои четыре: <b>bottomMargin</b>, <b>leftMargin</b>, <b>rightMargin</b>, <b>topMargin</b>. Класс <a href="http://developer.android.com/reference/android/widget/LinearLayout.LayoutParams.html" target="_blank">LinearLayout.LayoutParams</a> в свою очередь является подклассом ViewGroup.MarginLayoutParams, наследует от него уже 6 аттрибутов и добавляет свои два: <b>gravity </b>и <b>weight</b>.</p>
+<p>Т.е. объект <b>LinearLayout </b>имеет вложенный класс <b>LinearLayout.LayoutParams</b> с layout-аттрибутами. И эти аттрибуты распространяются на все дочерние View и ViewGroup.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_15_1.png" alt="" width="514" height="300" border="0"></p>
+<p>Т.е. View, находящаяся в LinearLayout имеет один набор layout-параметров:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_15_2.png" alt="" width="313" height="282" border="0"></p>
+<p>а View из RelativeLayout – другой:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_15_3.png" alt="" width="328" height="543" border="0"></p>
+<p>Есть и общие элементы, т.к. родители у этих ViewGroup одни.</p>
+<p>Вернемся в Eclipse, он ждет нашего выбора. Используем базовый класс ViewGroup.LayoutParams</p>
+<p><img src="images/lesson_15_4.png" alt="" width="482" height="437" border="0"></p>
+<p>Давайте разберем код. Мы создаем <b>LinearLayout </b>и ставим <b>вертикальную </b>ориентацию. Далее создаем <b>LayoutParams</b>. Конструктор на вход принимает два параметра: <b>width </b>и <b>height</b>. Мы оба ставим <b>MATCH_PARENT</b>. Далее вызывается метод <a href="http://developer.android.com/reference/android/app/Activity.html#setContentView(android.view.View, android.view.ViewGroup.LayoutParams)" target="_blank">setContentView</a>. На вход ему подается <b>LinearLayout </b>и <b>LayoutParams</b>. Это означает, что корневым элементом <b>Activity </b>будет <b>LinearLayout </b>с layout-свойствами из <b>LayoutParams</b>.</p>
+<p>Если мы сейчас запустим приложение, то ничего не увидим, т.к. LinearLayout – прозрачен. Давайте добавлять в LinearLayout View-компоненты.</p>
+<pre><code class="java">        LayoutParams lpView = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        
+        TextView tv = new TextView(this);
+        tv.setText("TextView");
+        tv.setLayoutParams(lpView);
+        linLayout.addView(tv);
+        
+        Button btn = new Button(this);
+        btn.setText("Button");
+        linLayout.addView(btn, lpView);</code></pre>
+<p>Мы снова создаем объект <b>LayoutParams </b>с атрибутами <b>width </b>= <b>wrap_content </b>и <b>height </b>= <b>wrap_content</b>. Теперь если мы присвоим этот объект какому-либо View, то это <b>View </b>будет иметь <b>ширину </b>и <b>высоту по содержимому</b>.</p>
+<p>Далее мы создаем <b>TextView</b>, настраиваем его текст, присваиваем ему выше созданный LayoutParams и добавляем в LinearLayout с помощью метода <a href="http://developer.android.com/reference/android/view/ViewGroup.html#addView(android.view.View)" target="_blank">addView (View child)</a>.</p>
+<p>С <b>Button </b>аналогично – создаем, правим текст, а затем используем другую реализацию метода <a href="http://developer.android.com/reference/android/view/ViewGroup.html#addView(android.view.View, android.view.ViewGroup.LayoutParams)" target="_blank">addView (View child, ViewGroup.LayoutParams params)</a>, которая одновременно добавляет <b>Button </b>в <b>LinearLayout </b>и присваивает для Button указанный <b>LayoutParams</b>. Результат будет тот же, что и с TextView, но вместо двух строк кода получилась одна.</p>
+<p>Обратите внимание, что для<b> двух объектов View</b> я использовал <b>один объект LayoutParams</b> - lpView. Оба View-объекта считают параметры из LayoutParams и используют их.</p>
+<p>Сохраним и запустим приложение. Видим, что компоненты на экране появились. И видно, что их высота и ширина определена по содержимому (wrap_content).</p>
+<p><img src="images/lesson_15_5.png" alt="" width="640" height="454" border="0"></p>
+<p>Объект <b>lpView </b>имеет базовый тип <b>android.view.ViewGroup.LayoutParams</b>. А значит позволит настроить только ширину и высоту. Но для <b>View </b>в <b>LinearLayout </b>доступны, например, отступ слева или выравнивание по правому краю. И если мы хотим их задействовать, значит надо использовать <b>LinearLayout.LayoutParams</b>:</p>
+<pre><code class="java">        LinearLayout.LayoutParams leftMarginParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        leftMarginParams.leftMargin = 50;
+        
+        Button btn1 = new Button(this);
+        btn1.setText("Button1");
+        linLayout.addView(btn1, leftMarginParams);</code></pre>
+<p>Смотрим код. Мы создаем объект типа<b> LinearLayout.LayoutParams</b> с помощью такого же конструктора, как и для обычного LayoutParams, указывая <b>width </b>и <b>height</b>. Затем мы указываем <b>отступ слева</b> = 50. Отступ здесь указывается в <b>пикселах</b>. Далее схема та же: создаем объект, настраиваем текст и добавляем его в LinearLayout c присвоением LayoutParams.</p>
+<p>Аналогично добавим компонент с выравниванием:</p>
+<pre><code class="java">        LinearLayout.LayoutParams rightGravityParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        rightGravityParams.gravity = Gravity.RIGHT;
+        
+        Button btn2 = new Button(this);
+        btn2.setText("Button2");
+        linLayout.addView(btn2, rightGravityParams);</code></pre>
+<p>Сохраним и запустим. Button1 имеет отступ 50px. А Button2 выравнена по правому краю:</p>
+<p><img src="images/lesson_15_6.png" alt="" width="640" height="454" border="0"></p>
+<p>Вероятно, эта тема будет не очень понятна с первого раза. Поэтому на следующих двух уроках мы закрепим эти знания и попрактикуемся в добавлении элементов на экран и их настройке.</p>
+<p>Полный код урока:</p>
+<pre><code class="java">public class MainActivity extends Activity {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // создание LinearLayout
+        LinearLayout linLayout = new LinearLayout(this);
+        // установим вертикальную ориентацию
+        linLayout.setOrientation(LinearLayout.VERTICAL);
+        // создаем LayoutParams  
+        LayoutParams linLayoutParam = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT); 
+        // устанавливаем linLayout как корневой элемент экрана 
+        setContentView(linLayout, linLayoutParam);
+        
+        LayoutParams lpView = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        
+        TextView tv = new TextView(this);
+        tv.setText("TextView");
+        tv.setLayoutParams(lpView);
+        linLayout.addView(tv);
+        
+        Button btn = new Button(this);
+        btn.setText("Button");
+        linLayout.addView(btn, lpView);
+
+        
+        LinearLayout.LayoutParams leftMarginParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        leftMarginParams.leftMargin = 50;
+        
+        Button btn1 = new Button(this);
+        btn1.setText("Button1");
+        linLayout.addView(btn1, leftMarginParams);
+
+        
+        LinearLayout.LayoutParams rightGravityParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        rightGravityParams.gravity = Gravity.RIGHT;
+        
+        Button btn2 = new Button(this);
+        btn2.setText("Button2");
+        linLayout.addView(btn2, rightGravityParams);
+    }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

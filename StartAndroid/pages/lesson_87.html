@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 87. AsyncTask. Параметры. Промежуточные результаты</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем параметры<br> - выводим промежуточные результаты </p>
+<p>На прошлом уроке мы увидели, как AsyncTask может взаимодействовать с экраном <b>до </b>и <b>после </b>выполнения задачи. Но часто бывает, что нужно <b>в процессе работы</b> выводить промежуточный результат.  На этом уроке посмотрим, как это можно реализовать. А также разберемся, как можно передавать <b>данные </b>в AsyncTask.</p>
+<p>При описании класса-наследника AsyncTask мы в угловых скобках указываем три типа данных:</p>
+<p>1) Тип <b>входных </b>данных. Это данные, которые пойдут на вход AsyncTask</p>
+<p>2) Тип <b>промежуточных </b>данных. Данные, которые используются для вывода промежуточных результатов</p>
+<p>3) Тип <b>возвращаемых </b>данных. То, что вернет AsyncTask после работы.</p>
+<p>В прошлом уроке мы указали &lt;Void, Void, Void&gt;. Это означало, что мы не используем параметры. Теперь попробуем воспользоваться ими. Нам надо вместо Void указать типы данных, которые будем использовать. В этом уроке используем первые два, третий пока оставим Void. Первые два – это у нас входные данные и промежуточные результаты.</p>
+<p>Мы будем писать приложение, эмулирующее загрузку файлов. На вход в AsyncTask будем давать адреса файлов - для этих данных используем тип String. В процессе загрузки файлов будем выдавать кол-во уже загруженных файлов, как промежуточные результаты. Для этих данных можно использовать тип Integer. Т.е. в угловых скобках первый тип у нас будет String, а второй – Integer. Третий мы не используем, там снова укажем Void.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0871_AsyncTaskParams<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AsyncTaskParams<br><b>Package name</b>: ru.startandroid.develop.p0871asynctaskparams<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;AsyncTaskParams&lt;/string&gt;
+	&lt;string name="start"&gt;Start&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/start"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tvInfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Нажав на кнопку будем стартовать задачу, в TextView будем выводить информацию о работе.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0871asynctaskparams;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  MyTask mt;
+  TextView tvInfo;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvInfo = (TextView) findViewById(R.id.tvInfo);
+  }
+
+  public void onclick(View v) {
+    mt = new MyTask();
+    mt.execute("file_path_1", "file_path_2", "file_path_3", "file_path_4");
+  }
+
+  class MyTask extends AsyncTask&lt;String, Integer, Void&gt; {
+    
+    @Override
+    protected void onPreExecute() {
+      super.onPreExecute();
+      tvInfo.setText("Begin");
+    }
+
+    @Override
+    protected Void doInBackground(String... urls) {
+      try {
+        int cnt = 0;
+        for (String url : urls) {
+          // загружаем файл
+          downloadFile(url);
+          // выводим промежуточные результаты
+          publishProgress(++cnt);
+        }
+        // разъединяемся
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      return null;
+    }
+
+
+    @Override
+    protected void onProgressUpdate(Integer... values) {
+      super.onProgressUpdate(values);
+      tvInfo.setText("Downloaded " + values[0] + " files");
+    }
+
+    @Override
+    protected void onPostExecute(Void result) {
+      super.onPostExecute(result);
+      tvInfo.setText("End");
+    }
+    
+    
+    private void downloadFile(String url) throws InterruptedException {
+      TimeUnit.SECONDS.sleep(2);
+    }
+  }
+}</code></pre>
+<p>При описании класса-наследника AsyncTask мы использовали типы данных &lt;String, Integer, Void&gt;. Напомню, что <b>первый </b>(String) используется для <b>входных </b>данных, <b>второй </b>(Integer) – для <b>промежуточных</b> данных, <b>третий </b>(Void) – для <b>выходных </b>данных (пока не используем).</p>
+<p>В методе <b>onPreExecute</b>, который выполняется перед началом работы AsyncTask, мы пишем в TextView текст Begin.</p>
+<p>Обратите внимание на тип входных данных в методе <b>doInBackground</b>. Это String. Т.е. здесь используется первый тип из угловых скобок, тип входных данных. В нашей задаче, мы подаем на вход AsyncTask набор адресов файлов для загрузки. Метод doInBackground принимает эти данные и в цикле по одному загружает эти файлы. После загрузки каждого файла он вызывает метод publishProgress и передает туда кол-во загруженных файлов. После загрузки всех файлов отключаемся. </p>
+<p>Когда мы в doInBackground вызываем метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#publishProgress(Progress...)" target="_blank">publishProgress </a>и передаем туда данные, срабатывает метод <a href="http://developer.android.com/reference/android/os/AsyncTask.html#onProgressUpdate(Progress...)" target="_blank">onProgressUpdate</a> и получает эти данные. Тип этих данных равен второму типу из угловых скобок, т.е. Integer. Метод onProgressUpdate используется для вывода промежуточных результатов. Он выполняется в основном потоке и имеет доступ к UI. Из doInBackground мы (с помощью publishProgress) передали в onProgressUpdate кол-во загруженных файлов – это кол-во и выводим в TextView.</p>
+<p>Метод <b>onPostExecute </b>выполняется по завершению задачи, выводим текст End в TextView.</p>
+<p>Метод <b>downloadFile </b>– эмуляция загрузки файлов, просто пауза в 2 секунды.</p>
+<p>В методе <b>onclick </b>мы создаем AsyncTask и запускаем его методом execute. На вход этому методу передаем набор переменных типа String. String используется, потому что мы его указали в угловых скобках на первом месте – это тип входных данных. Я передаю данные просто перечислив их через запятую, но можно использовать и массив.</p>
+<p>Все сохраним и запустим. Нажмем <b>Start</b>. Появился текст Begin</p>
+<p><img src="images/lesson_86_0.png" alt="" width="640" height="454"></p>
+<p>Т.е. сработал метод onPreExecute</p>
+<p>Далее пошел отсчет загруженных файлов</p>
+<p><img src="images/lesson_86_1.png" alt="" width="640" height="454"></p>
+<p>Это мы вызываем метод publishProgress, чтоб выполнился метод onProgressUpdate и обновил экран</p>
+<p>Появился текст End</p>
+<p><img src="images/lesson_86_2.png" alt="" width="640" height="454"></p>
+<p>Это выполнился onPostExecute</p>
+<p>Сейчас, наверно, кажется, что методов целая куча и в них можно запутаться, попробуем резюмировать:</p>
+<p><b>execute </b>– этот метод мы явно вызываем, чтобы начать выполнение задачи. В него мы передаем набор данных  определенного типа. Этот тип указан первым в угловых скобках при описании AsyncTask (в нашем примере это String).</p>
+<p><b>onPreExecute </b>и <b>onPostExecute </b>– их мы сами явно не вызываем, они вызываются системой в начале и конце выполнения задачи.</p>
+<p><b>doInBackground </b>– в нем мы указываем, что нам надо сделать в новом потоке. На вход поступают данные, которые мы передали в execute. Явно не вызываем.</p>
+<p><b>publishProgress </b>– явно вызываем в методах doInBackground, onPreExecute или onPostExecute. На вход передаем промежуточные данные определенного типа. Этот тип указан вторым в угловых скобках при описании AsyncTask (в нашем примере это Integer).</p>
+<p><b>onProgressUpdate </b>– метод получает на вход промежуточные результаты. Сами не вызываем, вместо этого используем метод publishProgress. То, что передаем в publishProgress, попадает в onProgressUpdate.</p>
+<p>Еще имеет смысл пояснить такой момент. Метод <b>onProgressUpdate </b>принимает на вход набор параметров. Мы же в этом уроке передаем ему (через <b>publishProgress</b>) всего одно значение. Поэтому чтобы прочесть это значение мы берем первый элемент массива ([0]).</p>
+<p>Ну и на всякий случай напишу, что в этом примере мы использовали String и Integer, но вы в решении ваших задач можете использовать какие угодно типы-классы, хоть свои собственные.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

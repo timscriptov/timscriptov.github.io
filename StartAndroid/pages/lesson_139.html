@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 139. Google maps. Создание и настройка проекта. Карта, камера, события</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- создаем приложение с картой<br/> - настраиваем карту и обрабатываем ее события<br/> - программно меняем положение камеры</p>
+<p>После темы получения координат вполне логично будет рассмотреть тему Google карт. Тема несложная и не особо большая, нам хватит пару уроков, чтобы ее рассмотреть.</p>
+<p>Но перед тем, как начать творить и созидать, нам надо будет сделать две вещи.</p>
+<p>1) В Google Console включить службу карт и получить API-ключ для работы</p>
+<p>2) Обеспечить доступ проекта к Google Play services</p>
+<h3>API ключ</h3>
+<p>Начнем с первого пункта. Для этого нам надо зайти в <a href="https://code.google.com/apis/console/?noredirect" target="_blank" rel="noopener noreferrer">Google APIs Console</a>.</p>
+<p>Если у вас нет проекта, Google предложит его создать.</p>
+<p><img style="border: 1px solid black;" src="images/xl0139_010.png.pagespeed.ic.islmp0lhlx.png" alt="" width="424" height="436"/></p>
+<p>Жмем <b>Create project</b>…</p>
+<p>Проект создан. Слева выбираем <b>Services</b> и открывается список служб.</p>
+<p><img style="border: 1px solid black;" src="images/l0139_020.png.pagespeed.ce.vd2ittu59o.png" alt="" width="640" height="271"/></p>
+<p>В этом списке ищем <b>Google Maps Android API v2</b></p>
+<p><img style="border: 1px solid black;" src="images/xl0139_030.png.pagespeed.ic.sxd8r3uwot.png" alt="" width="509" height="44"/></p>
+<p>Жмем на тумблер включения (OFF), принимаем соглашение и снова попадаем в список служб.</p>
+<p>Но теперь служба должна быть включена</p>
+<p><img style="border: 1px solid black;" src="images/xl0139_040.png.pagespeed.ic.0wv7ukf6dm.png" alt="" width="616" height="39"/></p>
+<p>Все ок. Теперь идем за ключом.</p>
+<p>Для этого слева сверху выбираем <b>API Access</b> и открывается такой экран.</p>
+<p><img style="border: 1px solid black;" src="images/l0139_050.png.pagespeed.ce.7zpiuotvq-.png" alt="" width="640" height="457"/></p>
+<p>На нем жмем кнопку <b>Create new Android key</b> и от нас требуют ввести SHA1-значение ключа, которым будет подписано приложение.</p>
+<p>И даже дают инструкции, как это сделать с помощью утилиты <b>keytool</b></p>
+<p><img style="border: 1px solid black;" src="images/xl0139_060.png.pagespeed.ic._qtcwugxhf.png" alt="" width="627" height="436"/></p>
+<p>Если вообще непонятно о чем речь, рекомендую прочесть Урок 123. Там я все подробно описал.</p>
+<p>Но последние версии Eclipse позволяют получить SHA1 без всяких команд, достаточно зайти в настройки и там есть вся инфа</p>
+<p><img src="images/l0139_070.png.pagespeed.ce.dc4yah5s-s.png" alt="" width="640" height="584"/></p>
+<p>Берем содержимое поля <b>SHA1 fingerprint</b></p>
+<p>К нему через точку с запятой дописываем пакет приложения (в этом уроке это будет ru.startandroid.develop.p1391googlemaps), вставляем в поле и жмем <b>Create</b>.</p>
+<p><img style="border: 1px solid black;" src="images/xl0139_080.png.pagespeed.ic.axkmuazhlv.png" alt="" width="629" height="435"/></p>
+<p>Появился нужный нам ключ - строка <b>API key</b>.</p>
+<p><img style="border: 1px solid black;" src="images/l0139_090.png.pagespeed.ce.rqkj0r5idn.png" alt="" width="640" height="123"/></p>
+<p>Не закрывайте пока эту страницу, скоро этот созданный ключ нам понадобится при создании приложения.</p>
+<p><i>Не забывайте проделать эти же манипуляции, когда будете подписывать приложение для публикации на маркете другим ключом.</i></p>
+<h3>Google Play services</h3>
+<p>Теперь второй пункт. Для работы с картой нам понадобится Google Play services.</p>
+<p>Открываем SDK Manager и ищем там Extras &gt; <b>Google Play services</b>. Если еще не установлено, то устанавливайте.</p>
+<p><img style="border: 1px solid black;" src="images/xl0139_100.png.pagespeed.ic.4ccr23v-3l.png" alt="" width="347" height="182"/></p>
+<p>После того, как скачалось, у себя на компе ищите папку по следующему пути: <i>&lt;android-sdk&gt;/extras/google/google_play_services/libproject/google-play-services_lib/</i>.  Если вдруг не знаете, где лежит SDK, то это можно подсмотреть в настройках Eclipse, пункт Android, <b>SDK Location</b>:</p>
+<p><img src="images/l0139_110.png.pagespeed.ce.bpwyzkjkq3.png" alt="" width="640" height="178"/></p>
+<p>Исходники из папки <i>google-play-services_lib</i> надо будет импортнуть в Workspace. Для этого в меню Eclipse жмем <b>File</b> &gt; <b>Import</b>, выбираем <b>Android</b> &gt; <b>Existing Android Code into Workspace</b>, находим <i>google-play-services_lib</i> папку, ставим галку, чтобы импорт был выполнен путем копирования (Copy projects into workspace) и жмем <b>Finish</b>. </p>
+<p><img src="images/xl0139_120.png.pagespeed.ic.t3nxp4nvnb.png" alt="" width="531" height="550"/></p>
+<p>Проект <b>google-play-services_lib</b> должен появиться в вашем Workspace</p>
+<p><img style="border: 1px solid black;" src="images/xl0139_130.png.pagespeed.ic.b95k_ghfjp.png" alt="" width="453" height="178"/></p>
+<p>Предварительная подготовка завершена, можем создавать проект.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1391_GoogleMaps<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: GoogleMaps<br/> <b>Package name</b>: ru.startandroid.develop.p1391googlemaps<br/> <b>Create Activity</b>: MainActivity</p>
+<h3>Настройка проекта</h3>
+<p>Теперь еще немного возни с проектом.</p>
+<p>Заходим в свойства проекта и добавляем (кнопкой <b>Add</b>) ссылку на ранее импортированный <i>google-play-services_lib</i> проект.</p>
+<p><img src="images/l0139_140.png.pagespeed.ce.4keedlwsma.png" alt="" width="640" height="336"/></p>
+<p>В манифесте необходимо добавить следующее в тег <b>application</b>:</p>
+<pre><code class="xml">    &lt;meta-data
+        android:name="com.google.android.maps.v2.API_KEY"
+        android:value="AIzaSyComUhEqr9BL4JjqJE05Lck4j1uABIU08Y"&gt;
+    &lt;/meta-data&gt;
+    &lt;meta-data
+        android:name="com.google.android.gms.version"
+        android:value="@integer/google_play_services_version"&gt;
+    &lt;/meta-data&gt;</code></pre>
+<p>Первые данные, это наш ключ из Google Console. Здесь вам надо в <b>android:value</b> поставить ваше значение API key, которое вы чуть ранее получили и оставили открытым в браузере. Этот ключ нужен, чтобы карта работала.</p>
+<p>Вторые данные – это версия Google Play services. Думаю, что эта инфа о версии нужна, чтобы карта четко понимала, как и что ей доступно из этих сервисов.</p>
+<p> </p>
+<p>Также, в манифесте в тег <b>manifest</b> нам надо добавить следующие разрешения:</p>
+<pre><code class="xml">&lt;uses-permission android:name="android.permission.INTERNET"&gt;&lt;/uses-permission&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"&gt;&lt;/uses-permission&gt;
+&lt;uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"&gt;&lt;/uses-permission&gt;
+&lt;uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"&gt;&lt;/uses-permission&gt;</code></pre>
+<p>Это доступ в инет, проверка доступности инета, сохранение кэша карт и доступ к Google-веб-сервисам.</p>
+<p>Если думаете работать с определением местоположения, то не забывайте про:</p>
+<pre><code class="xml">&lt;uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"&gt;&lt;/uses-permission&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"&gt;&lt;/uses-permission&gt;</code></pre>
+<p>И туда же, в тег <b>manifest</b> такое требование:</p>
+<pre><code class="xml">&lt;uses-feature
+    android:glEsVersion="0x00020000"
+    android:required="true"&gt;
+&lt;/uses-feature&gt;</code></pre>
+<p>Google-карты используют OpenGL ES версии 2. На девайсах, которые это не поддерживают, карта просто не отобразится. Поэтому ставим ограничение.</p>
+<p>Теперь все. Далее продолжаем работу, как с обычным проектом.</p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="test"&gt;Test&lt;/string&gt;</code></pre>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;Button
+        android:id="@+id/btnTest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickTest"
+        android:text="@string/test"&gt;
+    &lt;/Button&gt;
+    &lt;fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"&gt;
+    &lt;/fragment&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка и фрагмент-карта</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1391googlemaps;
+
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.View;
+
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+
+public class MainActivity extends FragmentActivity {
+
+  SupportMapFragment mapFragment;
+  GoogleMap map;
+  final String TAG = "myLogs";
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        .findFragmentById(R.id.map);
+    map = mapFragment.getMap();
+    if (map == null) {
+      finish();
+      return;
+    }
+    init();
+  }
+
+  private void init() {
+    }
+
+
+  public void onClickTest(View view) {
+    map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+  }
+}</code></pre>
+<p>В <b>onCreate</b> мы находим наш фрагмент с картой и получаем от него объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap" target="_blank" rel="noopener noreferrer">GoogleMap</a> методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/SupportMapFragment.html#getMap()" target="_blank" rel="noopener noreferrer">getMap</a>. Учитывайте, что этот метод может вернуть null.</p>
+<p>Кстати, в onCreate можно также повесить проверку, что на устройстве доступно Google Play services. Для этого надо вызвать метод <a href="http://developer.android.com/reference/com/google/android/gms/common/GooglePlayServicesUtil.html#isGooglePlayServicesAvailable(android.content.Context)" target="_blank" rel="noopener noreferrer">isGooglePlayServicesAvailable()</a> и он должен вернуть <a href="http://developer.android.com/reference/com/google/android/gms/common/ConnectionResult.html#SUCCESS" target="_blank" rel="noopener noreferrer">SUCCESS</a>. Подробности в <a href="http://developer.android.com/google/play-services/setup.html#ensure" target="_blank" rel="noopener noreferrer">документацие</a>.</p>
+<p>Метод <b>init</b> пока пустой.</p>
+<p>В <b>onClickTest</b> мы устанавливаем тип карты методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setMapType(int)" target="_blank" rel="noopener noreferrer">setMapType</a></p>
+<p>Всего существует 5 типов:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#MAP_TYPE_NONE" target="_blank" rel="noopener noreferrer">MAP_TYPE_NONE</a> – карта не будет отображаться</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#MAP_TYPE_NORMAL" target="_blank" rel="noopener noreferrer">MAP_TYPE_NORMAL</a> – обычный режим, в нем карта стартует по умолчанию.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#MAP_TYPE_SATELLITE" target="_blank" rel="noopener noreferrer">MAP_TYPE_SATELLITE</a> – снимки со спутника</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#MAP_TYPE_TERRAIN" target="_blank" rel="noopener noreferrer">MAP_TYPE_TERRAIN</a> – карта рельефа местности</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#MAP_TYPE_HYBRID" target="_blank" rel="noopener noreferrer">MAP_TYPE_HYBRID</a> – снимки со спутника + инфа о улицах и транспорте</p>
+<p>Получить текущий тип можно методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#getMapType()" target="_blank" rel="noopener noreferrer">getMapType</a>.</p>
+<p><i>Я буду проводить все тесты на реальном устройстве, т.к. эмуляторы по умолчанию не поддерживают Google Play services. Но если очень надо, то можно и на эмуляторе запустить после некоторых манипуляций. Об этом написано, например, <a href="http://stackoverflow.com/questions/13691943/this-app-wont-run-unless-you-update-google-play-services-via-bazaar/13869332#13869332" target="_blank" rel="noopener noreferrer">здесь</a>. Надо скачать два APK-файла и установить их на эмулятор.</i></p>
+<h3>Карта</h3>
+<p>Все сохраняем, запускаем приложение и видим карту в обычном режиме.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0139_150.png.pagespeed.ic.vwzhf2b-cg.png" alt="" width="640" height="400"/></p>
+<p><i>У меня при первом запуске карта была не видна, но были видны кнопки управления масштабом. В логах был такой текст: <b>Failed to load map. Error contacting Google servers. This is probably an authentication issue (but could be due to network errors)</b>. В этом случае убедитесь, что все верно сделано с получением ключа. Если проблема остается, то удалите приложение с устройства, сделайте в Eclipse очистку проекта (меню Project &gt; Clean) и снова установите приложение - мне помогло.</i></p>
+<p>Жмем <b>Test</b></p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0139_160.png.pagespeed.ic.lpuxmmupyn.png" alt="" width="640" height="400"/></p>
+<p>Теперь карта отображает снимки со спутника</p>
+<p>Посмотрим, что еще можно сделать с картой.</p>
+<p>В обычном режиме карта умеет показывать даже схему этажей здания, если очень приблизиться зумом к этому зданию.</p>
+<p>Вот, например схема 0-го этажа аэропорта Барселоны. Справа видно переключатель этажей.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0139_170.png.pagespeed.ic.iiqcvlvwl9.png" alt="" width="640" height="400"/></p>
+<p>Мы можем отключить программно эту возможность методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setIndoorEnabled(boolean)" target="_blank" rel="noopener noreferrer">setIndoorEnabled</a>.</p>
+<p>Метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setBuildingsEnabled(boolean)" target="_blank" rel="noopener noreferrer">setBuildingsEnabled</a> управляет отображением 3D зданий.</p>
+<h3>Управление</h3>
+<p>Управление картой жестами и кнопками также поддается настройке. Для этого необходимо вызвать метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#getUiSettings()" target="_blank" rel="noopener noreferrer">getUiSettings</a> и мы получим объект настроек интерфейса <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html" target="_blank" rel="noopener noreferrer">UiSettings</a>.</p>
+<p>У него куча методов, которые что-либо включают/выключают:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setAllGesturesEnabled(boolean)" target="_blank" rel="noopener noreferrer">setAllGesturesEnabled</a> – все жесты</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setCompassEnabled(boolean)" target="_blank" rel="noopener noreferrer">setCompassEnabled</a> – компас (слева сверху)</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setMyLocationButtonEnabled(boolean)" target="_blank" rel="noopener noreferrer">setMyLocationButtonEnabled</a> – кнопка текущего местоположения (необходимо включить определение, метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap#setMyLocationEnabled(boolean)" target="_blank" rel="noopener noreferrer">setMyLocationEnabled(true)</a>)</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setRotateGesturesEnabled(boolean)" target="_blank" rel="noopener noreferrer">setRotateGesturesEnabled</a> – жесты вращения</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setScrollGesturesEnabled(boolean)" target="_blank" rel="noopener noreferrer">setScrollGesturesEnabled</a> – жесты пролистывания карты </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#setTiltGesturesEnabled(boolean)" target="_blank" rel="noopener noreferrer">setTiltGesturesEnabled</a> – жесты смена угла обзора</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#isZoomControlsEnabled()" target="_blank" rel="noopener noreferrer">setZoomControlsEnabled</a> – кнопки зума</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/UiSettings.html#isZoomGesturesEnabled()" target="_blank" rel="noopener noreferrer">setZoomGesturesEnabled</a> – жесты зума</p>
+<p>У этих методов есть аналоги, которые начинаются с <b>is</b> вместо <b>set</b> и позволяют получить текущие значения.</p>
+<p>На карту можно вешать слушателей. Перепишем метод <b>init</b>:</p>
+<pre><code class="java">  private void init() {
+      map.setOnMapClickListener(new OnMapClickListener() {
+      
+      @Override
+      public void onMapClick(LatLng latLng) {
+        Log.d(TAG, "onMapClick: " + latLng.latitude + "," + latLng.longitude);
+      }
+    });
+      
+      map.setOnMapLongClickListener(new OnMapLongClickListener() {
+      
+      @Override
+      public void onMapLongClick(LatLng latLng) {
+        Log.d(TAG, "onMapLongClick: " + latLng.latitude + "," + latLng.longitude);
+      }
+    });
+      
+      map.setOnCameraChangeListener(new OnCameraChangeListener() {
+      
+      @Override
+      public void onCameraChange(CameraPosition camera) {
+        Log.d(TAG, "onCameraChange: " + camera.target.latitude + "," + camera.target.longitude);
+      }
+    });
+    }</code></pre>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnMapClickListener(com.google.android.gms.maps.GoogleMap.OnMapClickListener)" target="_blank" rel="noopener noreferrer">setOnMapClickListener</a> вешает слушателя <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMapClickListener.html" target="_blank" rel="noopener noreferrer">OnMapClickListener</a>. Его метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMapClickListener.html#onMapClick(com.google.android.gms.maps.model.LatLng)" target="_blank" rel="noopener noreferrer">onMapClick</a> сработает при клике на карту и вернет объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/LatLng.html" target="_blank" rel="noopener noreferrer">LatLng</a> с координатами (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/LatLng.html#latitude" target="_blank" rel="noopener noreferrer">latitude</a>, <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/LatLng.html#longitude" target="_blank" rel="noopener noreferrer">longitude</a>), где было нажатие.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnMapLongClickListener(com.google.android.gms.maps.GoogleMap.OnMapLongClickListener)" target="_blank" rel="noopener noreferrer">setOnMapLongClickListener</a> вешает слушателя <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMapLongClickListener.html" target="_blank" rel="noopener noreferrer">OnMapLongClickListener</a>. Его метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMapLongClickListener.html#onMapLongClick(com.google.android.gms.maps.model.LatLng)" target="_blank" rel="noopener noreferrer">onMapLongClick</a> сработает при длительном нажатии на карту и вернет объект LatLng с координатами (latitude, longitude), где было нажатие.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnCameraChangeListener(com.google.android.gms.maps.GoogleMap.OnCameraChangeListener)" target="_blank" rel="noopener noreferrer">setOnCameraChangeListener</a> вешает слушателя <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnCameraChangeListener.html" target="_blank" rel="noopener noreferrer">OnCameraChangeListener</a>. Его метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnCameraChangeListener.html#onCameraChange(com.google.android.gms.maps.model.CameraPosition)" target="_blank" rel="noopener noreferrer">onCameraChange</a> сработает при смене позиции камеры, т.е. при пролистывании карты, и вернет объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CameraPosition.html" target="_blank" rel="noopener noreferrer">CameraPosition</a>, который содержит информацию о текущем положении камеры.</p>
+<p>CameraPosition имеет атрибуты:</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CameraPosition.html#target" target="_blank" rel="noopener noreferrer">target</a>, тип LatLng с полями-координатами: latitude, longitude. Это точка, на которую смотрит камера.</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CameraPosition.html#bearing" target="_blank" rel="noopener noreferrer">bearing</a>, угол поворота камеры от севера по часовой</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CameraPosition.html#tilt" target="_blank" rel="noopener noreferrer">tilt</a>, угол наклона камеры</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CameraPosition.html#zoom" target="_blank" rel="noopener noreferrer">zoom</a>, текущий уровень зума</p>
+<p> </p>
+<p>Все сохраним, запустим приложение. Попробуйте выполнять короткие и длинные нажатия, вращать карту, перемещать ее, менять угол наклона: в логах будет выводиться вся инфа по этим операциям.</p>
+<h3>Камера</h3>
+<p>Теперь рассмотрим возможности программного изменения положения камеры.</p>
+<p>Для этого нам необходимо будет создавать объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdate" target="_blank" rel="noopener noreferrer">CameraUpdate</a> и передавать его в один из методов:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#animateCamera(com.google.android.gms.maps.CameraUpdate)" target="_blank" rel="noopener noreferrer">animateCamera(CameraUpdate update)</a> – плавное перемещение камеры</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#animateCamera(com.google.android.gms.maps.CameraUpdate, com.google.android.gms.maps.GoogleMap.CancelableCallback)" target="_blank" rel="noopener noreferrer">animateCamera(CameraUpdate update, GoogleMap.CancelableCallback callback)</a> – плавное перемещение и возможность указать слушателя <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.CancelableCallback" target="_blank" rel="noopener noreferrer">CancelableCallback</a>, который оповестит, что перемещение завершено (метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.CancelableCallback.html#onFinish()" target="_blank" rel="noopener noreferrer">onFinish</a>), либо прервано (метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.CancelableCallback.html#onCancel()" target="_blank" rel="noopener noreferrer">onCancel</a>).</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#animateCamera(com.google.android.gms.maps.CameraUpdate, int, com.google.android.gms.maps.GoogleMap.CancelableCallback)" target="_blank" rel="noopener noreferrer">animateCamera(CameraUpdate update, int durationMs, GoogleMap.CancelableCallback callback)</a> – плавное перемещение, слушатель CancelableCallback и возможность указать время длительности перемещения в миллисекундах</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#moveCamera(com.google.android.gms.maps.CameraUpdate)" target="_blank" rel="noopener noreferrer">moveCamera(CameraUpdate update)</a> – мгновенное перемещение, без анимации</p>
+<p>Остается узнать, как получить объект CameraUpdate, который будет содержать информацию о перемещении камеры. Для этого используется <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory" target="_blank" rel="noopener noreferrer">CameraUpdateFactory</a>.</p>
+<p>Пойдем по порядку методов в документацие.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#newCameraPosition(com.google.android.gms.maps.model.CameraPosition)" target="_blank" rel="noopener noreferrer">newCameraPosition (CameraPosition cameraPosition)</a> – созданный объект CameraUpdate будет содержать данные по перемещению камеры в указанную позицию с указанными настройками.</p>
+<p>Тут снова появляется объект CameraPosition, все параметры которого мы уже чуть ранее рассмотрели при разговоре о событии смены камеры и который содержит всю инфу о положении камеры</p>
+<p>Чтобы создать CameraPosition, используем CameraPosition.Builder. Перепишем метод <b>onClickTest</b>:</p>
+<pre><code class="java">  public void onClickTest(View view) {
+    CameraPosition cameraPosition = new CameraPosition.Builder()
+        .target(new LatLng(-27, 133))
+        .zoom(5)
+        .bearing(45)
+        .tilt(20)
+        .build();
+    CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+    map.animateCamera(cameraUpdate);
+  }</code></pre>
+<p>Создаем CameraPosition, указываем координаты (-27,133), зум (5 уровень), поворот карты (45 градусов), угол наклона (20 градусов). И передаем полученный объект в метод newCameraPosition, получая CameraUpdate, который в свою очередь передаем в метод animateCamera.</p>
+<p>Все сохраним, запустим, жмем <b>Test</b> и наблюдаем плавное перемещение к Австралии. В процессе перемещения меняется уровень зума, угол наклона и поворот камеры.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#newLatLng(com.google.android.gms.maps.model.LatLng)" target="_blank" rel="noopener noreferrer">newLatLng (LatLng latLng)</a> - перемещение камеры к указанной точке.</p>
+<p>Тут все просто. Перепишем метод <b>onClickTest</b>:</p>
+<pre><code class="java">  public void onClickTest(View view) {
+    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(new LatLng(
+        -27, 133));
+    map.animateCamera(cameraUpdate);
+  }</code></pre>
+<p>По нажатию на <b>Test</b> камера переместится в указанную точку.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#newLatLngBounds(com.google.android.gms.maps.model.LatLngBounds, int)" target="_blank" rel="noopener noreferrer">newLatLngBounds (LatLngBounds bounds, int padding)</a> – камера покажет указанную область с учетом отступа</p>
+<p>Перепишем метод <b>onClickTest</b>:</p>
+<pre><code class="java">  public void onClickTest(View view) {
+    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(
+        new LatLngBounds(new LatLng(-39, 112), new LatLng(-11, 154)),
+        100);
+    map.animateCamera(cameraUpdate);
+  }</code></pre>
+<p>Для указания области используется объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/LatLngBounds.html" target="_blank" rel="noopener noreferrer">LatLngBounds</a>, который создается из двух точек LatLng. Эти две точки будут являться левой нижней (югозападной) и верхней правой (северовосточной) точками созданной области.</p>
+<p>Параметр padding это отступ (в пикселах) от краев экрана. Т.е., если указать ненулевой padding, то камера покажет указанную область карты не в весь экран, а с учетом этого отступа.</p>
+<p>По нажатию на <b>Test</b> камера покажет Австралию с отступом в 100 пикселов от краев экрана.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#newLatLngBounds(com.google.android.gms.maps.model.LatLngBounds, int, int, int)" target="_blank" rel="noopener noreferrer">newLatLngBounds (LatLngBounds bounds, int width, int height, int padding)</a> – аналогичен предыдущему, но можно указать размеры прямоугольника на экране, в который будет помещена показанная область и отступ будет действовать внутри этой области.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#newLatLngZoom(com.google.android.gms.maps.model.LatLng, float)" target="_blank" rel="noopener noreferrer">newLatLngZoom (LatLng latLng, float zoom)</a> – переместит камеру в указанную точку с указанным уровнем зума</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#scrollBy(float, float)" target="_blank" rel="noopener noreferrer">scrollBy (float xPixel, float yPixel)</a> – перемещение камеры на указанное кол-во пикселов</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#zoomBy(float)" target="_blank" rel="noopener noreferrer">zoomBy (float amount)</a> – изменение текущего уровня зума на указанное кол-во (если положительное - то приближение, если отрицательное - удаление).</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#zoomBy(float, android.graphics.Point)" target="_blank" rel="noopener noreferrer">zoomBy (float amount, Point focus)</a> – смена текущего зума на указанное кол-во уровней, и применение итогового уровня к указанной точке на экране</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#zoomIn()" target="_blank" rel="noopener noreferrer">zoomIn</a>/<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#zoomOut()" target="_blank" rel="noopener noreferrer">zoomOut </a>– увеличение/уменьшение уровня зума на единицу</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/CameraUpdateFactory.html#zoomTo(float)" target="_blank" rel="noopener noreferrer">zoomTo (float zoom)</a> – установка указанного уровня зума</p>
+<p>Объект GoogleMap имеет метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setPadding(int, int, int, int)" target="_blank" rel="noopener noreferrer">setPadding</a>. Он устанавливает отступы от краев экрана. Это влияет на положение стандартных элементов управления карты, а также камера теперь будет считать центром карты эту новую ограниченную область и позиционироваться там.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

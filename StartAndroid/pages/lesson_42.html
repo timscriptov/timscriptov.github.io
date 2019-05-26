@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 42. Список - ListView</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем ListView для построения списка</p>
+<p>Перед тем, как начать говорить про компонент <b>ListView</b>, предлагаю вспомнить еще раз прошлый урок и механизм построения списка, который мы там использовали. Мы перебирали массив данных, в каждой итерации создавали <b>пункт </b>списка, заполняли его <b>данными </b>и помещали в <b>список</b>.</p>
+<p>При создании <b>ListView </b>создавать пункты за нас будет <b>адаптер</b>. Адаптеру нужны от нас <b>данные </b>и<b> layout-ресурс</b> пункта списка. Далее мы присваиваем <b>адаптер </b>списку <b>ListView</b>. Список при построении запрашивает у адаптера пункты, адаптер их создает (используя данные и layout) и возвращает списку. В итоге мы видим готовый список.</p>
+<p>Есть различные типы списков и адаптеров. Мы пока что рассмотрим простейший вариант.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0421_SimpleList<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleList<br><b>Package name</b>: ru.startandroid.develop.p0421simplelist<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем <b>main.xml</b> и добавим на экран компонент <b>ListView</b> (вкладка Composite):</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/hello"&gt;
+    &lt;/TextView&gt;
+    &lt;ListView
+        android:id="@+id/lvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>ListView</b> – это и есть компонент списка.</p>
+<p>Теперь надо создать <b>адаптер</b>. Открываем <b>MainActivity.java</b> и пишем:</p>
+<pre><code class="java">package ru.startandroid.develop.p0421simplelist;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  String[] names = { "Иван", "Марья", "Петр", "Антон", "Даша", "Борис",
+      "Костя", "Игорь", "Анна", "Денис", "Андрей" };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // находим список
+    ListView lvMain = (ListView) findViewById(R.id.lvMain);
+
+    // создаем адаптер
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+        android.R.layout.simple_list_item_1, names);
+
+    // присваиваем адаптер списку
+    lvMain.setAdapter(adapter);
+
+  }
+}</code></pre>
+<p>Вы не поверите, но это весь код, необходимый для создания списка )</p>
+<p>В качестве данных используем массив имен. В onCreate мы находим список, создаем адаптер и присваиваем адаптер списку. Давайте разберемся, как создали адаптер.</p>
+<p>Мы использовали этот конструктор: <a href="http://developer.android.com/reference/android/widget/ArrayAdapter.html#ArrayAdapter(android.content.Context, int, T[])" target="_blank">public ArrayAdapter (Context context, int textViewResourceId, T[] objects)</a></p>
+<p>и передали ему следующие параметры:</p>
+<p><b>this </b>– контекст<br><b>android.R.layout.simple_list_item_1</b> – это системный layout-файл, который представляет собой TextView<br><b>names </b>– массив данных, которые мы хотим вывести в список</p>
+<p>Мы можем посмотреть содержимое использованного <b>simple_list_item_1</b>. Для этого в вашем проекте найдите пункт <b>Android 4.0</b>., раскройте его, и раскройте <b>android.jar</b></p>
+<p><img src="images/lesson_41_0.png" alt=""></p>
+<p>Проматывайте в самый низ и открывайте <b>res.layout</b>.</p>
+<p><img src="images/lesson_41_1.png" alt="" width="233" height="99"></p>
+<p>И внутри находим используемый нами <b>simple_list_item_1</b></p>
+<p><img src="images/lesson_41_2.png" alt="" width="220" height="144"></p>
+<p>Двойной клик на него и смотрим содержимое:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/text1"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textAppearance="?android:attr/textAppearanceLarge"
+    android:gravity="center_vertical"
+    android:paddingLeft="6dip"
+    android:minHeight="?android:attr/listPreferredItemHeight"&gt;
+&lt;/TextView&gt;</code></pre>
+<p>Обычный TextView с набором параметров.</p>
+<p>Когда список при формировании запрашивает очередной пункт, адаптер берет этот Layout-ресурс <b>simple_list_item_1</b>, прогоняет его через <b>LayoutInflater</b> и получает <b>View</b>, преобразует View к TextView, присваивает ему <b>текст</b> из массива данных и отдает <b>списку</b>.</p>
+<p>Все сохраним и запустим. Видим список из наших данных.</p>
+<p><img src="images/lesson_41_3.png" alt="" width="640" height="454"></p>
+<p>Использование системного layout-ресурса simple_list_item_1 хорошо тем, что нам не надо самим layout рисовать. Однако, если нас не устраивает то, как выглядит список с использованием simple_list_item_1 в качестве пункта списка, мы можем создать <b>свой layout-ресурс</b>.</p>
+<p>Создадим layout-файл <b>my_list_item.xml</b> в папке res/layout нашего проекта:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textView1"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:padding="5dp"
+    android:text="TextView"
+    android:textColor="#00FF00"
+    android:textSize="24sp"&gt;
+&lt;/TextView&gt;</code></pre>
+<p><b>TextView </b>с указанием цвета и размера шрифта, выравнивания текста и отступов.</p>
+<p>Изменим существующий код, укажем адаптеру наш созданный layout-ресурс <b>my_list_item</b>:</p>
+<pre><code class="java; highlight">    // создаем адаптер
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+        R.layout.my_list_item, 
+        names);</code></pre>
+<p>Теперь адаптер будет использовать его при создании пунктов списка.</p>
+<p>Все сохраним и запустим. Видим наш зеленый список:</p>
+<p><img src="images/lesson_41_4.png" alt="" width="640" height="454"></p>
+<p>В layout-ресурсе для пункта списка вместо <b>TextView </b>вы можете использовать какой-нибудь его производный класс – например <b>Button</b>. Главное, чтобы объект прошел <b>преобразование </b>к <b>TextView</b>. Адаптер присвоит ему текст методом <b>setText </b>и отдаст списку.</p>
+<h3>Немного про Context</h3>
+<p>На одном из прошлых уроков я говорил, что <b>Context </b>(контекст) используется для доступа к <b>базовым </b>функциям приложения. В этом уроке у нас получилось хорошее подтверждение этим словам.</p>
+<p>ArrаyAdapter использует LayoutInflater, чтобы конвертнуть layout-ресурс в View. Но получение объекта LayoutInflater – это одна из <b>базовых </b>функций и она <b>недоступна </b>для класса <b>ArrаyAdapter</b>. Поэтому мы в ArrаyAdapter в качестве контекста передаем ссылку на Activity (Activity имеет доступ к базовым функциям через восходящую иерархию классов). А класс ArrayAdapter внутри себя <b>использует </b>переданный ему <b>контекст</b>, чтобы вызвать LayoutInflater. Без контекста он не смог бы это сделать.</p>
+</body>
+</html>
+
+            </div>
+     </div>  
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

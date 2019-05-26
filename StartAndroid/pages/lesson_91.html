@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 91. AsyncTask. Поворот экрана</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- сохраняем связь с AsyncTask при повороте экрана</p>
+<p>Для полного понимания урока желательно знать, что такое внутренние классы и static объекты.</p>
+<p>В прошлых уроках мы в Activity создавали внутренний класс, наследующий AsyncTask. Далее мы по нажатию кнопки создавали экземпляр этого класса и работали с ним. Все бы хорошо … но, если мы повернем экран, Activity будет создано заново, все прошлые объекты будут потеряны. В том числе мы потеряем и ссылку на наш созданный AsyncTask. А сам AsyncTask будет работать со старым Activity и держать его в памяти, т.к. объект внутреннего класса (AsyncTask) содержит скрытую ссылку на объект внешнего класса (Activity).</p>
+<p>Давайте в этом убедимся и разберемся, как это пофиксить.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0911_AsyncTaskRotate<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AsyncTaskRotate<br><b>Package name</b>: ru.startandroid.develop.p0911asynctaskrotate<br><b>Create Activity</b>: MainActivity</p>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/tv"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  MyTask mt;
+  TextView tv;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d("qwe", "create MainActivity: " + this.hashCode());
+
+    tv = (TextView) findViewById(R.id.tv);
+
+    mt = new MyTask();
+    Log.d("qwe", "create MyTask: " + mt.hashCode());
+    mt.execute();
+  }
+
+  class MyTask extends AsyncTask&lt;String, Integer, Void&gt; {
+
+    @Override
+    protected Void doInBackground(String... params) {
+      try {
+        for (int i = 1; i &lt;= 10; i++) {
+          TimeUnit.SECONDS.sleep(1);
+          publishProgress(i);
+          Log.d("qwe", "i = " + i 
+              + ", MyTask: " + this.hashCode()
+              + ", MainActivity: " + MainActivity.this.hashCode());
+        }
+
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      return null;
+    }
+
+    @Override
+    protected void onProgressUpdate(Integer... values) {
+      super.onProgressUpdate(values);
+      tv.setText("i = " + values[0]);
+    }
+  }
+}</code></pre>
+<p>Обычный AsyncTask, который в цикле выполняет паузы (1 сек.) и в TextView на экране пишет номер (i) итерации цикла.</p>
+<p>Из необычного здесь можно отметить то, что мы используем метод <a href="http://developer.android.com/reference/java/lang/Object.html#hashCode()" target="_blank">hashCode</a>. Этот метод возвращает хэш-код объекта. Сейчас не будем вникать что это и зачем нужно. Главное, надо знать, что разным объектам соответствует разный хэш-код. Т.е. по хэш-коду мы будем отличать объекты друг от друга (можно воспринимать хэш-код, как некий ID).</p>
+<p>Мы при создании MainActivity и MyTask пишем в лог их хэш-коды. Затем при выполнении задачи, мы также будем писать в лог хэш-коды этих объектов. Сейчас станет понятно, зачем это нужно.</p>
+<p>Все сохраним и запускаем приложение. Оно сразу запускает задачу, которая раз в секунду выдает на экран номер итерации цикла. Дождемся пока на экране появится, например, 5</p>
+<p><img src="images/lesson_90_0.png" alt="" width="640" height="454"></p>
+<p>и повернем экран (CTRL+F12 или CTRL+F11)</p>
+<p><img src="images/lesson_90_1.png" alt="" width="540" height="526"></p>
+<p>Отсчет снова пошел с единицы.</p>
+<p>Дождемся конца отсчета и посмотрим в логи. Буду выдавать их частями и каментить:</p>
+<p><i>create MainActivity: 1156854488<br>create MyTask: 1156875480</i></p>
+<p>Создались объекты и мы видим их хэш-коды.</p>
+<p>Далее начинает работу MyTask</p>
+<p><i>i = 1, MyTask: 1156875480, MainActivity: 1156854488<br>i = 2, MyTask: 1156875480, MainActivity: 1156854488<br>i = 3, MyTask: 1156875480, MainActivity: 1156854488<br>i = 4, MyTask: 1156875480, MainActivity: 1156854488<br>i = 5, MyTask: 1156875480, MainActivity: 1156854488</i></p>
+<p>Выводит в лог номер итерации и хэш-коды – свой и MainActivity, с которым он работает. Хэш-коды совпадают с теми, что ранее вывелись в лог при создании. Тут все ясно.</p>
+<p>Теперь мы поворачиваем экран.</p>
+<p><i>create MainActivity: 1156904328<br>create MyTask: 1156916144</i></p>
+<p>Создается новое MainActivity и в нем создается новый MyTask. Их хэш-коды (1156904328 и 1156916144)  отличаются от хэш-кодов старых MainActivity и MyTask (1156854488 и 1156875480).  Т.е. это совершенно другие, новые объекты.</p>
+<p><i>i = 6, MyTask: 1156875480, MainActivity: 1156854488<br>i = 7, MyTask: 1156875480, MainActivity: 1156854488<br>i = 1, MyTask: 1156916144, MainActivity: 1156904328<br>i = 8, MyTask: 1156875480, MainActivity: 1156854488<br>i = 2, MyTask: 1156916144, MainActivity: 1156904328<br>i = 9, MyTask: 1156875480, MainActivity: 1156854488<br>i = 3, MyTask: 1156916144, MainActivity: 1156904328<br>i = 10, MyTask: 1156875480, MainActivity: 1156854488<br>i = 4, MyTask: 1156916144, MainActivity: 1156904328<br>i = 5, MyTask: 1156916144, MainActivity: 1156904328<br>i = 6, MyTask: 1156916144, MainActivity: 1156904328<br>i = 7, MyTask: 1156916144, MainActivity: 1156904328<br>i = 8, MyTask: 1156916144, MainActivity: 1156904328<br>i = 9, MyTask: 1156916144, MainActivity: 1156904328<br>i = 10, MyTask: 1156916144, MainActivity: 1156904328</i></p>
+<p>Мы видим, как продолжает работать старый MyTask (1156875480), и работает он со старым MainActivity (1156854488), продолжая отсчет от 6 до 10.</p>
+<p>А параллельно с ним работает новый MyTask (1156916144) с новым MainActivity (1156904328), он начал с 1. На экране мы видим именно работу этих новых объектов. Поэтому цифры в TextView снова пошли с единицы. А старые объекты продолжают существовать где-то в памяти и работать. Но главное то, что мы потеряли связь со старым MyTask, создалась новая задача и работа пошла сначала.</p>
+<p>Каждый раз начинать задачу заново при повороте экрана – это получится кривое приложение. Будем фиксить. Нам надо при создании нового Activity как-то получать ссылку на старый MyTask и не создавать новый, чтобы не начинать работу с начала, а продолжать ее. В этом нам помогут методы onRetainNonConfigurationInstance и getLastNonConfigurationInstance. О них можно прочесть в уроке 70.</p>
+<p>Добавим в класс MainActivity реализацию метода <b>onRetainNonConfigurationInstance</b>:</p>
+<pre><code class="java">  public Object onRetainNonConfigurationInstance() {
+    return mt;
+  }</code></pre>
+<p><code class="java"></code>При повороте экрана, система сохранит для нас ссылку на объект mt.</p>
+<p>И перепишем <b>onCreate</b>:</p>
+<pre><code class="java">  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d("qwe", "create MainActivity: " + this.hashCode());
+
+    tv = (TextView) findViewById(R.id.tv);
+
+    mt = (MyTask) getLastNonConfigurationInstance();
+    if (mt == null) {
+      mt = new MyTask();
+      mt.execute();
+    }
+    Log.d("qwe", "create MyTask: " + mt.hashCode());
+  }</code></pre>
+<p>При создании Activity мы просим систему вернуть (getLastNonConfigurationInstance) нам сохраненный в методе onRetainNonConfigurationInstance объект и приводим его к MyTask. Если Activity создается не после поворота экрана, то мы получим null, а значит, создаем сами MyTask.</p>
+<p>Таким образом, при повороте экрана мы возвращаем себе старый MyTask. Посмотрим, что получится.</p>
+<p>Верните эмулятор в вертикальную ориентацию. Сохраняем и запускаем приложение.</p>
+<p>Ждем до 5</p>
+<p><img src="images/lesson_90_2.png" alt="" width="640" height="454"></p>
+<p>и поворачиваем экран:</p>
+<p><img src="images/lesson_90_3.png" alt="" width="540" height="526"></p>
+<p>А на экране ничего не происходит, хотя логи продолжают идти. Давайте посмотрим, что в логах:</p>
+<p><i>create MainActivity: 1156854504<br>create MyTask: 1156875408<br>i = 1, MyTask: 1156875408, MainActivity: 1156854504<br>i = 2, MyTask: 1156875408, MainActivity: 1156854504<br>i = 3, MyTask: 1156875408, MainActivity: 1156854504<br>i = 4, MyTask: 1156875408, MainActivity: 1156854504<br>i = 5, MyTask: 1156875408, MainActivity: 1156854504</i></p>
+<p>Тут все понятно, создались объекты, начала работать задача</p>
+<p><br><i>create MainActivity: 1156904256<br>create MyTask: 1156875408</i></p>
+<p>Создается новое MainActivity с новым хэш-кодом (1156904256). А вот MyTask мы добыли старый (хэш-код тот же - 1156875408), у нас получилось вернуть доступ к старому MyTask и не создавать новый. А значит работа продолжится и не будет начинаться заново. Это хорошо. Но есть и плохая новость.</p>
+<p><br><i>i = 6, MyTask: 1156875408, MainActivity: 1156854504<br>i = 7, MyTask: 1156875408, MainActivity: 1156854504<br>i = 8, MyTask: 1156875408, MainActivity: 1156854504<br>i = 9, MyTask: 1156875408, MainActivity: 1156854504<br>i = 10, MyTask: 1156875408, MainActivity: 1156854504</i></p>
+<p>Старый MyTask продолжает работать со старым MainActivity (1156854504), а новое (1156904256) в упор не видит.</p>
+<p>Так происходит, потому что объект внутреннего класса (MyTask) содержит <b>скрытую ссылку</b> на объект внешнего класса (MainActivity). Обратите внимание, что мы в методах MyTask работаем с объектом tv. А ведь такого объекта в MyTask нет, он есть только в MainActivity. Тут используется скрытая ссылка – это позволяет MyTask работать с объектами MainActivity.</p>
+<p>Поэтому наш старый MyTask связан со своим объектом внешнего класса MainActivity и видит только его. И меняет текст в TextView старого MainActivity, которое висит где-то в памяти. А на экране мы видим новое MainActivity. И оно не меняется.</p>
+<p>То, что MyTask содержит сслыку на старое MainActivity плохо еще тем, что MainActivity не может быть уничтожено и висит в памяти.</p>
+<p>Значит, нам надо избавиться от связки MainActivity и MyTask. Для этого применим <b>static </b>к внутреннему классу MyTask. Внутренний static класс никак <b>не связан</b> с объектом внешнего класса и не содержит скрытую ссылку на него. Но нам надо получить доступ к объектам (tv) MainActivity. Если не будет ссылки, не будет и доступа. Значит, сами создадим такую ссылку. В MyTask опишем объект, он и будет ссылаться на MainActivity. А мы будем этой ссылкой управлять – когда создается новое MainActivity, мы будем давать ссылку на него в MyTask.</p>
+<p>Перепишем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0911asynctaskrotate;
+
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  MyTask mt;
+  TextView tv;
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    Log.d("qwe", "create MainActivity: " + this.hashCode());
+
+    tv = (TextView) findViewById(R.id.tv);
+
+    mt = (MyTask) getLastNonConfigurationInstance();
+    if (mt == null) {
+      mt = new MyTask();
+      mt.execute();
+    }
+    // передаем в MyTask ссылку на текущее MainActivity
+    mt.link(this);
+    
+    Log.d("qwe", "create MyTask: " + mt.hashCode());
+  }
+
+  public Object onRetainNonConfigurationInstance() {
+    // удаляем из MyTask ссылку на старое MainActivity
+    mt.unLink();
+    return mt;
+  }
+  
+
+  static class MyTask extends AsyncTask&lt;String, Integer, Void&gt; {
+    
+    MainActivity activity;
+    
+    // получаем ссылку на MainActivity
+    void link(MainActivity act) {
+      activity = act;
+    }
+    
+    // обнуляем ссылку
+    void unLink() {
+      activity = null;
+    }
+
+    @Override
+    protected Void doInBackground(String... params) {
+      try {
+        for (int i = 1; i &lt;= 10; i++) {
+          TimeUnit.SECONDS.sleep(1);
+          publishProgress(i);
+          Log.d("qwe", "i = " + i + ", MyTask: " + this.hashCode()
+              + ", MainActivity: " + activity.hashCode());
+        }
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      return null;
+    }
+
+    @Override
+    protected void onProgressUpdate(Integer... values) {
+      super.onProgressUpdate(values);
+      activity.tv.setText("i = " + values[0]);
+    }
+  }
+}</code></pre>
+<p>Мы добавили <b>static </b>к описанию класса <b>MyTask</b>. Также описали в нем объект <b>activity </b>класса MainActivity и два метода:</p>
+<p><b>link </b>– с его помощью MyTask будет получать ссылку на MainActivity, с которой будет работать</p>
+<p><b>unlink </b>– обнуление ссылки</p>
+<p>И теперь в классе MyTask мы уже не можем просто так работать с объектами MainActivity, т.к. MyTask у нас static, и не содержит скрытой ссылки на MainActivity. Мы должны явно указывать, что обращаемся к MainActivity, например <i>activity.tv</i>.</p>
+<p>В методе <b>onRetainNonConfigurationInstance </b>перед тем, как сохранить MyTask для передачи новому Activity, мы обнуляем ссылку на старое MainActivity. MyTask больше не будет держать старое MainActivity и система сможет его (MainActivity) уничтожить.</p>
+<p>А в <b>onCreate </b>мы после создания/получения объекта MyTask вызываем метод link и передаем туда ссылку на текущее новое MainActivity. С ним и продолжит работу MyTask.</p>
+<p>Давайте проверим. Верните эмулятор в вертикальную ориентацию. Все сохраним и запустим приложение. Пошел отсчет. Дожидаемся 5</p>
+<p><img src="images/lesson_90_4.png" alt="" width="640" height="454"></p>
+<p>и поворачиваем экран</p>
+<p><img src="images/lesson_90_5.png" alt="" width="540" height="526"></p>
+<p>Отсчет продолжился, что и требовалось получить. Смотрим логи:</p>
+<p><i>create MainActivity: 1156967624<br>create MyTask: 1156978504<br>i = 1, MyTask: 1156978504, MainActivity: 1156967624<br>i = 2, MyTask: 1156978504, MainActivity: 1156967624<br>i = 3, MyTask: 1156978504, MainActivity: 1156967624<br>i = 4, MyTask: 1156978504, MainActivity: 1156967624<br>i = 5, MyTask: 1156978504, MainActivity: 1156967624</i></p>
+<p>Объекты создались, работа пошла</p>
+<p>Поворот экрана</p>
+<p><i>create MainActivity: 1156991528<br>create MyTask: 1156978504</i></p>
+<p>MainActivity новое (1156991528), MyTask старый (1156978504).</p>
+<p><i>i = 6, MyTask: 1156978504, MainActivity: 1156991528<br>i = 7, MyTask: 1156978504, MainActivity: 1156991528<br>i = 8, MyTask: 1156978504, MainActivity: 1156991528<br>i = 9, MyTask: 1156978504, MainActivity: 1156991528<br>i = 10, MyTask: 1156978504, MainActivity: 1156991528</i></p>
+<p>Старый MyTask получил ссылку на новый MainActivity и продолжает работу уже с ним. А старое MainActivity кануло в небытие.</p>
+<p>Уф! Хотел поверхностно показать механизм, но полез в объяснения «что да как» и получился достаточно непростой для понимания урок. Если остались непонятные моменты – велкам в форум, в ветку этого урока. Будем разбираться :)</p>
+<p>Есть еще один способ (кроме static) избежать связки AsyncTask и Activity - просто сделайте ваш класс, наследующий AsyncTask, не внутренним, а отдельно от MainActivity.</p>
+<p>Просьба к вам - откройте снова урок 86 и прочтите 4 правила использования AsyncTask. Я думаю, теперь они будут для вас гораздо информативнее, чем при первом прочтении.</p>
+<p>В форуме верно заметили, что есть небольшой изъян в этом всем. Будет плохо, если onProgressUpdate выполнится между моментом, когда старое Activity выполнит метод unLink, и моментом, когда новое Activity выполнит метод link. В этом случае у нас activity будет равен null и мы получим NullPointerException. Вероятность это всего, конечно, мала, но решать проблему как-то надо.</p>
+<p>Напишу здесь свой вариант решения. В методе onProgressUpdate мы ставим проверку <i>activity == null</i>. Если activity - не null, то без проблем меняем textView. Если же activity - null, то текст, который мы хотели прописать в TextView, мы сохраняем в какую-нить свою переменную класса MyTask. А новое Activity, когда получает MyTask, достает данные из этой переменной и сама помещает их в TextView.</p>
+<p>Ваши предложения по решению проблемы пишите на в ветке этого урока. </p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 106. Android 3. Fragments. Взаимодействие с Activity</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- рассмотрим взаимодействие между Activity и ее фрагментами</p>
+<p>После размещения фрагмента, хотелось бы начать с ним взаимодействовать. Т.е. размещать View-компоненты и работать с ними, обращаться к фрагментам из Activity и наоборот. Попробуем это реализовать.</p>
+<p>Для чистоты эксперимента будем работать с двумя фрагментами: статическим и динамическим.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: Lesson106<br>
+<b>Package name</b>: com.mycompany.myapp<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: FragmentActivity<br>
+<b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="frag1_text"&gt;Fragment 1&lt;/string&gt;
+&lt;string name="frag2_text"&gt;Fragment 2&lt;/string&gt;
+&lt;string name="log"&gt;Log&lt;/string&gt;
+&lt;string name="find"&gt;Find&lt;/string&gt;</code></pre>
+<p>Создаем layout и классы для двух фрагментов.</p>
+<p><b>fragment1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#77ff0000"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/textView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag1_text"&gt;
+	&lt;/TextView&gt;
+	&lt;Button
+		android:id="@+id/button"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/log"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>fragment2.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#7700ff00"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/textView"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/frag2_text"&gt;
+	&lt;/TextView&gt;
+	&lt;Button
+		android:id="@+id/button"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/log"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>Fragment1.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+public class Fragment1 extends Fragment {
+
+  final String LOG_TAG = "myLogs";
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View v = inflater.inflate(R.layout.fragment1, null);
+
+    Button button = (Button) v.findViewById(R.id.button);
+    button.setOnClickListener(new OnClickListener() {
+      public void onClick(View v) {
+        Log.d(LOG_TAG, "Button click in Fragment1");
+      }
+    });
+    
+    return v;
+  }
+}</code></pre>
+<p>У фрагмента <b>нет </b>привычного для нас метода <b>findViewById </b>для поиска компонентов с экрана. Поэтому вызываем этот метод для <b>View</b>, которое будет содержимым фрагмента. В методе <b>onCreateView</b> мы создаем View и сразу же находим в нем кнопку и ставим ей обработчик. Затем отдаем View системе.</p>
+<p><b>Fragment2.java</b>:</p>
+	<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+public class Fragment2 extends Fragment {
+
+  final String LOG_TAG = "myLogs";
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View v = inflater.inflate(R.layout.fragment2, null);
+    
+    Button button = (Button) v.findViewById(R.id.button);
+    button.setOnClickListener(new OnClickListener() {
+      public void onClick(View v) {
+        Log.d(LOG_TAG, "Button click in Fragment2");
+      }
+    });
+    
+    return v;
+  }
+}</code></pre>
+<p>Все аналогично Fragment1.</p>
+<p>Настраиваем основное Activity.</p>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnFind"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/find"&gt;
+	&lt;/Button&gt;
+	&lt;fragment
+		android:id="@+id/fragment1"
+		android:name="ru.startandroid.develop.p1061fragmentactivity.Fragment1"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		tools:layout="@layout/fragment1"&gt;
+	&lt;/fragment&gt;
+	&lt;FrameLayout
+		android:id="@+id/fragment2"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"&gt;
+	&lt;/FrameLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка, компонент fragment, в который помещен Fragment1, и контейнер FrameLayout, в который потом поместим Fragment2.</p>
+<p>Обратите внимание на атрибут <b>tools:layout</b>. В нем указан layout-файл, и мы можем на этапе разработки видеть, как будет выглядеть статический фрагмент, когда приложение будет запущено.</p>
+<p><img src="images/lesson_105_0.png" alt="" width="350" height="620"></p>
+<p>Для этого надо нажать правой кнопкой на компоненте fragment, и через пункт <b>Fragment Layout</b> указать нужный layout.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentTransaction;
+import android.os.Bundle;
+
+public class MainActivity extends Activity {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        Fragment frag2 = new Fragment2();
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        ft.add(R.id.fragment2, frag2);
+        ft.commit();
+    }
+}</code></pre>
+<p>Здесь мы просто добавляем Fragment2 в контейнер.</p>
+<p>Все сохраняем, запускаем приложение.</p>
+<p><img src="images/lesson_105_1.png" alt="" width="384" height="640"></p>
+<p>Жмем кнопку <b>Log</b> в первом фрагменте и смотрим лог:</p>
+<p><i>Button click in Fragment1</i></p>
+<p>Жмем <b>Log</b> во втором фрагменте:</p>
+<p><i>Button click in Fragment2</i></p>
+<p>Все ок. Компоненты в фрагментах нашлись и обработчики среагировали на нажатия.</p>
+<p>Атрибут onClick, который мы привыкли использовать для кнопки, здесь не прокатит. Указанный в этом атрибуте метод, будет вызван в Activity, а не в фрагменте.</p>
+<h3>Доступ к фрагменту из Activity</h3>
+<p>Разберемся, как получить доступ к фрагменту из Activity. Для этого у FragmentManager есть метод <a href="http://developer.android.com/reference/android/app/FragmentManager.html#findFragmentById(int)" target="_blank">findFragmentById</a>, который на вход принимает id компонента fragment (если фрагмент статический) или id контейнера (если динамический).</p>
+<p>У нас в <b>main.xml</b> есть кнопка <b>btnFind</b>, вызывающая метод <b>onClick</b> при нажатии. Дорисуем в <b>MainActivity.java</b> метод <b>onClick</b>:</p>
+<pre><code class="java">  public void onClick(View v) {
+    Fragment frag1 = getFragmentManager().findFragmentById(R.id.fragment1);
+    ((TextView) frag1.getView().findViewById(R.id.textView))
+        .setText("Access to Fragment 1 from Activity");
+
+    Fragment frag2 = getFragmentManager().findFragmentById(R.id.fragment2);
+    ((TextView) frag2.getView().findViewById(R.id.textView))
+        .setText("Access to Fragment 2 from Activity");
+  }</code></pre>
+<p>Используем метод <b>findFragmentById</b>. В первом случае на вход передаем <b>id компонента fragment</b>, т.к. Fragment1 у нас размещен именно так. При поиске Fragment2 указываем <b>id контейнера</b>, в который этот фрагмент был помещен. В результате метод findFragmentById возвращает нам объект Fragment.</p>
+<p>Далее мы получаем доступ к его View с помощью метода <a href="http://developer.android.com/reference/android/app/Fragment.html#getView()" target="_blank">getView</a>, находим в нем TextView и меняем текст.</p>
+<p>Все сохраняем, запускаем. Жмем кнопку <b>Find</b></p>
+<p><img src="images/lesson_105_2.png" alt="" width="384" height="640"></p>
+<p>Тексты в фрагментах обновились. Тем самым из Activity мы достучались до фрагментов и их компонентов.</p>
+<p>На всякий случай проговорю одну вещь из разряда «Спасибо кэп!». Если посмотреть на код MainActivity, то можно заметить, что работая с frag2 в методе onCreate и с frag2 в методе onClick мы работаем с текущим фрагментом Fragment2. Это так и есть. Оба frag2 в итоге будут ссылаться на один объект. Так что, если вы динамически добавили фрагмент, то у вас уже есть ссылка на него, и искать его через findFragmentById вам уже не надо.</p>
+<h3>Доступ к Activity из фрагмента </h3>
+<p>Теперь попробуем из фрагмента поработать с Activity. Для этого фрагмент имеет метод <a href="http://developer.android.com/reference/android/app/Fragment.html#getActivity()" target="_blank">getActivity</a>.</p>
+<p>Давайте перепишем обработчик кнопки в первом фрагменте. Будем менять текст кнопки <b>btnFind</b>.</p>
+<p><b>Fragment1.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+public class Fragment1 extends Fragment {
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View v = inflater.inflate(R.layout.fragment1, null);
+    
+    Button button = (Button) v.findViewById(R.id.button);
+    button.setOnClickListener(new OnClickListener() {
+      public void onClick(View v) {
+        ((Button)getActivity().findViewById(R.id.btnFind)).setText("Access from Fragment1");
+      }
+    });
+    
+    return v;
+  }
+}</code></pre>
+<p>Получаем Activity методом getActivity, ищем в нем кнопку и меняем текст.</p>
+<p>Сохраняем, запускаем. Жмем кнопку в первом фрагменте:</p>
+<p><img src="images/lesson_105_3.png" alt="" width="384" height="640"></p>
+<p>Работает. Из фрагмента мы поменяли компонент Activity.</p>
+<h3>Обработка в Activity события из фрагмента </h3>
+<p>Рассмотрим <a href="http://developer.android.com/guide/components/fragments.html#EventCallbacks" target="_blank">механизм</a>, который описан в документацие: фрагмент генерирует некое событие и ставит Activity обработчиком.</p>
+<p>Например, в Activity есть два фрагмента. Первый – список заголовков статей. Второй – отображает содержимое статьи, выбранной в первом. Мы нажимаем на заголовок статьи в первом фрагменте и получаем содержимое во втором. В этом случае, цель первого фрагмента – передать в Activity информацию о том, что выбран заголовок. А Activity дальше уже сама решает, что делать с этой информацией. Если, например, приложение запущено на планшете в горизонтальной ориентации, то можно отобразить содержимое статьи во втором фрагменте. Если же приложение запущено на смартфоне, то экран маловат для двух фрагментов и надо запускать отдельное Activity со вторым фрагментом, чтобы отобразить статью.</p>
+<p>Фишка тут в том, что первому фрагменту неинтересны все эти <a href="http://developer.android.com/guide/components/fragments.html#Design" target="_blank">терзания</a> Activity. Фрагмент – обособленный модуль. Его дело - проинформировать, что выбрана статья такая-то. Ему не надо искать второй фрагмент и работать с ним – это дело Activity.</p>
+<p>Тут немного отвлекусь на небольшое лирическое отступление. Модульность, вообще, - очень важная и полезная штука. И ее надо использовать для универсальности, удобности и легкости в понимании работы своих приложений. Но уникальных рецептов, как правильно все организовать, конечно, нет. Каждый делает по-своему. Именно по этим причинам я в своих уроках даю чисто технические вещи про <b>отдельные компоненты</b> и не рассказываю, как организовывать и писать <b>целое приложение</b>. Иначе, форум бы уже ломился от сообщений, что я все делаю не так и надо по-другому, и каждый бы излагал свое видение. И была бы куча споров, где одна сторона говорит, что крокодил зеленый, а другая сторона говорит, что он нифига не зеленый, а длинный ))</p>
+<p>Вернемся к уроку. Фрагмент должен сообщить в Activity, что выбрана статья. Для этого он будет вызывать некий метод в Activity. И как нам сообщает документация, лучший способ тут – это использовать интерфейс, который мы опишем в фрагменте и который затем будет реализован в Activity. Схема известная и распространенная. Давайте реализуем. В нашем приложении никаких статей нет, поэтому будем просто передавать произвольную строку из второго фрагмента в Activity. А Activity уже будет отображать эту строку в первом фрагменте.</p>
+<p>Перепишем <b>Fragment2.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+public class Fragment2 extends Fragment {
+  
+  public interface onSomeEventListener {
+    public void someEvent(String s);
+  }
+  
+  onSomeEventListener someEventListener;
+  
+  @Override
+  public void onAttach(Activity activity) {
+    super.onAttach(activity);
+        try {
+          someEventListener = (onSomeEventListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement onSomeEventListener");
+        }
+  }
+
+  final String LOG_TAG = "myLogs";
+
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View v = inflater.inflate(R.layout.fragment2, null);
+    
+    Button button = (Button) v.findViewById(R.id.button);
+    button.setOnClickListener(new OnClickListener() {
+      public void onClick(View v) {
+        someEventListener.someEvent("Test text to Fragment1");
+      }
+    });
+    
+    return v;
+  }
+}</code></pre>
+<p>Описываем интерфейс <b>onSomeEventListener</b>. В нем метод <b>someEvent</b>, который на вход получает строку. Этот интерфейс будет реализовывать Activity.</p>
+<p>В методе <b>onAttach </b>мы на вход получаем Activity, к которому присоединен фрагмент. Мы пытаемся привести это Activity к типу интерфейса onSomeEventListener, чтобы можно было вызывать метод someEvent и передать туда строку.  Теперь someEventListener ссылается на Activity.</p>
+<p>Далее, в <b>onCreateView</b>, в обработчике кнопки мы вызываем метод someEvent и передает туда текст. Этот метод будет отработан в Activity.</p>
+<p>Теперь меняем Activity.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package com.mycompany.myapp;
+
+import ru.startandroid.develop.p1061fragmentactivity.Fragment2.onSomeEventListener;
+import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentTransaction;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class MainActivity extends Activity implements onSomeEventListener{
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        Fragment frag2 = new Fragment2();
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        ft.add(R.id.fragment2, frag2);
+        ft.commit();
+    }
+
+  @Override
+  public void someEvent(String s) {
+      Fragment frag1 = getFragmentManager().findFragmentById(R.id.fragment1);
+      ((TextView)frag1.getView().findViewById(R.id.textView)).setText("Text from Fragment 2:" + s);
+  }
+}</code></pre>
+<p>Дописываем интерфейс <b>onSomeEventListener </b>к описанию класса.</p>
+<p><b>onCreate </b>без изменений.</p>
+<p>Реализуем метод <b>someEvent</b>. Просто ищем первый фрагмент и вставляем туда текст.</p>
+<p>Все сохраняем и запускаем. Жмем кнопку во втором фрагменте:</p>
+<p><img src="images/lesson_105_4.png" alt="" width="384" height="640"></p>
+<p>Второй фрагмент передал через интерфейс строку в Activity, а оно нашло первый фрагмент и отобразило там эту строку.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

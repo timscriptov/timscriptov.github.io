@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 170. OpenGL. Графические примитивы</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- рисуем графические примитивы</p>
+<p>Исходники уроков доступны на <a href="https://github.com/startandroid/lessons_opengl" target="_blank" rel="noopener noreferrer">гитхабе</a>. Скачивайте проект, в нем будем использовать модуль lesson170_primitives.</p>
+<p>На прошлом уроке мы разбирались, как передать в шейдеры данные о вершинах и получить в итоге треугольник. Чтобы этот механизм стал более понятен, попробуем развить тему, и создадим несколько примеров по передаче данных о вершинах и построения разных графических примитивов (точка, линия и треугольник) из этих вершин.</p>
+<h3>Треугольник</h3>
+<p>Сейчас наше приложение рисует один треугольник. Если мы посмотрим на класс OpenGLRenderer, то в методе prepareData увидим в нем список вершин:</p>
+<pre><code class="java">float[] vertices = { -0.5f, -0.2f, 0.0f, 0.2f, 0.5f, -0.2f, }; </code></pre>
+<p>Каждая пара значений – это координаты (x,y) одной вершины. Три пары = три вершины = треугольник.</p>
+<p>Далее, в методе onDrawFrame мы используем метод glDrawArrays чтобы нарисовать треугольник.</p>
+<pre><code class="java">    @Override public void onDrawFrame(GL10 arg0) { 
+        glClear(GL_COLOR_BUFFER_BIT); 
+        glDrawArrays(GL_TRIANGLES, 0, 3); 
+    }
+</code></pre>
+<p>GL_TRIANGLES - тип примитива, который необходимо нарисовать, треугольник в нашем случае</p>
+<p>0 - вершины надо брать из массива начиная с позиции 0, т.е. с самой первой</p>
+<p>3 - означает, что для рисования необходимо использовать три вершины</p>
+<p>Запускаем приложение</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3256436571" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Теперь попробуем нарисовать 4 треугольника. Для этого нам понадобится больше вершин. 4 треугольника, в каждом по три вершины, значит нам нужно 3*4=12 вершин.</p>
+<p>Перепишем массив vertices в методе prepareData</p>
+<pre><code class="java">        float[] vertices = {
+                // треугольник 1
+                -0.9f, 0.8f, -0.9f, 0.2f, -0.5f, 0.8f,
+        
+                // треугольник 2
+                -0.6f, 0.2f, -0.2f, 0.2f, -0.2f, 0.8f,
+        
+                // треугольник 3
+                0.1f, 0.8f, 0.1f, 0.2f, 0.5f, 0.8f,
+        
+                // треугольник 4
+                0.1f, 0.2f, 0.5f, 0.2f, 0.5f, 0.8f,
+        };
+</code></pre>
+<p>Теперь у нас есть 12 вершин из которых можно построить 4 треугольника.</p>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3181220558" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Но видим только один треугольник вместо 4-х. Мы забыли сказать системе, что надо рисовать треугольники используя 12 вершин. Т.е. в метод glDrawArrays мы до сих пор передаем значение 3, а это значит что система возьмет из массива значения, чтобы нарисовать только три вершины.</p>
+<p>Перепишем onDrawFrame</p>
+<pre><code class="java">    @Override public void onDrawFrame(GL10 arg0) {
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDrawArrays(GL_TRIANGLES, 0, 12);
+    }
+</code></pre>
+<p>В методе glDrawArrays укажем 12 вместо 3. Теперь система будет знать, что из массива ей необходимо использовать данные, чтобы сформировать 12 вершин для рисования треугольников, и мы получим 4 треугольника.</p>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3106004545" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим два треугольника и прямоугольник. Этот прямоугольник на самом деле состоит из двух треугольников, расположенных впритык друг к другу.</p>
+<p>Посмотрите на массив вершин и обратите внимание, что у треугольников 3 и 4 есть общие вершины (0.1f, 0.2f) и (0.5f, 0.8f). Вот по этой стороне они и соединились образовав прямоугольник.</p>
+<p>В итоге мы получили 4 треугольника, два из которых выглядят, как один прямоугольник.</p>
+<h3>Типы треугольников</h3>
+<p>Чтобы нарисовать треугольник, мы передаем тип GL_TRIANGLES в метод glDrawArrays. Существует еще два типа отрисовки треугольников: GL_TRIANGLE_STRIP и GL_TRIANGLE_FAN.</p>
+<p>В чем разница между ними? Смотрим <a href="http://blog.csdn.net/xiajun07061225/article/details/7455283" target="_blank" rel="noopener noreferrer">рисунок</a></p>
+<p><img src="images/lesson170/lesson1.png" alt="" width="640" height="385"/></p>
+<p><b>GL_TRIANGLES</b> – каждые три переданные вершины образуют треугольник. Т.е.</p>
+<p>v0, v1, v2 – первый треугольник</p>
+<p>v3, v4, v5 – второй треугольник</p>
+<p><b>GL_TRIANGLE_STRIP</b> – каждый следующий треугольник использует две последние вершины предыдущего</p>
+<p>v0, v1, v2 – первый треугольник</p>
+<p>v1, v2, v3 – второй треугольник</p>
+<p>v2, v3, v4 – третий треугольник</p>
+<p>v3, v4, v5 – четвертый треугольник</p>
+<p><b>GL_TRIANGLE_FAN</b> – каждый следующий треугольник использует последнюю вершину предыдущего и самую первую вершину</p>
+<p>v0, v1, v2 – первый треугольник</p>
+<p>v0, v2, v3 – второй треугольник</p>
+<p>v0, v3, v4 – третий треугольник</p>
+<p>Рассмотрим эти типы на примерах</p>
+<p>Задаем 6 вершин в prepareData:</p>
+<pre><code class="java">float[] vertices = { 0.1f, 0.8f, 0.1f, 0.2f, 0.5f, 0.8f, 0.1f, 0.2f, 0.5f, 0.2f, 0.5f, 0.8f, };
+</code></pre>
+<p>тип GL_TRIANGLES и 6 вершин в glDrawArrays:</p>
+<pre><code class="java">glDrawArrays(GL_TRIANGLES, 0, 6);
+</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2955572519" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Получаем прямоугольник, составленный из двух треугольников.</p>
+<p>Теперь нарисуем тот же прямоугольник, но чуть по-другому</p>
+<p>Задаем 4 вершины</p>
+<pre><code class="java">float[] vertices = { 0.1f, 0.8f, 0.1f, 0.2f, 0.5f, 0.8f, 0.5f, 0.2f, };
+</code></pre>
+<p>тип GL_TRIANGLE_STRIP и 4 вершины</p>
+<pre><code class="java">glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);</code></pre>
+<p>Если у вас среда разработки ругается на константу GL_TRIANGLE_STRIP, то добавьте ее в импорт в начале класса:</p>
+<pre><code class="java">import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
+</code></pre>
+<p>И для всех последующих констант делайте аналогично.</p>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2880356506" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Результат тот же, но в этот раз мы использовали 4 вершины, а не 6. Тип треугольника GL_TRIANGLE_STRIP помог немного сэкономить. В данном примере это конечно не особо критично, но, в целом, чем меньше вершин нам приходится передавать, тем выше скорость работы приложения.</p>
+<p>Рассмотрим последний тип. Задаем 8 вершин</p>
+<pre><code class="java">        float[] vertices = { 
+                0.0f, 0.0f, 
+                -0.4f, 0.4f, 
+                0.4f, 0.4f, 
+                0.8f, 0.0f, 
+                0.4f, -0.4f, 
+                -0.4f, -0.4f, 
+                -0.8f, 0.0f, 
+                -0.4f, 0.4f, 
+        };
+</code></pre>
+<p>тип GL_TRIANGLE_FAN и 8 вершин</p>
+<pre><code class="java">glDrawArrays(GL_TRIANGLE_FAN, 0, 8);</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2805140493" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Получили шестиугольник. Для этого мы указали центральную вершину и вершины-углы, и в режиме GL_TRIANGLE_FAN система нарисовала шестиугольник.</p>
+<h3>Линия</h3>
+<p>Переходим к линии. Чтобы нарисовать линию нам необходимо указать две вершины.</p>
+<p>Задаем их в массиве:</p>
+<pre><code class="java">float[] vertices = { -0.9f, -0.9f, 0.9f, 0.9f, };
+</code></pre>
+<p>И перепишем onDrawFrame:</p>
+<pre><code class="java">    @Override 
+    public void onDrawFrame(GL10 arg0) { 
+        glClear(GL_COLOR_BUFFER_BIT); 
+        glDrawArrays(GL_LINES, 0, 2); 
+    }
+</code></pre>
+<p>Используем константу GL_LINES и указываем, что надо использовать две вершины.</p>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2729924480" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>С одной линией все понятно, попробуем нарисовать три линии.</p>
+<p>Указываем вершины</p>
+<pre><code class="java">        float[] vertices = { 
+                // линия 1 
+                -0.9f, -0.9f, 0.9f, 0.9f, 
+                
+                // линия 2 
+                -0.5f, 0.0f, 0.5f, 0.0f, 
+                
+                // линия 3 
+                0.0f, 0.7f, 0.0f, -0.7f, 
+        };
+</code></pre>
+<p>Не забываем указать в glDrawArrays, что необходимо использовать 6 вершин, и зададим толщину линии = 5.</p>
+<pre><code class="java">    @Override 
+    public void onDrawFrame(GL10 arg0) { 
+        glClear(GL_COLOR_BUFFER_BIT); 
+        glLineWidth(5); 
+        glDrawArrays(GL_LINES, 0, 6); 
+    }
+</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="2654708467" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Нарисованы три линии</p>
+<h3>Типы линий</h3>
+<p>Существует три типа отрисовки линий. Разберем их на примерах.</p>
+<p>Тип <b>GL_LINES</b> мы уже использовали, он просто берет попарно вершины и рисует линии между ними. Т.е. если у нас есть вершины (v0, v1, v2, v3, v4, v5), то мы получим три линии (v0,v1), (v2,v3) и (v4,v5).</p>
+<p>Задаем вершины</p>
+<pre><code class="java">        float[] vertices = {
+                -0.4f, 0.6f, 
+                0.4f, 0.6f, 
+                0.6f, 0.4f,
+                0.6f, -0.4f, 
+                0.4f, -0.6f, 
+                -0.4f, -0.6f,
+        };
+</code></pre>
+<p>Указываем тип GL_LINES, 6 вершин</p>
+<pre><code class="java">glDrawArrays(GL_LINES, 0, 6);
+</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,UklGRlwGAABXRUJQVlA4TE8GAAAv38HHAJelIAAZhvVPjb0GAoISiUCAwP+z+SebtCF7sW8golFIl+qMgl8Tb3csiPGGSF4apM+DC75bSQZq27atbZunr5w5ft9SoMzMmJLLzDBmKDMzeJyULTkMKrehlfUXI8vyB+moR8/9RPR/Aui/nCfm++k08FMJx4yaMW1sMoxxW30+z+Cv94Bk8HkpJrHybLvX913zsTmqgJGzFvtkvPwovZR/9cQL3LRWBRk6TwV42QTgZZDRu/buGeKTnDklwPadAFb0mfb1vm0VpYCax56IvMllzp7OdHh9bw/PV71AUQCkgY+DrHp2/1KbO4Ew748u7+t8lV7Xc+AiAV++un2pcX4pYJcnUrt+0ffnf/393J75n7V78nJ6noqaBAU5ksY618tn3NOE6rZzhHGb1gSZ5s0n36VvP0Op8Ki7/KdOL29u06e9afIfuLiMAm1NIyMBZvUuIeDcXerr9zEIaW+E36U7KBlaM597ge9VkL9ZkkSgl2msvySZfP5/XAv0iwDbeyfu3DaUgJbjc3/Yu6Q0gPL7ntR+vHTJ0vQPrif7yb98SYqCuV9LGqgtYOXblYH6fvuqq+31k9mEZ03Zk79635QGUJGp+cn1RN7d37r9pPL7aIlBASK1aYgXbPLjEyhob3YETWz5nfD85xThUO/o0gCsRi/vQfIvWzyQCvs6XesFG1H/iynMV14bPNtLwBRvfYkA0196z3+9/dJr7+9n1VSgMDdd6wWruHW7kkLa4o2lphMEjPa2lQqQ3iynjiz7cRT5qoXVFMKRWi9Y6roznEK4cZGAvb1ldNEpI6zxFpQMsMUTeTmc/OcNoxBe3pMCznaungmgMsjHIHzVu3Zw+vFpQs3royOm23VUQjzhvUuT/6xRFEb+PJXivzrILwIkj7303l4fSsDGDk9uTSwlWJld5D9t48LAG30+z+QXvyL2nzwUvmWTx1JpMUHsf/Y/+5/9z/5n/7P/2f/sf/Y/+5/9z/5n/7P/2f/s///07Bf7//8E+5/9z/5n/7P/2f/sf/b/vzT268v+Y/+x/9h/7D/2H/uP/cf+Y/+x/9h/7D/2H/uP/cf+Y/+x/9h/7D/2H/uP/cf+Y/+x/9h/7D/2H/uP/cf+Y/+x/9n/7H/2P/uf/c/+Z///e2G/2P//J9j/7H/2P/uf/c/+Z/+z/9n/7H/2P/uf/c/+Z/+z/9n/7P9/3VWWEkt9gBGRWCSWAhIgiKXiiBQxBoggBoulAAzdcvXKxmoCLFGxI84KknrwRzFHWQAGLj/V2N0pqD++1BBgqXghKR22gYo6gbnYfiZJKr6IpYDk7H33OrtbL6xZd7G958WdH2eWEZSlYoPA3GywnVDtXJ0mFWki1qnuW9WkEFPFUoCM/+K3Jz0PMx+PVgQZ83HmUc+TXz4Zqwhiqdhwq8HJhevCRB32dmbHUUKFGQsEwNAtl92eZ7e+m5ogqASEkJj63a1nPR0XN1QRoKJOfCEmVC3lVTlbR5uFj583zCQLoSpLRZ5g4PJTjd2dzuEaTVCWAgCxFKAXHnK6uuuPLTakIq7IAu0g2gRrHrdvpAHaIMRyRZBoEyR+zHb2tJxfV0mApRBQLACDV59t6Xlx9xsr2pQ2CF2ghEzECea7Lc33crYTZu7e5U+Hkoo40/zwxu5RBCgLBYsCMHzbtYct/UlFl0DX5WwnZDtXpwk68ma3tjRnc+E6DU97mtaSijaddQaQEgshixL0d7I62kzORegCE30QLHM7dmCADtFg8JS9D57WkBVtDgwpFFFgHESctnNV5UaHKOVVOVvHAFjY9rhlPimEKtjyPCMkHzgcaBKEKNAOYgEsfP2sfhKpUBKU/O3h+MjTxdJxwIRl/GxEHQSHO++NIBUGBId6FpD1wUOHpf3qJQakzrRfSpEKw8LhDz+pW4Kog0iZHpQkXxU8QeV/umOhIs6QKipMHDCkQoXxUUYUIl8EIQt2d15DHEAR4wNCzKMQN5NG500NHD776CN3LilEmu1UJo0uoiQrHTvqbKcyaXSIkqx07Phh4UB71slb3/qiJ7uUFCLNOC6KLjDRZhwXoQtMHOnI5vLe/+PctgpSiDZd59i5IttOnY42XefYuZBtp07HDiBpdF5JJQhQiHgxoosuoijSxYgOXURRzJWEEPv//wACAA==" alt="" data-pagespeed-url-hash="2068289473" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Каждая пара вершин образовала линию.</p>
+<p>Тип <b>GL_LINE_STRIP</b> рисует линии не попарно, а последовательно между всеми вершинами. Т.е. если у нас есть вершины (v0, v1, v2, v3, v4, v5), то мы получим пять линий (v0,v1), (v1,v2), (v2,v3), (v3,v4) и (v4,v5).</p>
+<p>Вершины мы будем использовать те же, а тип поменяем на GL_LINE_STRIP</p>
+<pre><code class="java">glDrawArrays(GL_LINE_STRIP, 0, 6); </code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1993073460" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Линии нарисованы последовательно между всеми вершинами</p>
+<p>Тип <b>GL_LINE_LOOP</b> аналогичен GL_LINE_STRIP, только он вдобавок еще рисует линию между первой и последней точкой.</p>
+<p>Меняем тип на GL_LINE_LOOP</p>
+<pre><code class="java">glDrawArrays(GL_LINE_LOOP, 0, 6);
+</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1917857447" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Результат тот же, что и при GL_LINE_STRIP, плюс есть линия между первой и последней вершинами.</p>
+<h3>Точка</h3>
+<p>Осталось рассмотреть точку. Здесь уже нет никаких разных типов, только GL_POINTS.</p>
+<p>Укажем его в glDrawArrays:</p>
+<pre><code class="java">    @Override 
+    public void onDrawFrame(GL10 arg0) { 
+        glClear(GL_COLOR_BUFFER_BIT); 
+        glDrawArrays(GL_POINTS, 0, 6); 
+    }
+</code></pre>
+<p>Вершины оставим те же.</p>
+<p>Толщину точки можно задать в вершинном шейдере, используя переменную gl_PointSize.</p>
+<p><b>vertex_shader.glsl</b></p>
+<pre><code class="java">    attribute vec4 a_Position; 
+    
+    void main() { 
+        gl_Position = a_Position; 
+        gl_PointSize = 5.0; 
+    }
+</code></pre>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1842641434" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Нарисованы 6 точек</p>
+<p>Ну и напоследок давайте нарисуем сразу несколько разных примитивов, например: 4 треугольника, 2 линии, 3 точки</p>
+<p>4 треугольника – это 4 * 3 = 12 вершин</p>
+<p>2 линии – это 2 * 2 = 4 вершины</p>
+<p>3 точки – это 3 вершины</p>
+<p>Итого нам нужно задать 12 + 4 + 3 = 19 вершин</p>
+<pre><code class="java">        float[] vertices = { 
+                // треугольник 1 
+                -0.9f, 0.8f, -0.9f, 0.2f, -0.5f, 0.8f, 
+                
+                // треугольник 2 
+                -0.6f, 0.2f, -0.2f, 0.2f, -0.2f, 0.8f, 
+                
+                // треугольник 3 
+                0.1f, 0.8f, 0.1f, 0.2f, 0.5f, 0.8f, 
+                
+                // треугольник 4 
+                0.1f, 0.2f, 0.5f, 0.2f, 0.5f, 0.8f, 
+                
+                // линия 1 
+                -0.7f, -0.1f, 0.7f, -0.1f, 
+                
+                // линия 2 
+                -0.6f, -0.2f, 0.6f, -0.2f, 
+                
+                // точка 1 
+                -0.5f, -0.3f, 
+                
+                // точка 2 
+                0.0f, -0.3f, 
+                
+                // точка 3 
+                0.5f, -0.3f, 
+        }; 
+</code></pre>
+<p>Перепишем onDrawFrame</p>
+<pre><code class="java">    @Override 
+    public void onDrawFrame(GL10 arg0) { 
+        glClear(GL_COLOR_BUFFER_BIT); 
+        glLineWidth(5); 
+        glDrawArrays(GL_TRIANGLES, 0, 12); 
+        glDrawArrays(GL_LINES, 12, 4); 
+        glDrawArrays(GL_POINTS, 16, 3); 
+    }
+</code></pre>
+<p>Мы три раза вызываем метод glDrawArrays.</p>
+<p>Первый вызов говорит системе о том, что надо нарисовать треугольники и использовать при этом 12 вершин, начиная с первой в массиве (индекс 0).</p>
+<p>Второй вызов говорит системе о том, что надо нарисовать линии и использовать при этом 4 вершины, начиная с тринадцатой в массиве (индекс 12). Начинаем с тринадцатой потому, что первые 12 вершин в массиве мы использовали, чтобы задать треугольники, а вершины линий у нас идут начиная с тринадцатой.</p>
+<p>Третий вызов говорит системе о том, что надо нарисовать точки и использовать при этом 3 вершины, начиная с семнадцатой в массиве (индекс 16). Начинаем с семнадцатой потому, что первые 12 вершин в массиве мы использовали, чтобы задать треугольники, следующие 4 вершины мы использовали, чтобы задать линии, а вершины точек у нас идут начиная с семнадцатой.</p>
+<p>Запускаем</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="1767425421" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Система нарисовала 4 треугольника (2 их из них образуют прямоугольник), 2 линии и три точки.</p>
+<p>Надеюсь, стала понятнее связь между массивом вершин и методом glDrawArrays. Т.е. в glDrawArrays мы указываем какие фигуры рисовать и сколько вершин для этого использовать, а данные по вершинам система берет из массива vertices. Возможно осталось непонятным, например, как система определяет, что для вершины надо брать именно 2 точки из массива vertices. Это мы подробно разберем на следующем уроке и алгоритм передачи данных в шейдеры станет полностью понятным. </p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

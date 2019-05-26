@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 82. Handler. Пример с более содержательными сообщениями</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем более содержательные сообщения для Handler</p>
+<p>В прошлых уроках мы использовали метод sendEmptyMessage. Этот метод сам создавал сообщение Message, заполнял его атрибут what и отправлял в очередь. Кроме <b>what </b>у сообщения есть еще атрибуты <b>arg1</b> и <b>arg2 </b>типа int, и <b>obj</b> типа Object. В этом уроке мы сами будем создавать сообщение, заполнять атрибуты и отправлять.</p>
+<p>Создадим приложение, которое будет подключаться к серверу, запрашивать кол-во файлов готовых для загрузки, эмулировать загрузку и отображать на экране ход действий, используя горизонтальный ProgressBar и TextView.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0821_HandlerAdvMessage <br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: HandlerAdvMessage<br><b>Package name</b>: ru.startandroid.develop.p0821handleradvmessage<br><b>Create Activity</b>: MainActivity</p>
+<p><b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+	&lt;string name="app_name"&gt;HandlerAdvMessage&lt;/string&gt;
+	&lt;string name="connect"&gt;Connect&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnConnect"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onclick"
+		android:text="@string/connect"&gt;
+	&lt;/Button&gt;
+	&lt;TextView
+		android:id="@+id/tvStatus"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text=""&gt;
+	&lt;/TextView&gt;
+	&lt;ProgressBar
+		android:id="@+id/pbDownload"
+		style="?android:attr/progressBarStyleHorizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:visibility="gone"&gt;
+	&lt;/ProgressBar&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b> </b></p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0821handleradvmessage;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final int STATUS_NONE = 0; // нет подключения
+  final int STATUS_CONNECTING = 1; // подключаемся
+  final int STATUS_CONNECTED = 2; // подключено
+  final int STATUS_DOWNLOAD_START = 3; // загрузка началась
+  final int STATUS_DOWNLOAD_FILE = 4; // файл загружен
+  final int STATUS_DOWNLOAD_END = 5; // загрузка закончена
+  final int STATUS_DOWNLOAD_NONE = 6; // нет файлов для загрузки
+
+  Handler h;
+
+  TextView tvStatus;
+  ProgressBar pbDownload;
+  Button btnConnect;
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvStatus = (TextView) findViewById(R.id.tvStatus);
+    pbDownload = (ProgressBar) findViewById(R.id.pbDownload);
+    btnConnect = (Button) findViewById(R.id.btnConnect);
+
+    h = new Handler() {
+      public void handleMessage(android.os.Message msg) {
+        switch (msg.what) {
+        case STATUS_NONE:
+          btnConnect.setEnabled(true);
+          tvStatus.setText("Not connected");
+          pbDownload.setVisibility(View.GONE);
+          break;
+        case STATUS_CONNECTING:
+          btnConnect.setEnabled(false);
+          tvStatus.setText("Connecting");
+          break;
+        case STATUS_CONNECTED:
+          tvStatus.setText("Connected");
+          break;
+        case STATUS_DOWNLOAD_START:
+          tvStatus.setText("Start download " + msg.arg1 + " files");
+          pbDownload.setMax(msg.arg1);
+          pbDownload.setProgress(0);
+          pbDownload.setVisibility(View.VISIBLE);
+          break;
+        case STATUS_DOWNLOAD_FILE:
+          tvStatus.setText("Downloading. Left " + msg.arg2 + " files");
+          pbDownload.setProgress(msg.arg1);
+          saveFile((byte[]) msg.obj);
+          break;
+        case STATUS_DOWNLOAD_END:
+          tvStatus.setText("Download complete!");
+          break;
+        case STATUS_DOWNLOAD_NONE:
+          tvStatus.setText("No files for download");
+          break;
+        }
+      };
+    };
+    h.sendEmptyMessage(STATUS_NONE);
+  }
+
+  public void onclick(View v) {
+
+    Thread t = new Thread(new Runnable() {
+      Message msg;
+      byte[] file;
+      Random rand = new Random();
+
+      public void run() {
+        try {
+          // устанавливаем подключение
+          h.sendEmptyMessage(STATUS_CONNECTING);
+          TimeUnit.SECONDS.sleep(1);
+
+          // подключение установлено
+          h.sendEmptyMessage(STATUS_CONNECTED);
+
+          // определяем кол-во файлов
+          TimeUnit.SECONDS.sleep(1);
+          int filesCount = rand.nextInt(5);
+
+          if (filesCount == 0) {
+            // сообщаем, что файлов для загрузки нет
+            h.sendEmptyMessage(STATUS_DOWNLOAD_NONE);
+            // и отключаемся
+            TimeUnit.MILLISECONDS.sleep(1500);
+            h.sendEmptyMessage(STATUS_NONE);
+            return;
+          }
+
+          // загрузка начинается
+          // создаем сообщение, с информацией о количестве файлов
+          msg = h.obtainMessage(STATUS_DOWNLOAD_START, filesCount, 0);
+          // отправляем
+          h.sendMessage(msg);
+
+          for (int i = 1; i &lt;= filesCount; i++) {
+            // загружается файл
+            file = downloadFile();
+            // создаем сообщение с информацией о порядковом номере
+            // файла,
+            // кол-вом оставшихся и самим файлом
+            msg = h.obtainMessage(STATUS_DOWNLOAD_FILE, i,
+                filesCount - i, file);
+            // отправляем
+            h.sendMessage(msg);
+          }
+
+          // загрузка завершена
+          h.sendEmptyMessage(STATUS_DOWNLOAD_END);
+
+          // отключаемся
+          TimeUnit.MILLISECONDS.sleep(1500);
+          h.sendEmptyMessage(STATUS_NONE);
+
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+    t.start();
+  }
+
+  byte[] downloadFile() throws InterruptedException {
+    TimeUnit.SECONDS.sleep(2);
+    return new byte[1024];
+  }
+
+  void saveFile(byte[] file) {
+
+  }
+
+}</code></pre>
+<p>В <b>onCreate</b> мы создаем Handler и в его методе обработки (handleMessage) прописываем всю логику изменения экрана в зависимости от приходящих сообщений. Не буду подробно это расписывать, там все просто – меняем текст, включаем/выключаем кнопку, показываем/скрываем ProgressBar, меняем значение ProgressBar. Из интересного здесь стоит отметить, что читаем мы на этот раз не только <b>what</b>, но и остальные атрибуты сообщения – <b>arg1</b>, <b>arg2</b>, <b>obj</b>. А как они заполняются, увидим далее.</p>
+<p>В <b>onclick </b>создаем новый поток для загрузки файлов. Устанавливаем подключение, получаем кол-во готовых для загрузки файлов. Если файлов для загрузки нет, посылаем соответствующее сообщение в Handler и отключаемся. Если же файлы есть, мы создаем сообщение Message с помощью метода<a href="http://developer.android.com/reference/android/os/Handler.html#obtainMessage(int, int, int)" target="_blank"> obtainMessage (int what, int arg1, int arg2)</a>. Он принимает на вход атрибуты what, arg1 и arg2. В <b>what </b>мы кладем статус, в <b>arg1 </b>- кол-во файлов, <b>arg2 </b>– не нужен, там просто ноль.</p>
+<p>Далее начинаем загрузку. После загрузки каждого файла мы создаем сообщение Message c помощью метода <a href="http://developer.android.com/reference/android/os/Handler.html#obtainMessage(int, int, int, java.lang.Object)" target="_blank">obtainMessage (int what, int arg1, int arg2, Object obj)</a>, заполняем его атрибуты: <b>what </b>– статус, <b>arg1 </b>– порядковый номер файла, <b>arg2 </b>– кол-во оставшихся файлов, <b>obj </b>– файл. И отправляем.</p>
+<p>По завершению загрузки отправляем соответствующее сообщение и отключаемся.</p>
+<p><b>downloadFile </b>– эмулирует загрузку файла. ждет две секунды и возвращает массив из 1024 байтов.</p>
+<p><b>saveFile </b>– метод сохранения файла на диск. Просто заглушка. Ничего не делает.</p>
+<p>Все сохраняем и запускаем. Жмем <b>Connect</b>.</p>
+<p>Устанавливается подключение</p>
+<p><img src="images/lesson_81_0.png" alt="" width="640" height="454"></p>
+<p>Далее, либо начинается загрузка</p>
+<p><img src="images/lesson_81_1.png" alt="" width="640" height="454"></p>
+<p>либо появляется сообщение, что файлов нет</p>
+<p><img src="images/lesson_81_2.png" alt="" width="640" height="454"></p>
+<p>Отключаемся</p>
+<p><img src="images/lesson_81_3.png" alt="" width="640" height="454"></p>
+<p>Используя разные атрибуты кроме what, мы смогли передать в основной поток  и использовать там более разнообразные данные.</p>
+<p>Мы создаем сообщения с помощью разных реализаций метода obtainMessage. А почему бы не создавать напрямую объект Message с помощью его конструкторов? В принципе можно, но официальная документация рекомендует пользоваться методами obtainMessage, потому что это эффективней и быстрее. В этом случае сообщение достается из глобального пула сообщений, а не создается с нуля.</p>
+<p><a href="http://developer.android.com/reference/android/os/Handler.html#pubmethods" target="_blank">Здесь</a> вы можете посмотреть все реализации метода obtainMessage для формирования сообщений и использовать тот, который подходит для ситуации. Они различаются разными комбинациями  входных параметров.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

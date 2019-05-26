@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 36. SQLite. Подробнее про метод query. Условие, сортировка, группировка</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- подробно разбираем метод чтения данных query<br> - используем сортировку, группировку, условия, having</p>
+<p>На прошлых уроках мы использовали метод <b>query</b> для чтения всех данных из таблицы. Мы использовали только имя таблицы в качестве входного параметра и получали все записи. Но у query есть и другие параметры:</p>
+<p><b>columns </b>– список полей, которые мы хотим получить<br><b> selection </b>– строка условия WHERE<br><b> selectionArgs </b>– массив аргументов для selection. В selection можно использовать знаки <i>?</i>, которые будут заменены этими значениями.<br><b> groupBy </b>- группировка <br><b> having </b>– использование условий для агрегатных функций <br><b> orderBy </b>- сортировка</p>
+<p>Попробуем на примере их использовать. Создадим приложение – <b>справочник стран</b>. Возьмем <b>десять стран</b> и сохраним в БД их <b>наименование</b>, <b>количество </b>населения и <b>регион</b>.  Реализуем в приложении следующие функции:</p>
+<p>- вывод всех записей<br> - вывод значения агрегатной функции (SUM, MIN, MAX, COUNT)<br> - вывод стран с населением, больше чем указано<br> - группировка стран по региону<br> - вывод регионов с населением больше, чем указано<br> - сортировка стран по наименованию, населению или региону</p>
+<p>Выводить все данные снова будем в лог.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0361_SQLiteQuery<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SQLiteQuery<br><b>Package name</b>: ru.startandroid.develop.p0361sqlitequery<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем layout-файл <b>main.xml</b> и пишем:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Справочник стран"
+        android:textSize="14sp"
+        android:gravity="center_horizontal"
+        android:layout_marginBottom="5dp"
+        android:layout_marginTop="5dp"&gt;
+    &lt;/TextView&gt;
+    &lt;Button
+        android:id="@+id/btnAll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Все записи"
+        android:layout_marginTop="5dp"&gt;
+    &lt;/Button&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"&gt;
+        &lt;Button
+            android:id="@+id/btnFunc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Функция"&gt;
+        &lt;/Button&gt;
+        &lt;EditText
+            android:id="@+id/etFunc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"&gt;
+            &lt;requestFocus&gt;
+            &lt;/requestFocus&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"&gt;
+        &lt;Button
+            android:id="@+id/btnPeople"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Население"&gt;
+        &lt;/Button&gt;
+        &lt;EditText
+            android:id="@+id/etPeople"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:inputType="number"&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;Button
+        android:id="@+id/btnGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Население по региону"
+        android:layout_marginTop="5dp"&gt;
+    &lt;/Button&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"&gt;
+        &lt;Button
+            android:id="@+id/btnHaving"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Население по региону &gt;"&gt;
+        &lt;/Button&gt;
+        &lt;EditText
+            android:id="@+id/etRegionPeople"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:inputType="number"&gt;
+        &lt;/EditText&gt;
+    &lt;/LinearLayout&gt;
+    &lt;LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"&gt;
+        &lt;Button
+            android:id="@+id/btnSort"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Сортировка"&gt;
+        &lt;/Button&gt;
+        &lt;RadioGroup
+            android:id="@+id/rgSort"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+            &lt;RadioButton
+                android:id="@+id/rName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Наименование"&gt;
+            &lt;/RadioButton&gt;
+            &lt;RadioButton
+                android:id="@+id/rPeople"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Население"&gt;
+            &lt;/RadioButton&gt;
+            &lt;RadioButton
+                android:id="@+id/rRegion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Регион"&gt;
+            &lt;/RadioButton&gt;
+        &lt;/RadioGroup&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>6 кнопок – 6 функций, которые мы планируем реализовать. Поля для ввода значений, где это необходимо. Для <b>сортировки </b>используем <b>RadioGroup</b>.</p>
+<p>Код для <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0361sqlitequery;
+
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioGroup;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+  final String LOG_TAG = "myLogs";
+
+  String name[] = { "Китай", "США", "Бразилия", "Россия", "Япония",
+      "Германия", "Египет", "Италия", "Франция", "Канада" };
+  int people[] = { 1400, 311, 195, 142, 128, 82, 80, 60, 66, 35 };
+  String region[] = { "Азия", "Америка", "Америка", "Европа", "Азия",
+      "Европа", "Африка", "Европа", "Европа", "Америка" };
+
+  Button btnAll, btnFunc, btnPeople, btnSort, btnGroup, btnHaving;
+  EditText etFunc, etPeople, etRegionPeople;
+  RadioGroup rgSort;
+
+  DBHelper dbHelper;
+  SQLiteDatabase db;
+
+  /** Called when the activity is first created. */
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    btnAll = (Button) findViewById(R.id.btnAll);
+    btnAll.setOnClickListener(this);
+
+    btnFunc = (Button) findViewById(R.id.btnFunc);
+    btnFunc.setOnClickListener(this);
+
+    btnPeople = (Button) findViewById(R.id.btnPeople);
+    btnPeople.setOnClickListener(this);
+
+    btnSort = (Button) findViewById(R.id.btnSort);
+    btnSort.setOnClickListener(this);
+
+    btnGroup = (Button) findViewById(R.id.btnGroup);
+    btnGroup.setOnClickListener(this);
+
+    btnHaving = (Button) findViewById(R.id.btnHaving);
+    btnHaving.setOnClickListener(this);
+
+    etFunc = (EditText) findViewById(R.id.etFunc);
+    etPeople = (EditText) findViewById(R.id.etPeople);
+    etRegionPeople = (EditText) findViewById(R.id.etRegionPeople);
+
+    rgSort = (RadioGroup) findViewById(R.id.rgSort);
+
+    dbHelper = new DBHelper(this);
+    // подключаемся к базе
+    db = dbHelper.getWritableDatabase();
+
+    // проверка существования записей
+    Cursor c = db.query("mytable", null, null, null, null, null, null);
+    if (c.getCount() == 0) {
+      ContentValues cv = new ContentValues();
+      // заполним таблицу
+      for (int i = 0; i &lt; 10; i++) {
+        cv.put("name", name[i]);
+        cv.put("people", people[i]);
+        cv.put("region", region[i]);
+        Log.d(LOG_TAG, "id = " + db.insert("mytable", null, cv));
+      }
+    }
+    c.close();
+    dbHelper.close();
+    // эмулируем нажатие кнопки btnAll
+    onClick(btnAll);
+
+  }
+
+  public void onClick(View v) {
+
+    // подключаемся к базе
+    db = dbHelper.getWritableDatabase();
+
+    // данные с экрана
+    String sFunc = etFunc.getText().toString();
+    String sPeople = etPeople.getText().toString();
+    String sRegionPeople = etRegionPeople.getText().toString();
+
+    // переменные для query
+    String[] columns = null;
+    String selection = null;
+    String[] selectionArgs = null;
+    String groupBy = null;
+    String having = null;
+    String orderBy = null;
+
+    // курсор
+    Cursor c = null;
+
+    // определяем нажатую кнопку
+    switch (v.getId()) {
+    // Все записи
+    case R.id.btnAll:
+      Log.d(LOG_TAG, "--- Все записи ---");
+      c = db.query("mytable", null, null, null, null, null, null);
+      break;
+    // Функция
+    case R.id.btnFunc:
+      Log.d(LOG_TAG, "--- Функция " + sFunc + " ---");
+      columns = new String[] { sFunc };
+      c = db.query("mytable", columns, null, null, null, null, null);
+      break;
+    // Население больше, чем
+    case R.id.btnPeople:
+      Log.d(LOG_TAG, "--- Население больше " + sPeople + " ---");
+      selection = "people &gt; ?";
+      selectionArgs = new String[] { sPeople };
+      c = db.query("mytable", null, selection, selectionArgs, null, null,
+          null);
+      break;
+    // Население по региону
+    case R.id.btnGroup:
+      Log.d(LOG_TAG, "--- Население по региону ---");
+      columns = new String[] { "region", "sum(people) as people" };
+      groupBy = "region";
+      c = db.query("mytable", columns, null, null, groupBy, null, null);
+      break;
+    // Население по региону больше чем
+    case R.id.btnHaving:
+      Log.d(LOG_TAG, "--- Регионы с населением больше " + sRegionPeople
+          + " ---");
+      columns = new String[] { "region", "sum(people) as people" };
+      groupBy = "region";
+      having = "sum(people) &gt; " + sRegionPeople;
+      c = db.query("mytable", columns, null, null, groupBy, having, null);
+      break;
+    // Сортировка
+    case R.id.btnSort:
+      // сортировка по
+      switch (rgSort.getCheckedRadioButtonId()) {
+      // наименование
+      case R.id.rName:
+        Log.d(LOG_TAG, "--- Сортировка по наименованию ---");
+        orderBy = "name";
+        break;
+      // население
+      case R.id.rPeople:
+        Log.d(LOG_TAG, "--- Сортировка по населению ---");
+        orderBy = "people";
+        break;
+      // регион
+      case R.id.rRegion:
+        Log.d(LOG_TAG, "--- Сортировка по региону ---");
+        orderBy = "region";
+        break;
+      }
+      c = db.query("mytable", null, null, null, null, null, orderBy);
+      break;
+    }
+
+    if (c != null) {
+      if (c.moveToFirst()) {
+        String str;
+        do {
+          str = "";
+          for (String cn : c.getColumnNames()) {
+            str = str.concat(cn + " = "
+                + c.getString(c.getColumnIndex(cn)) + "; ");
+          }
+          Log.d(LOG_TAG, str);
+
+        } while (c.moveToNext());
+      }
+      c.close();
+    } else
+      Log.d(LOG_TAG, "Cursor is null");
+
+    dbHelper.close();
+  }
+
+  class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context) {
+      // конструктор суперкласса
+      super(context, "myDB", null, 1);
+    }
+
+    public void onCreate(SQLiteDatabase db) {
+      Log.d(LOG_TAG, "--- onCreate database ---");
+      // создаем таблицу с полями
+      db.execSQL("create table mytable ("
+          + "id integer primary key autoincrement," + "name text,"
+          + "people integer," + "region text" + ");");
+    }
+
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+  }
+
+}</code></pre>
+<p>Никаких проверок на вводимые с экрана значения я не делал, чтобы не перегружать код. Он и так немаленький получился, но ничего сложного в нем нет.</p>
+<p>Три массива данных <b>name</b>, <b>people</b>, <b>region</b>. Это <b>наименования </b>стран, их <b>население </b>(в млн.) и <b>регионы</b>, к которым страны относятся. По этим данным мы будем заполнять таблицу.</p>
+<p>В методе <b>onCreate </b>мы определяем и находим экранные элементы, присваиваем обработчики, создаем объект <b>dbHelper </b>для управления БД, подключаемся к базе и получаем объект <b>db </b>для работы с БД, проверяем наличие записей в таблице, если нет ничего – заполняем ее данными, закрываем соединение и эмулируем нажатие кнопки <b>Все записи</b> - чтобы сразу вывести весь список.</p>
+<p>В методе <b>onClick </b>– подключаемся к базе, читаем данные с экранных полей в переменные, описываем переменные, которые будем использовать в методе <b>query</b>, и курсор, и смотрим, какая кнопка была нажата.</p>
+<p><b>btnAll </b>– вывод всех записей. Вызываем метод query с <b>именем </b>таблицы и <b>null </b>для остальных параметров. Это уже знакомо, делали на прошлом уроке.</p>
+<p><b>btnFunc </b>– вывод значения агрегатной функции (или любого поля). Использую параметр <b>columns</b>, в который надо записать <b>поля</b>, которые я хотел бы получить из таблицы, т.е. то, что обычно перечисляется после слова <b>SELECT </b>в SQL-запросе. <b>columns</b> имеет тип<b> String[]</b> – массив строк. Создаем массив из одного значения, которое считано с поля <b>etFunc </b>на экране. Запускаем query.</p>
+<p><b>btnPeople </b>– вывод стран с населением больше введенного на экране количества. Используем <b>selection</b> для формирования условия. При этом используем один аргумент -<i> ?</i>. Значение аргумента задаем в <b>selectionArgs </b>– это <b>sPeople </b>– содержимое поля <b>etPeople</b>. Запускаем query.</p>
+<p><b>btnGroup </b>– группировка стран по регионам и вывод общее количество населения. Используем <b>columns </b>для указания столбцов, которые хотели бы получить – <b>регион</b> и <b>сумма </b>населения. В <b>groupBy</b> указываем, что <b>группировка </b>будет по <b>региону</b>. Запускаем query.</p>
+<p><b>btnHaving </b>– вывод регионов с населением больше указанного числа. Полностью аналогично случаю с группировкой, но добавляется условие в параметре <b>having </b>– сумма населения региона должна быть меньше <b>sRegionPeople </b>(значение <b>etRegionPeople </b>с экрана).</p>
+<p><b>btnSort </b>– сортировка стран. Определяем какой <b>RadioButton </b>включен и соответственно указываем в <b>orderBy </b>поле для сортировки данных. Запускаем query.</p>
+<p>В выше описанных случаях мы запускали <b>query </b>и получали объект c класса <b>Cursor</b>. Далее мы проверяем, что он существует и в нем есть записи (<b>moveToFirst</b>). Если все ок, то мы запускаем перебор записей в цикле <b>do … while (c.moveToNext())</b>. Для каждой записи перебираем названия полей (<b>getColumnNames</b>), получаем по каждому полю его номер и извлекаем данные методом <b>getString</b>. Формируем список полей и значений в переменную <b>str</b>, которую потом выводим в лог. После всего этого закрываем соединение.</p>
+<p>Ну и в конце кода идет описание вложенного класса <b>DBHelper</b>. Тут ничего не изменилось с прошлых уроков. Только при <b>создании таблицы </b>используются другие <b>поля</b>.</p>
+<p>Сохраняем все и запускаем приложение.</p>
+<p>В лог при запуске вывелись все записи, как если бы мы нажали кнопку «Все записи».</p>
+<p><i>--- Все записи ---<br> id = 1; name = Китай; people = 1400; region = Азия; <br> id = 2; name = США; people = 311; region = Америка; <br> id = 3; name = Бразилия; people = 195; region = Америка; <br> id = 4; name = Россия; people = 142; region = Европа; <br> id = 5; name = Япония; people = 128; region = Азия; <br> id = 6; name = Германия; people = 82; region = Европа; <br> id = 7; name = Египет; people = 80; region = Африка; <br> id = 8; name = Италия; people = 60; region = Европа; <br> id = 9; name = Франция; people = 66; region = Европа; <br> id = 10; name = Канада; people = 35; region = Америка;</i></p>
+<p>Т.е. таблица заполнена данными, можно работать.</p>
+<p>Попробуем использовать агрегатную функцию. Например – получим<b> кол-во записей</b>. Вводим значение:</p>
+<p><img src="images/lesson_35_0.png" alt=""></p>
+<p>жмем кнопку <b>Функция</b>. Смотрим лог:</p>
+<p><i>--- Функция count(*) as Count ---<br> Count = 10;</i></p>
+<p>Все верно, 10 записей в таблице.</p>
+<p>Покажем страны с населением больше 100 млн. Вводим <b>100</b> и жмем <b>Население &gt;</b></p>
+<p><img src="images/lesson_35_1.png" alt="" width="640" height="454"></p>
+<p>Лог:</p>
+<p><i>--- Население больше 100 ---<br> id = 1; name = Китай; people = 1400; region = Азия; <br> id = 2; name = США; people = 311; region = Америка; <br> id = 3; name = Бразилия; people = 195; region = Америка; <br> id = 4; name = Россия; people = 142; region = Европа; <br> id = 5; name = Япония; people = 128; region = Азия;</i></p>
+<p>Сгруппируем страны по региону и покажем население регионов. Нажмем кнопку <b>Население по региону</b></p>
+<p>Лог:</p>
+<p><i>--- Население по региону ---<br> region = Азия; people = 1528; <br> region = Америка; people = 541; <br> region = Африка; people = 80; <br> region = Европа; people = 350;</i></p>
+<p>Теперь отобразим только те регионы, в которых население выше 500 млн.чел.  Вводим <b>500 </b>и жмем <b>Население по региону &gt;</b></p>
+<p><img src="images/lesson_35_2.png" alt="" width="640" height="454"></p>
+<p>Лог:</p>
+<p><i>--- Регионы с населением больше 500 ---<br> region = Азия; people = 1528; <br> region = Америка; people = 541;</i></p>
+<p>Осталась сортировка. Выберем, например, сортировку по <b>населению </b>и жмем кнопку <b>Сортировка</b></p>
+<p><img src="images/lesson_35_3.png" alt="" width="640" height="454"></p>
+<p>Лог:</p>
+<p><i>--- Сортировка по населению ---<br> id = 10; name = Канада; people = 35; region = Америка; <br> id = 8; name = Италия; people = 60; region = Европа; <br> id = 9; name = Франция; people = 66; region = Европа; <br> id = 7; name = Египет; people = 80; region = Африка; <br> id = 6; name = Германия; people = 82; region = Европа; <br> id = 5; name = Япония; people = 128; region = Азия; <br> id = 4; name = Россия; people = 142; region = Европа; <br> id = 3; name = Бразилия; people = 195; region = Америка; <br> id = 2; name = США; people = 311; region = Америка; <br> id = 1; name = Китай; people = 1400; region = Азия;</i></p>
+<p>По умолчанию <b>сортировка</b> идет по <b>возрастанию</b>.</p>
+<p>Все работает так, как и должно. На этих примерах мы использовали все основные <b>параметры </b>метода <b>query</b>. Кроме описанных параметров, у метода query есть также реализации с использованием параметров <b>limit </b>и <b>distinct</b>. Я не стал их здесь отдельно показывать. Расскажу на словах:</p>
+<p><b>limit </b>– <b>строковый </b>параметр, указывается в формате <em>[offset], rows</em>. Т.е. если в <b>query </b>в качестве <b>limit </b>передать строку "<i>5</i>" - то запрос выдаст только <b>пять </b>первых записей. Если же передать "<i>3,5</i>", то запрос выдаст <b>пять </b>записей, начиная с <b>четвертой </b>(НЕ с третьей).</p>
+<p><b>distinct </b>– это <b>boolean</b>-параметр, удаление дубликатов. Может быть <b>true </b>или <b>false</b>.</p>
+<p>Надеюсь, что метод query, который сначала казался большим скоплением параметров, стал понятен и прост.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

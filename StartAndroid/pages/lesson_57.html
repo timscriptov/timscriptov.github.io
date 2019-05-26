@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 57. GridView и его атрибуты</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- используем GridView</p>
+<p><b>GridView </b>– еще один из компонентов, использующих адаптеры. Он выводит элементы в виде сетки/матрицы/таблицы, нужное подчеркнуть )</p>
+<p>Сделаем простой пример. И рассмотрим интересные атрибуты этого компонента.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0571_GridView<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: GridView<br><b>Package name</b>: ru.startandroid.develop.p0571gridview<br><b>Create Activity</b>: MainActivity</p>
+<p>В экран <b>main.xml</b> поместим GridView:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;GridView
+        android:id="@+id/gvMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+    &lt;/GridView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Создадим в любой папке res/drawable-*  файл <b>rect.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"&gt;
+    &lt;solid android:color="#99000099"&gt;&lt;/solid&gt;
+&lt;/shape&gt;</code></pre>
+<p>Это просто прямоугольник, залитый синим цветом. Я буду использовать его как фон. Я эту тему еще не рассматривал в уроках, <a href="http://developer.android.com/guide/topics/resources/drawable-resource.html#Shape" target="_blank">тут</a> можно почитать подробнее .</p>
+<p>Создадим свой layout для адаптера – <b>item.xml</b></p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/rect"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="40dp"
+        android:textSize="20sp"
+        android:text=""&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>LinearLayout с фоном drawable/rect, который мы создали ранее. И TextView.</p>
+<p>Код <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0571gridview;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.ArrayAdapter;
+import android.widget.GridView;
+
+public class MainActivity extends Activity {
+  
+  String[] data = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"};
+  
+  GridView gvMain;
+  ArrayAdapter&lt;String&gt; adapter;
+
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        adapter = new ArrayAdapter&lt;String&gt;(this, R.layout.item, R.id.tvText, data);
+        gvMain = (GridView) findViewById(R.id.gvMain);
+        gvMain.setAdapter(adapter);
+        adjustGridView();
+    }
+
+
+  private void adjustGridView() {
+  }
+}</code></pre>
+<p>Кода немного. Определяем GridView и создаем адаптер. В качестве layout для адаптера используем созданный item.xml, а tvText – это элемент, в который адаптер будет вставлять текст. Метод adjustGridView пока пустой, в нем будем настройки настройки Grid.</p>
+<p>Давайте смотреть, какие для GridView есть атрибуты.</p>
+<h3>numColumns и columnWidth</h3>
+<p><b>numColumns </b>– кол-во столбцов в сетке. Если его не задавать, то столбец будет по умолчанию один. Запустим приложение и убедимся.</p>
+<p><img src="images/lesson_56_0.png" alt="" width="640"></p>
+<p>Давайте поменяем это свойство - укажем, например 3. Сделаем это в пустом пока что методе adjustGridView</p>
+<pre><code class="java">  private void adjustGridView() {
+    gvMain.setNumColumns(3);
+  }</code></pre>
+<p>Сохраним и запустим.</p>
+<p><img src="images/lesson_56_1.png" alt="" width="640"></p>
+<p>Все верно, получилось три столбца.</p>
+<p>Это свойство также может иметь значение <a href="http://developer.android.com/reference/android/widget/GridView.html#AUTO_FIT" target="_blank">AUTO_FIT</a>. В этом случае проверяется значение поля атрибута <b>columnWidth</b> (ширина столбца).</p>
+<p>- если ширина столбца явно указана, то кол-во столбцов рассчитывается исходя из ширины, доступной GridView, и ширины столбцов.</p>
+<p>- иначе, кол-во столбцов считается равным 2</p>
+<p>Проверим. Укажем кол-во столбцов = <b>AUTO_FIT</b>, а ширину столбцов задавать пока не будем.</p>
+<pre><code class="java">  private void adjustGridView() {
+    gvMain.setNumColumns(GridView.AUTO_FIT);
+  }</code></pre>
+<p>Запускаем, видим два столбца</p>
+<p><img src="images/lesson_56_2.png" alt="" width="640"></p>
+<p>Теперь укажем явно ширину столбцов, пусть будет 50.</p>
+<pre><code class="xml">  private void adjustGridView() {
+    gvMain.setNumColumns(GridView.AUTO_FIT);
+    gvMain.setColumnWidth(50);
+  }</code></pre>
+<p>Теперь кол-во столбцов рассчитывается исходя из их ширины.</p>
+<p><img src="images/lesson_56_3.png" alt="" width="640" height="449"></p>
+<p>Видно, что в экран влезло 6 столбцов. Вы можете поизменять параметр ширины столбцов и убедиться, что их кол-во будет меняться.</p>
+<h3>horizontalSpacing, verticalSpacing</h3>
+<p>Это горизонтальный и вертикальный отступы между ячейками. Пусть будет 5.</p>
+<pre><code class="java">  private void adjustGridView() {
+    gvMain.setNumColumns(GridView.AUTO_FIT);
+    gvMain.setColumnWidth(80);
+    gvMain.setVerticalSpacing(5);
+    gvMain.setHorizontalSpacing(5);
+  }</code></pre>
+<p>Запустим приложение.</p>
+<p><img src="images/lesson_56_4.png" alt="" width="640" height="449"></p>
+<p>Между ячейками появилось расстояние.</p>
+<h3>stretchMode</h3>
+<p>Этот параметр определяет, как будет использовано свободное пространство, если оно есть. Используется в случае, когда вы указываете ширину столбца и кол-во ставите в режим AUTO_FIT. Изменим наш метод, добавим туда настройку stretch-параметра.</p>
+<pre><code class="java">  private void adjustGridView() {
+    gvMain.setNumColumns(GridView.AUTO_FIT);
+    gvMain.setColumnWidth(80);
+    gvMain.setVerticalSpacing(5);
+    gvMain.setHorizontalSpacing(5);
+    gvMain.setStretchMode(GridView.NO_STRETCH);
+  }</code></pre>
+<p><b>stretchMode</b> может принимать <b>4</b> значения:</p>
+<p><a href="http://developer.android.com/reference/android/widget/GridView.html#NO_STRETCH" target="_blank">NO_STRETCH</a> – свободное пространство не используется</p>
+<p><img src="images/lesson_56_5.png" alt="" width="640" height="449"></p>
+<p>Столбцы выровнены по левому краю. Все свободное пространство справа.</p>
+<p><br><a href="http://developer.android.com/reference/android/widget/GridView.html#STRETCH_COLUMN_WIDTH" target="_blank"> STRETCH_COLUMN_WIDTH</a> – свободное пространство используется столбцами, это режим по умолчанию</p>
+<p><img src="images/lesson_56_6.png" alt="" width="640" height="449"></p>
+<p>Столбцы растянуты по ширине. Она уже может не соответствовать той, что указана в setColumnWidth.</p>
+<p><br><a href="http://developer.android.com/reference/android/widget/GridView.html#STRETCH_SPACING" target="_blank"> STRETCH_SPACING</a> – свободное пространство равномерно распределяется между столбцами</p>
+<p><img src="images/lesson_56_7.png" alt="" width="640" height="449"></p>
+<p>Ширина столбцов неизменна. Увеличены интервалы между ними.</p>
+<p><br><a href="http://developer.android.com/reference/android/widget/GridView.html#STRETCH_SPACING_UNIFORM" target="_blank"> STRETCH_SPACING_UNIFORM</a> – свободное пространство равномерно распределяется не только между столбцами, но и справа и слева</p>
+<p><img src="images/lesson_56_8.png" alt="" width="640" height="449"></p>
+<p>Ширина столбцов неизменна. Увеличены интервалы между ними и с боков.</p>
+<p>Разумеется, все эти параметры можно задавать не только программно, но и через атрибуты в layout-файлах. Вместо ArrayAdapter можно использовать любой другой. Можно прикрутить обработчик setOnItemClickListener и получать позицию или id нажатого элемента. Все как в обычных списках.</p>
+<p>Есть также хороший пример по этой теме:</p>
+<p><a href="http://developer.android.com/resources/tutorials/views/hello-gridview.html">http://developer.android.com/resources/tutorials/views/hello-gridview.html</a></p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

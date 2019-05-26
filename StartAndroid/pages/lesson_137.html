@@ -1,0 +1,585 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 137. Сенсоры. Ускорение, ориентация.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- читаем данные с сенсоров</p>
+ 
+<p> </p>
+<p>В этом уроке я попробую изложить то, что я понял из всего мною прочитанного по сенсорам. Рассмотрим, как можно получить данные от сенсоров и как эти данные можно использовать.</p>
+<p>Android поддерживает несколько типов сенсоров. В данный момент документация <a href="http://developer.android.com/guide/topics/sensors/sensors_overview.html#sensors-intro" target="_blank" rel="noopener noreferrer">сообщает</a>, что таких типов 13. Мы в этом уроке рассмотрим сенсоры света, ускорения, гравитации и магнитного поля.</p>
+<p>Получать данные с сенсоров несложно. Для этого нам надо будет запросить у системы объект-сенсор и повесить на него своего слушателя. В метод слушателя будет приходить массив с данными.</p>
+<p> </p>
+<h3>Список сенсоров. Сенсор света.</h3>
+<p>Первое приложение будет выводить нам список доступных сенсоров и данные с сенсора света.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1371_Sensors<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Sensors<br/> <b>Package name</b>: ru.startandroid.develop.p1371sensors<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="list"&gt;List&lt;/string&gt;
+&lt;string name="light"&gt;Light&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;Button
+        android:id="@+id/btnSensList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickSensList"
+        android:text="@string/list"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnSensLight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/btnSensList"
+        android:onClick="onClickSensLight"
+        android:text="@string/light"&gt;
+    &lt;/Button&gt;
+    &lt;ScrollView
+        android:id="@+id/scroll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btnSensList"&gt;
+        &lt;TextView
+            android:id="@+id/tvText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"&gt;
+        &lt;/TextView&gt;
+    &lt;/ScrollView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Кнопки для получения списка сенсоров и данных по свету, и TextView для отображения данных.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1371sensors;
+
+import java.util.List;
+
+import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  TextView tvText;
+  SensorManager sensorManager;
+  List&lt;Sensor&gt; sensors;
+  Sensor sensorLight;
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvText = (TextView) findViewById(R.id.tvText);
+    sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+    sensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+    sensorLight = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+  }
+
+  public void onClickSensList(View v) {
+    
+    sensorManager.unregisterListener(listenerLight, sensorLight);
+    StringBuilder sb = new StringBuilder();
+    
+    for (Sensor sensor : sensors) {
+      sb.append("name = ").append(sensor.getName())
+      .append(", type = ").append(sensor.getType())
+      .append("\nvendor = ").append(sensor.getVendor())
+      .append(" ,version = ").append(sensor.getVersion())
+      .append("\nmax = ").append(sensor.getMaximumRange())
+      .append(", resolution = ").append(sensor.getResolution())
+      .append("\n--------------------------------------\n");
+    }
+    tvText.setText(sb);
+  }
+  
+  public void onClickSensLight(View v) {
+    sensorManager.registerListener(listenerLight, sensorLight, 
+        SensorManager.SENSOR_DELAY_NORMAL);
+  }
+  
+  @Override
+  protected void onPause() {
+    super.onPause();
+    sensorManager.unregisterListener(listenerLight, sensorLight);
+  }
+  
+  SensorEventListener listenerLight = new SensorEventListener() {
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+      tvText.setText(String.valueOf(event.values[0]));
+    }
+  };
+  
+}</code></pre>
+<p>В <b>onCreate</b> получаем <a href="http://developer.android.com/reference/android/hardware/SensorManager.html" target="_blank" rel="noopener noreferrer">SensorManager</a>. У него запрашиваем полный список сенсоров, используя метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#getSensorList(int)" target="_blank" rel="noopener noreferrer">getSensorList</a> и передавая туда тип сенсора <a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_ALL" target="_blank" rel="noopener noreferrer">TYPE_ALL</a>.</p>
+<p>Чтобы получить конкретный сенсор (<a href="http://developer.android.com/reference/android/hardware/Sensor.html" target="_blank" rel="noopener noreferrer">Sensor</a>), вызываем метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#getDefaultSensor(int)" target="_blank" rel="noopener noreferrer">getDefaultSensor</a>. Передаем тип <a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_LIGHT" target="_blank" rel="noopener noreferrer">TYPE_LIGHT</a> и получаем сенсор света. Тут аккуратнее, т.к. если такого сенсора в девайсе нет – то метод вернет null.</p>
+<p> </p>
+<p>В <b>onClickSensList</b> мы отписываем слушателя от сенсора. Об этом чуть позднее.</p>
+<p>Далее берем список сенсоров и выводим по ним инфу на экран:<br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getName()" target="_blank" rel="noopener noreferrer"> getName</a> – имя<br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getType()" target="_blank" rel="noopener noreferrer"> getType</a> – тип<br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getVendor()" target="_blank" rel="noopener noreferrer"> getVendor</a> – создатель <br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getVersion()" target="_blank" rel="noopener noreferrer"> getVersion</a> – версия<br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getMaximumRange()" target="_blank" rel="noopener noreferrer"> getMaximumRange</a> – максимальное значение, которое может вернуть сенсор<br/><a href="http://developer.android.com/reference/android/hardware/Sensor.html#getResolution()" target="_blank" rel="noopener noreferrer"> getResolution</a> – насколько я понял, это минимальный шаг, с которым может изменяться значение</p>
+<p> </p>
+<p>В методе <b>onClickSensLight</b> мы используем метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#registerListener(android.hardware.SensorEventListener, android.hardware.Sensor, int)" target="_blank" rel="noopener noreferrer">registerListener</a>, чтобы на ранее полученный сенсор света (sensorLight) повесить своего слушателя listenerLight. Третий параметр метода – скорость получения новых данных. Т.е. насколько часто вам необходимо получать данные от сенсора. Есть 4 скорости в порядке убывания: <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_DELAY_NORMAL" target="_blank" rel="noopener noreferrer">SENSOR_DELAY_NORMAL</a>,  <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_DELAY_UI" target="_blank" rel="noopener noreferrer">SENSOR_DELAY_UI</a>,  <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_DELAY_GAME" target="_blank" rel="noopener noreferrer">SENSOR_DELAY_GAME</a>,  <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_DELAY_FASTEST" target="_blank" rel="noopener noreferrer">SENSOR_DELAY_FASTEST</a>.</p>
+<p>Правда документация пишет, что система может проигнорить это значение и выдавать данные как ей удобно. А начиная с API Level 9 можно вместо константы скорости передавать свое значение в микросекундах. Не перепутайте с миллисекундами.</p>
+<p> </p>
+<p>В <b>onPause</b> мы отписываем своего слушателя от сенсора света. Тут, как обычно, рекомендуется отписываться как только данные вам не нужны, чтобы не расходовать зря батарею.</p>
+<p> </p>
+<p><b>listenerLight</b> – слушатель, реализует интерфейс <a href="http://developer.android.com/reference/android/hardware/SensorEventListener.html" target="_blank" rel="noopener noreferrer">SensorEventListener</a>. У него два метода:</p>
+<p><a href="http://developer.android.com/reference/android/hardware/SensorEventListener.html#onAccuracyChanged(android.hardware.Sensor, int)" target="_blank" rel="noopener noreferrer">onAccuracyChanged</a> – вызывается, когда меняется точность данных сенсора и в начале получения данных. Дает нам объект-сенсор и уровень точности:</p>
+<p><a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_STATUS_ACCURACY_HIGH" target="_blank" rel="noopener noreferrer">SENSOR_STATUS_ACCURACY_HIGH</a> – максимально возможная точность<br/><a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_STATUS_ACCURACY_MEDIUM" target="_blank" rel="noopener noreferrer">SENSOR_STATUS_ACCURACY_MEDIUM</a> – средняя точность, калибровка могла бы улучшить результат<br/><a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_STATUS_ACCURACY_LOW" target="_blank" rel="noopener noreferrer">SENSOR_STATUS_ACCURACY_LOW</a> – низкая точность, необходима калибровка<br/><a href="http://developer.android.com/reference/android/hardware/SensorManager.html#SENSOR_STATUS_UNRELIABLE" target="_blank" rel="noopener noreferrer">SENSOR_STATUS_UNRELIABLE</a> – данные сенсора совсем ни о чем. Либо нужна калибровка, либо невозможно чтение данных.</p>
+<p><a href="http://developer.android.com/reference/android/hardware/SensorEventListener.html#onSensorChanged(android.hardware.SensorEvent)" target="_blank" rel="noopener noreferrer">onSensorChanged</a> – здесь то мы и получаем данные от сенсора в объекте <a href="http://developer.android.com/reference/android/hardware/SensorEvent.html" target="_blank" rel="noopener noreferrer">SensorEvent</a>.</p>
+<p> </p>
+<p>Все сохраняем и запускаем приложение. Жмем <b>List</b> и получаем список.</p>
+<p>У меня он выглядит вот так:</p>
+<p><img style="border: 1px solid black;" src="images/l0137_010.png.pagespeed.ce.vuqk8igb-3.png" alt="" width="640" height="1024"/></p>
+<p>На скрине видно, что в устройстве есть несколько сенсоров одного типа. Если вместо TYPE_ALL передать в метод getSensorList какой-либо конкретный типа сенсора, то получим список сенсоров только этого типа.</p>
+<p> </p>
+<p>Теперь нажмем <b>Light</b>. Приложение покажет текущее значение освещенности. Попробуйте менять яркость освещения рядом с девайсом, должно меняться значение.</p>
+<p>У меня в полутемной комнате показывает 0. Если взять фонарик и издалека начать подносить к датчику света покажет последовательно: 10, 100, 1000, 10000 и в конце 30000.  При этом, на скрине со списком сенсоров видно, что максимум значения = 3000, а шаг (если я правильно понял параметр resolution) = 1. Почему такое несоответствие инфы с реальностью – я не знаю.</p>
+<p> </p>
+<h3>Ускорение</h3>
+<p>Далее рассмотрим сенсоры движения. Для этого нам надо будет понять, что в нашем трехмерном пространстве у устройства есть три оси. В документацие Google есть такая картинка.</p>
+<p><img src="images/xl0137_020.png.pagespeed.ic.3k19necfe2.png" alt="" width="225" height="269"/></p>
+<p>Т.е. если держать устройство перед собой, то ось X проходит слева направо, ось Y проходит снизу вверх, ось Z проходит сквозь устройство в вашем направлении. Сенсор ускорения вернет нам массив из трех значений, каждое из которых соответствует определенной оси.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1372_Acceleration<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Acceleration<br/> <b>Package name</b>: ru.startandroid.develop.p1372acceleration<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"&gt;
+    &lt;/TextView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1372acceleration;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  TextView tvText;
+  SensorManager sensorManager;
+  Sensor sensorAccel;
+  Sensor sensorLinAccel;
+  Sensor sensorGravity;
+
+  StringBuilder sb = new StringBuilder();
+
+  Timer timer;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvText = (TextView) findViewById(R.id.tvText);
+    sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+    sensorAccel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    sensorLinAccel = sensorManager
+        .getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+    sensorGravity = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
+
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    sensorManager.registerListener(listener, sensorAccel,
+        SensorManager.SENSOR_DELAY_NORMAL);
+    sensorManager.registerListener(listener, sensorLinAccel,
+        SensorManager.SENSOR_DELAY_NORMAL);
+    sensorManager.registerListener(listener, sensorGravity,
+        SensorManager.SENSOR_DELAY_NORMAL);
+
+    timer = new Timer();
+    TimerTask task = new TimerTask() {
+      @Override
+      public void run() {
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            showInfo();
+          }
+        });
+      }
+    };
+    timer.schedule(task, 0, 400);
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    sensorManager.unregisterListener(listener);
+    timer.cancel();
+  }
+
+  String format(float values[]) {
+    return String.format("%1$.1f\t\t%2$.1f\t\t%3$.1f", values[0], values[1],
+        values[2]);
+  }
+
+  void showInfo() {
+    sb.setLength(0);
+    sb.append("Accelerometer: " + format(valuesAccel))
+        .append("\n\nAccel motion: " + format(valuesAccelMotion))
+        .append("\nAccel gravity : " + format(valuesAccelGravity))
+        .append("\n\nLin accel : " + format(valuesLinAccel))
+        .append("\nGravity : " + format(valuesGravity));
+    tvText.setText(sb);
+  }
+
+  float[] valuesAccel = new float[3];
+  float[] valuesAccelMotion = new float[3];
+  float[] valuesAccelGravity = new float[3];
+  float[] valuesLinAccel = new float[3];
+  float[] valuesGravity = new float[3];
+
+  SensorEventListener listener = new SensorEventListener() {
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+      switch (event.sensor.getType()) {
+      case Sensor.TYPE_ACCELEROMETER:
+        for (int i = 0; i &lt; 3; i++) {
+          valuesAccel[i] = event.values[i];
+          valuesAccelGravity[i] = (float) (0.1 * event.values[i] + 0.9 * valuesAccelGravity[i]);
+          valuesAccelMotion[i] = event.values[i]
+              - valuesAccelGravity[i];
+        }
+        break;
+      case Sensor.TYPE_LINEAR_ACCELERATION:
+        for (int i = 0; i &lt; 3; i++) {
+          valuesLinAccel[i] = event.values[i];
+        }
+        break;
+      case Sensor.TYPE_GRAVITY:
+        for (int i = 0; i &lt; 3; i++) {
+          valuesGravity[i] = event.values[i];
+        }
+        break;
+      }
+
+    }
+
+  };
+
+}</code></pre>
+<p>В <b>onCreate</b> мы получаем три сенсора:</p>
+<p><a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_ACCELEROMETER" target="_blank" rel="noopener noreferrer">TYPE_ACCELEROMETER</a> – ускорение, включая гравитацию (ту самую, которая 9.8, из физики)</p>
+<p><a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_LINEAR_ACCELERATION" target="_blank" rel="noopener noreferrer">TYPE_LINEAR_ACCELERATION</a> – ускорение (чистое, без гравитации)</p>
+<p><a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_GRAVITY" target="_blank" rel="noopener noreferrer">TYPE_GRAVITY</a> - гравитация</p>
+<p> </p>
+<p>В <b>onResume</b> регистрируем один слушатель listener на все три сенсора. И запускаем таймер, который будет каждые 400 мсек отображать данные в TextView.</p>
+<p> </p>
+<p>В <b>onPause</b> отписываем слушателя от всех сенсоров, вызывая метод unregisterListener, но не указывая конкретный сенсор. И отключаем таймер.</p>
+<p> </p>
+<p>Метод <b>format</b> просто отформатирует float значения до одного знака после запятой.</p>
+<p> </p>
+<p><b>showInfo</b> выведет в TextView данные. Данные у нас будут в пяти массивах.</p>
+<p> </p>
+<p>В слушателе <b>listener</b> в методе onSensorChanged мы определяем тип сенсора и пишем данные в соответствующие массивы:</p>
+<p><b>valuesAccel </b>– данные с сенсора ускорения (включая гравитацию)</p>
+<p><b>valuesAccelMotion </b>и <b>valuesAccelGravity </b>– данные из valuesAccel, разделенные с помощью вычислительного фильтра на чистое ускорение (без гравитации) и гравитацию.</p>
+<p><b>valuesLinAccel </b>– данные с сенсора ускорения без гравитации</p>
+<p><b>valuesGravity </b>– данные с сенсора гравитации</p>
+<p> </p>
+<p>Т.е. мы получаем данные по ускорению (valuesAccel) с сенсора TYPE_ACCELEROMETER и потом <b>вычислительным фильтром</b> сами разбиваем на чистое ускорение и гравитацию. Но можно так не заморачиваться, а использовать сенсоры TYPE_LINEAR_ACCELERATION и TYPE_GRAVITY, которые должны дать нам примерно тот же результат.</p>
+<p>Кстати, обратите внимание, как я считываю данные в свой массив. Я читаю значения и пишу их себе. Почему просто не выполнить присваивание типа: <i>valuesAccel = event.values</i>?  Если так сделать, то могут периодически проскакивать кривые данные, если вы несколько сенсоров читаете. Там, похоже, используется пул объектов, чтобы сборщик мусора не грузить таким диким кол-вом новых объектов на единицу времени. Соответственно, если вы возьмете объект по ссылке, то пока он дойдет у вас до обработки, система может снова взять его в оборот и записать в него уже новые значения, причем еще и от другого сенсора. Так что лучше читать значения, а не ссылку брать.</p>
+<p> </p>
+<p>Запустим приложение. И положим девайс на стол экраном вверх.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0137_030.png.pagespeed.ic.ra3hpqnj7l.png" alt="" width="640" height="400"/></p>
+<p>Еще раз обсудим, что вывелось на экран</p>
+<p><b>Accelerometer</b>: данные по ускорению + гравитация. Видим, что третья ось (Z), которая в лежачем положении проходит вертикально вверх, показывает ускорение примерно равное гравитации. Т.е. даже в состоянии покоя сенсор показывает не чистое ускорение а еще и гравитацию, что не всегда нужно.</p>
+<p>Мы использовали фильтр, чтобы отделить ускорение от гравитации.</p>
+<p><b>Accel motion</b>: чистое ускорение, вычисленное из ускорения с гравитацией. Здесь все нули, т.к. устройство лежит и не двигается.</p>
+<p><b>Accel gravity</b>: гравитация, вычисленная из ускорения с гравитацией. Здесь первые две оси = нулю, т.к. они проходят паралелльно земле и по этим осям гравитации нет. Зато она есть по третьей оси, которая проходит вертикально. Проще говоря планета не тянет нас влево-вправо-вперед-назад, она тянет нас вниз. Поэтому показывать ускорение в 9.8 будет та ось, которая находится вертикально к земле.</p>
+<p><b>Lin accel</b>: данные с сенсора чистого ускорения (без гравитации). Тут все нули, т.к. устройство в состоянии покоя. Эти значения примерно должны совпадать с теми, что мы посчитали в Accel motion.</p>
+<p><b>Gravity</b>: данные с сенсора гравитации. Третья ось показывает, что она находится вертикально, т.к. гравитация по ней близка к максимуму.  Эти значения должны совпадать с теми, что мы посчитали в Accel gravity.</p>
+<p>Вы можете подвигать устройство в таком положении с ускорением в разные стороны и понаблюдать, как меняются значения осей. Правда, не очень наглядно получается. Если строить по этим значениям график, будет, конечно, лучше видно их изменения во времени.</p>
+<p> </p>
+<p>Теперь я возьму устройство в руки и подниму перед собой так, чтобы оно было на уровне глаз, а экран смотрел на меня. Т.е. так же, как выше в тексте, на картинке c осями.</p>
+<p>Смотрим, как изменились данные.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0137_040.png.pagespeed.ic.w1-8w0tdxb.png" alt="" width="640" height="400"/></p>
+<p> </p>
+<p><b>Accelerometer</b>: четко видно, что теперь вторая ось (Y) расположена почти вертикально, по ней идет гравитация 9.8. А оси X и Z близки к нулю. Они не равны точно нулю, т.к. я держу устройство не идеально ровно и небольшие перекосы дают гравитацию и на эти оси.</p>
+<p>Т.е. вывод можно сделать следующий. Чем ближе значение оси к 9.8, тем вертикальнее ее положение в пространстве. А чем ближе к нулю, тем горизонтальнее.</p>
+<p><b>Accel motion</b> и <b>Lin accel</b> показывают нам чистое ускорение. Оно близко к нулю, т.к. я стараюсь не дергать устройство.</p>
+<p><b>Accel gravity</b> и <b>Gravity</b> показывают, что по второй оси имеем почти полную гравитацию, а значит ось расположена вертикально.</p>
+<p> </p>
+<p>Попробуйте понаклонять устройство в разные стороны и наблюдайте как меняется гравитация. При переходе оси от горизонтального положения к вертикальному значение сенсора по этой оси будет меняться от 0 до 9.8.</p>
+<p> </p>
+<h3>Ориентация</h3>
+<p>Теперь попробуем использовать данные сенсора ускорения и добавим к ним данные сенсора магнитного поля. Эти два набора данных при определенных манипуляциях дадут нам углы наклона устройства. Угла будет три, по одному для каждой оси.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1373_Orientation<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Orientation<br/> <b>Package name</b>: ru.startandroid.develop.p1373orientation<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>Экран <b>main.xm</b>l:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;TextView
+        android:id="@+id/tvText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"&gt;
+    &lt;/TextView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1373orientation;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+import android.app.Activity;
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.view.Display;
+import android.view.Surface;
+import android.view.WindowManager;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  TextView tvText;
+  SensorManager sensorManager;
+  Sensor sensorAccel;
+  Sensor sensorMagnet;
+  
+  StringBuilder sb = new StringBuilder();
+  
+  Timer timer;
+  
+  int rotation;
+  
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvText = (TextView) findViewById(R.id.tvText);
+    sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+    sensorAccel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    sensorMagnet = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+  }
+  
+  @Override
+  protected void onResume() {
+    super.onResume();
+    sensorManager.registerListener(listener, sensorAccel, SensorManager.SENSOR_DELAY_NORMAL);
+    sensorManager.registerListener(listener, sensorMagnet, SensorManager.SENSOR_DELAY_NORMAL);
+    
+    timer = new Timer();
+    TimerTask task = new TimerTask() {
+      @Override
+      public void run() {
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            getDeviceOrientation();
+            getActualDeviceOrientation();
+            showInfo();
+          }
+        });
+      }
+    };
+    timer.schedule(task, 0, 400);
+    
+    WindowManager windowManager = ((WindowManager) getSystemService(Context.WINDOW_SERVICE));
+    Display display = windowManager.getDefaultDisplay();
+    rotation = display.getRotation();
+
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    sensorManager.unregisterListener(listener);
+    timer.cancel();
+  }
+  
+  String format(float values[]) {
+    return String.format("%1$.1f\t\t%2$.1f\t\t%3$.1f", values[0], values[1], values[2]);
+  }
+  
+  void showInfo() {
+    sb.setLength(0);
+    sb.append("Orientation : " + format(valuesResult))
+    .append("\nOrientation 2: " + format(valuesResult2))
+    ;
+    tvText.setText(sb);
+  }
+  
+  float[] r = new float[9];
+  
+  void getDeviceOrientation() {
+    SensorManager.getRotationMatrix(r, null, valuesAccel, valuesMagnet);
+    SensorManager.getOrientation(r, valuesResult);
+
+    valuesResult[0] = (float) Math.toDegrees(valuesResult[0]); 
+     valuesResult[1] = (float) Math.toDegrees(valuesResult[1]);
+     valuesResult[2] = (float) Math.toDegrees(valuesResult[2]);
+    return;
+  }
+  
+  float[] inR = new float[9];
+  float[] outR = new float[9];
+  
+  void getActualDeviceOrientation() {
+    SensorManager.getRotationMatrix(inR, null, valuesAccel, valuesMagnet);
+    int x_axis = SensorManager.AXIS_X;
+    int y_axis = SensorManager.AXIS_Y;
+    switch (rotation) {
+    case (Surface.ROTATION_0): break;
+    case (Surface.ROTATION_90):
+    x_axis = SensorManager.AXIS_Y;
+    y_axis = SensorManager.AXIS_MINUS_X;
+    break;
+    case (Surface.ROTATION_180):
+    y_axis = SensorManager.AXIS_MINUS_Y;
+    break;
+    case (Surface.ROTATION_270):
+    x_axis = SensorManager.AXIS_MINUS_Y;
+    y_axis = SensorManager.AXIS_X;
+    break;
+    default: break;
+    }
+    SensorManager.remapCoordinateSystem(inR, x_axis, y_axis, outR);
+    SensorManager.getOrientation(outR, valuesResult2);
+    valuesResult2[0] = (float) Math.toDegrees(valuesResult2[0]); 
+    valuesResult2[1] = (float) Math.toDegrees(valuesResult2[1]); 
+    valuesResult2[2] = (float) Math.toDegrees(valuesResult2[2]); 
+    return;
+  }  
+  
+  float[] valuesAccel = new float[3];
+  float[] valuesMagnet = new float[3];
+  float[] valuesResult = new float[3];
+  float[] valuesResult2 = new float[3];
+  
+  
+  SensorEventListener listener = new SensorEventListener() {
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+      switch (event.sensor.getType()) {
+      case Sensor.TYPE_ACCELEROMETER:
+        for (int i=0; i &lt; 3; i++){
+          valuesAccel[i] = event.values[i];
+        }        
+        break;
+      case Sensor.TYPE_MAGNETIC_FIELD:
+        for (int i=0; i &lt; 3; i++){
+          valuesMagnet[i] = event.values[i];
+        }  
+        break;
+      }
+    }
+  };
+ 
+}</code></pre>
+<p>В <b>onCreate </b>мы получаем сенсоры ускорения (TYPE_ACCELEROMETER) и магнитного поля (<a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_MAGNETIC_FIELD" target="_blank" rel="noopener noreferrer">TYPE_MAGNETIC_FIELD</a>).</p>
+<p> </p>
+<p>В <b>onResume </b>вешаем слушателя и запускаем таймер, который каждые 400 мсек будет определять ориентацию девайса в пространстве и выводить эту инфу на экран. В переменную rotation получаем значение текущей ориентации экрана. Это нам понадобиться для корректного определения ориентации девайса.</p>
+<p> </p>
+<p>В <b>onPause </b>отключаем слушателя и таймер.</p>
+<p> </p>
+<p>Метод <b>format</b> просто отформатирует float значения до одного знака после запятой.</p>
+<p><b>showInfo</b> покажет данные массивов в TextView. Но сначала эти данные надо вычислить. Этим займутся следующие два метода.</p>
+<p> </p>
+<p>Метод <b>getDeviceOrientation</b> определяет текущую ориентацию девайса в пространстве без учета поворота экрана. Для этого мы сначала вызваем метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#getRotationMatrix(float[], float[], float[], float[])" target="_blank" rel="noopener noreferrer">getRotationMatrix</a>, который берет данные ускорения и магнитного поля и формирует из них матрицу данных в переменную r. Далее метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#getOrientation(float[], float[])" target="_blank" rel="noopener noreferrer">getOrientation</a> из этой матрицы позволяет получить массив значений (в радианах) поворота трех осей. Остается перевести радианы в градусы методом toDegrees и у нас есть готовый массив с углами наклона девайса.</p>
+<p> </p>
+<p>Метод <b>getActualDeviceOrientation </b>аналогичен методу getDeviceOrientation, но он позволяет учесть ориентацию экрана. Для этого мы дополнительно вызываем метод <a href="http://developer.android.com/reference/android/hardware/SensorManager.html#remapCoordinateSystem(float[], int, int, float[])" target="_blank" rel="noopener noreferrer">remapCoordinateSystem</a>, который пересчитает нам матрицу. С помощью переменных x_axis и y_axis мы передаем в этот метод данные о том, как оси поменялись местами при повороте экрана.</p>
+<p> </p>
+<p>Слушатель <b>listener</b> получает данные ускорения и магнитного поля и пишет их в массивы <b>valuesAccel</b> и <b>valuesMagnet</b>.</p>
+<p> </p>
+<p>Запускаем приложение. Кладем устройство на ровную поверхность.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0137_050.png.pagespeed.ic.uvgvhfgxdg.png" alt="" width="640" height="400"/></p>
+<p><b>Orientation</b>: данные по ориентации в пространстве без учета ориентации экрана устройства.<br/><b> Orientation 2</b>: данные по ориентации в пространстве с учетом ориентации экрана устройства. Они равны данным Orientation если экран устройства находится в нормальной ориентации.</p>
+<p>Здесь, в отличие от ускорения, оси немного в другом порядке показаны. Первая цифра – это угол по оси Z. В горизонтальном положении устройства, это число показывает градус отклонения от севера. Т.е. это компас. Поверните устройство, сохраняя горизонтально положение, так, чтобы первая цифра стала близка к нулю. Теперь ваш девайс должен смотреть строго на север.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0137_060.png.pagespeed.ic.wld9ddmrs8.png" alt="" width="640" height="400"/></p>
+<p>Вторая цифра – угол по оси X. Т.е. если устройство слева направо проткнуть (воображаемой!) спицей, и попробовать потом на ней повращать, будет меняться именно эта, вторая, цифра. Протыкать мы ничего не будем. Просто возьмите устройство за его верхнюю (дальнюю от вас) сторону и поднимайте ее на себя, как будто хотите, что-то посмотреть на экране. Нижняя сторона при этом лежит на столе. Видно, как меняется вторая цифра. Когда устройство будет вертикально стоять на нижней стороне, это значение должно стать равным -90. Т.е. это прямой угол. Попробуйте также поднимать нижнюю сторону, оставляя верхнюю на столе. Угол будет идти к 90.</p>
+<p>Третья цифра – угол по оси Y. Тут аналогично оси X. Если положить устройство на стол, и начать поднимать его правую сторону, оставляя левую на столе (как будто переворачиваем страницу), будет меняться третья цифра. Она покажет угол наклона по оси Y. Попробуйте также поднимать левую, оставляя правую на столе.</p>
+<p>Тем самым мы получили полную картину положения девайса в пространстве.</p>
+<p>Попробуйте поменять ориентацию экрана и заблокировать ее в настройках. И снова потестируйте наклоны. Вы увидите, что данные Orientation выводятся относительно стандартной ориентации экрана, а Orientation2 – относительно текущей ориентации экрана.</p>
+<p> </p>
+<p>Данные по ориентации также можно получить без всяких манипуляций, используя сенсор <a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_ORIENTATION" target="_blank" rel="noopener noreferrer"><span style="text-decoration: line-through;">TYPE_ORIENTATION</span></a>. Но он объявлен устаревшим с API Level 8.</p>
+<p> </p>
+<h3>Прочее</h3>
+<p>Еще немного инфы по теме сенсоров.</p>
+<p>Сенсоры бывают реальные (hardware) и виртуальные (virtual). Реальные – это датчики, которые дают нам значения. А виртуальные используют значения реальных и по ним вычисляют свои значения. В рассмотренных нами примерах мы использовали реальный сенсор ускорения (TYPE_ACCELEROMETER) и из него сами посчитали чистое ускорение и гравитацию. Используемые нами там же сенсоры чистого ускорения (TYPE_LINEAR_ACCELERATION) и гравитации (TYPE_GRAVITY) являются виртуальными и так же, как и мы вычисляют свой результат. Только, я думаю что механизм подсчета там отличен от нашего и позволяет получить более реальные результаты.</p>
+<p>Сенсор-гироскоп (<a href="http://developer.android.com/reference/android/hardware/Sensor.html#TYPE_GYROSCOPE" target="_blank" rel="noopener noreferrer">TYPE_GYROSCOPE</a>) показывает скорость вращения по осям в радиан/сек.</p>
+<p>У сенсора есть еще такая характеристика как <a href="http://developer.android.com/reference/android/hardware/Sensor.html#getPower()" target="_blank" rel="noopener noreferrer">power</a> – потребляемая мощность (mA). Чем она ниже, тем, разумеется, лучше для батареи.</p>
+<p>Если ваше приложение обязательно использует сенсор и не будет без него работать, вы можете указать это в манифесте с помощью тега uses-feature. В этом случае Google Play не должен дать поставить приложение на устройство, которое не имеет указанного сенсора.</p>
+<p>Пример для сенсора ускорения.</p>
+<p><i>&lt;uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" /&gt;</i></p>
+<p>Значения других сенсоров можно найти в <a href="http://developer.android.com/guide/topics/manifest/uses-feature-element.html#hw-features" target="_blank" rel="noopener noreferrer">документацие</a> в секции Sensors.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

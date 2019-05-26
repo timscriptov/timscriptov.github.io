@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 140. Google maps. Свои объекты на карте</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- размещаем на карте свои объекты</p>
+ 
+<p> </p>
+<p>Мы можем размещать на карте маркеры со всплывающими подсказками, рисовать простейшие фигуры и накладывать свои текстуры. Напишем приложение и рассмотрим все это на примерах.</p>
+<p><i>Подробную инструкцию о том, как создать и настроить проект, предназначенный для работы с Google-картами, можно найти в Уроке 139.</i></p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1401_GoogleMapsDraw<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: GoogleMapsDraw<br/> <b>Package name</b>: ru.startandroid.develop.p1401googlemapsdraw<br/> <b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="test"&gt;Test&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"&gt;
+        &lt;Button
+            android:id="@+id/btnTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onClickTest"
+            android:text="@string/test"&gt;
+        &lt;/Button&gt;
+    &lt;/LinearLayout&gt;
+    &lt;fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"&gt;
+    &lt;/fragment&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Кнопка и фрагмент-карта</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1401googlemapsdraw;
+
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.view.View;
+
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Marker;
+
+public class MainActivity extends FragmentActivity {
+  
+  SupportMapFragment mapFragment;
+  GoogleMap map;
+  Marker marker;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        map = mapFragment.getMap();
+        if (map == null) {
+          finish();
+          return;
+        }
+        
+        init();  
+
+    }
+    
+    private void init() {
+      
+    }
+    
+    public void onClickTest(View view) {
+      
+    }
+}</code></pre>
+<p>В <b>onCreate</b> мы находим наш фрагмент с картой и получаем от него объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html" target="_blank" rel="noopener noreferrer">GoogleMap</a> методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/SupportMapFragment.html#getMap()" target="_blank" rel="noopener noreferrer">getMap</a>. Учитывайте, что этот метод может вернуть null.</p>
+<p>Метод <b>init</b> пока пустой.</p>
+<p>Метод <b>onClickTest</b> пока пустой.</p>
+<p> </p>
+<h3>Маркеры</h3>
+<p>Начнем с маркеров. Думаю, все в курсе, что это такое, если пользовались поиском в картах. Попробуем программно поставить маркер. Перепишем <b>onClickTest</b>:</p>
+<pre><code class="java">  public void onClickTest(View view) {
+    map.addMarker(new MarkerOptions()
+      .position(new LatLng(0, 0))
+      .title("Hello world"));
+  }</code></pre>
+<p>Для добавления используем метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#addMarker(com.google.android.gms.maps.model.MarkerOptions)" target="_blank" rel="noopener noreferrer">addMarker</a> и на вход ему передаем объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html" target="_blank" rel="noopener noreferrer">MarkerOptions</a>. Указываем координаты маркера (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#position(com.google.android.gms.maps.model.LatLng)" target="_blank" rel="noopener noreferrer">position</a>) и текст (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#title(java.lang.String)" target="_blank" rel="noopener noreferrer">title</a>), который будет отображен по нажатию на маркер.</p>
+<p>Все сохраняем, запускаем приложение и жмем <b>Test</b>.</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_010.png.pagespeed.ic.nrg7v5yi9j.png" alt="" width="420" height="310"/></p>
+<p>в точке (0, 0) появился маркер.</p>
+<p>Нажмем на него</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_020.png.pagespeed.ic.i25m_6gn_c.jpg" alt="" width="309" height="222"/></p>
+<p>появился текст, который мы вводили.</p>
+<p> </p>
+<p>Рассмотрим, какие возможности дает нам MarkerOptions.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#alpha(float)" target="_blank" rel="noopener noreferrer">alpha</a> – прозрачность маркера, значение от 0 до 1</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#anchor(float, float)" target="_blank" rel="noopener noreferrer">anchor</a> – точка маркера, которая соответствует точке карты.</p>
+<p>Рассмотрим маркер поближе</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_030.png.pagespeed.ic.lpvcqc7bvd.png" alt="" width="321" height="378"/></p>
+<p>Сейчас на требуемое место на карте указывает его нижняя суженная часть. Если взять за единицу ширину и высоту маркера, то эту указательную точку маркера можно обозначить как (0.5, 1).</p>
+<p>А т.к. мы можем в качестве маркера использовать свои иконки, вовсе необязательно, что у них указательная часть будет расположена также снизу по центру. Поэтому anchor дает возможность нам самим указать указательную точку маркера.</p>
+<p>Например, указав (0.5, 0) мы получим маркер, который будет указывать своей верхней центральной частью.</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#draggable(boolean)" target="_blank" rel="noopener noreferrer">draggable</a> – маркер можно перетаскивать после установки</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#flat(boolean)" target="_blank" rel="noopener noreferrer">flat</a> – настройка поведения маркера при повороте и наклоне карты. Если передать true, то маркер будет привязан к карте, т.е. будет вращаться и наклоняться вместе с картой. Если же false (по умолчанию) то маркер будет привязан к камере: при поворотах и наклонах карты он останется в том же положении.</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#icon(com.google.android.gms.maps.model.BitmapDescriptor)" target="_blank" rel="noopener noreferrer">icon</a> – возможность кастомизации иконки маркера, на вход требует объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptor.html" target="_blank" rel="noopener noreferrer">BitmapDescriptor</a>, который в свою очередь может быть получен с помощью объекта <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html" target="_blank" rel="noopener noreferrer">BitmapDescriptorFactory</a>.</p>
+<p>Перепишем метод <b>onClickTest</b>:</p>
+<pre><code class="java">  public void onClickTest(View view) {
+    map.addMarker(new MarkerOptions().position(new LatLng(-10, -10)).icon(
+        BitmapDescriptorFactory
+            .defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+    map.addMarker(new MarkerOptions().position(new LatLng(0, 0)).icon(
+        BitmapDescriptorFactory.defaultMarker()));
+
+    map.addMarker(new MarkerOptions().position(new LatLng(10, 10)).icon(
+        BitmapDescriptorFactory.fromResource(R.drawable.ic_launcher)));
+  }</code></pre>
+<p>В точку (-10, -10) мы ставим маркер по умолчанию, который можно получить методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#defaultMarker(float)" target="_blank" rel="noopener noreferrer">defaultMarker</a>, но при этом мы меняем его цвет на зеленый.</p>
+<p>В точку (0, 0) мы ставим маркер по умолчанию, который можно получить методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#defaultMarker()" target="_blank" rel="noopener noreferrer">defaultMarker</a>. Цвет не меняем.</p>
+<p>В точку (10, 10) поставим маркер в виде стандартной Android иконки, используя метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#fromResource(int)" target="_blank" rel="noopener noreferrer">fromResource</a> и указав требуемый drawable-ресурс.</p>
+<p>Запускаем, жмем <b>Test</b> и наблюдаем маркеры:</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_040.png.pagespeed.ic.mdes1u0xrv.png" alt="" width="410" height="305"/></p>
+<p> </p>
+<p>BitmapDescriptorFactory также имеет другие методы для получения иконки маркера:</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#fromAsset(java.lang.String)" target="_blank" rel="noopener noreferrer">fromAsset</a>, из папки assets</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#fromBitmap(android.graphics.Bitmap)" target="_blank" rel="noopener noreferrer">fromBitmap</a>, из Bitmap объекта</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#fromFile(java.lang.String)" target="_blank" rel="noopener noreferrer">fromFile</a>, из файла внутреннего хранилища</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/BitmapDescriptorFactory.html#fromPath(java.lang.String)" target="_blank" rel="noopener noreferrer">fromPath</a>, из файла по указанному пути</p>
+<p> </p>
+<p>Ну а для метода defaultMarker есть еще несколько готовых расцветок кроме зеленого, в документацие они все указаны.</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#rotation(float)" target="_blank" rel="noopener noreferrer">rotation</a> – поворот маркера (в градусах) по часовой относительно точки anchor.</p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#snippet(java.lang.String)" target="_blank" rel="noopener noreferrer">snippet</a> – дополнительный текст для инфоокна (которое отображается по нажатию на маркер)</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_050.png.pagespeed.ic.w6klywpihw.png" alt="" width="323" height="236"/></p>
+<p> </p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/MarkerOptions.html#visible(boolean)" target="_blank" rel="noopener noreferrer">visible</a> – видимость маркера</p>
+<p> </p>
+<p>Метод addMarker при добавлении вернет вам объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Marker.html" target="_blank" rel="noopener noreferrer">Marker</a>, для которого вы также позже сможете применять вышеописанные настройки с помощью методов set*.</p>
+<p> </p>
+<p>Для отслеживания событий маркеров карта предоставляет нам пару слушателей.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerClickListener.html" target="_blank" rel="noopener noreferrer">OnMarkerClickListener</a> (устанавливается методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnMarkerClickListener(com.google.android.gms.maps.GoogleMap.OnMarkerClickListener)" target="_blank" rel="noopener noreferrer">setOnMarkerClickListener</a>) имеет метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerClickListener.html#onMarkerClick(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">onMarkerClick</a>, который дает нам Marker, на который было произведено нажатие.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerDragListener.html" target="_blank" rel="noopener noreferrer">OnMarkerDragListener</a> (устанавливается методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnMarkerDragListener(com.google.android.gms.maps.GoogleMap.OnMarkerDragListener)" target="_blank" rel="noopener noreferrer">setOnMarkerDragListener</a>) имеет три метода для отслеживания перетаскивания маркера: <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerDragListener.html#onMarkerDragStart(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">onMarkerDragStart</a> (перетаскивание начато), <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerDragListener.html#onMarkerDrag(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">onMarkerDrag</a> (перетаскивание в процессе) и <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnMarkerDragListener.html#onMarkerDragEnd(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">onMarkerDragEnd</a> (перетаскивание закончено).</p>
+<p> </p>
+<h3>Инфоокно</h3>
+<p>По нажатию на маркер появляется инфоокно с текстом. Показать это окно можно и программно, используя метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Marker.html#showInfoWindow()" target="_blank" rel="noopener noreferrer">showInfoWindow</a> объекта Marker.</p>
+<p>Перепишем методы <b>init</b> и <b>onClickTest</b>:</p>
+<pre><code class="java">  private void init() {
+    marker = map.addMarker(new MarkerOptions()
+        .position(new LatLng(0, 0))
+        .title("Hello world")
+        .snippet("Additional text"));
+  }
+
+  public void onClickTest(View view) {
+    marker.showInfoWindow();
+  }</code></pre>
+<p>Запустим приложение, появится маркер. Жмем <b>Test</b> и появляется инфоокно с текстами.</p>
+<p> </p>
+<p>Метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Marker.html#hideInfoWindow()" target="_blank" rel="noopener noreferrer">hideInfoWindow</a> скрывает инфоокно. Метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Marker.html#isInfoWindowShown()" target="_blank" rel="noopener noreferrer">isInfoWindowShown</a> подскажет, отображается ли для маркера инфоокно в данный момент.</p>
+<p> </p>
+<p>Инфоокно можно кастомизировать. Перепишем метод <b>init</b>:</p>
+<pre><code class="java">  private void init() {
+
+    marker = map.addMarker(new MarkerOptions().position(new LatLng(0, 0))
+        .title("Hello world").snippet("Additional text"));
+
+    map.addMarker(new MarkerOptions().position(new LatLng(0, 20))
+        .title("Hello world1").snippet("Additional text1"));
+
+    map.setInfoWindowAdapter(new InfoWindowAdapter() {
+
+      @Override
+      public View getInfoWindow(Marker marker) {
+        if (marker.getId().equals(MainActivity.this.marker.getId())) {
+          TextView tv = new TextView(MainActivity.this);
+          tv.setText("Test getInfoWindow");
+          tv.setTextColor(Color.RED);
+          return tv;
+        } else
+          return null;
+      }
+
+      @Override
+      public View getInfoContents(Marker marker) {
+        TextView tv = new TextView(MainActivity.this);
+        tv.setText("Test getInfoContents");
+        return tv;
+      }
+    });
+
+  }</code></pre>
+<p> </p>
+<p>Мы добавляем два маркера и первый сохраняем в переменную marker. Далее вызываем метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setInfoWindowAdapter(com.google.android.gms.maps.GoogleMap.InfoWindowAdapter)" target="_blank" rel="noopener noreferrer">setInfoWindowAdapter</a>, в который создаем и передаем объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.InfoWindowAdapter.html" target="_blank" rel="noopener noreferrer">InfoWindowAdapter</a>. Этот объект имеет два метода:</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.InfoWindowAdapter.html#getInfoWindow(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">getInfoWindow</a>, замена всего инфоокна своим View (которое является результатом работы метода)</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.InfoWindowAdapter.html#getInfoContents(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">getInfoContents</a>, замена содержимого инфоокна своим View (которое является результатом работы метода)</p>
+<p>Алгоритм такой. При вызове инфоокна система вызывает getInfoWindow и использует его View. Если getInfoWindow вернул null, то вызывается getInfoContents и используется его View. Если и здесь null, то создается стандартное инфоокно.</p>
+<p>Мы в методе getInfoWindow по id проверяем, что это первый маркер, который мы создавали и для него создаем свое View (TextView с красным текстом <em>Test getInfoWindow</em>). Для всех других маркеров метод вернет null (а следовательно они пойдут в метод getInfoContents).</p>
+<p>В методе getInfoContents мы создаем свое View (TextView с текстом <em>Test getInfoContents</em>) и используем его для всех маркеров.</p>
+<p>Запускаем приложение, у нас появились два маркера. Жмем на первый:</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_060.png.pagespeed.ic.tr0yl0avba.jpg" alt="" width="370" height="198"/></p>
+<p>Видим, что инфоокно полностью заменилось нашим View из getInfoWindow.</p>
+<p>Жмем на второй маркер.</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_070.png.pagespeed.ic.lntellwcky.jpg" alt="" width="380" height="223"/></p>
+<p>Здесь заменилось не все инфоокно, а только его содержимое. А рамка осталась.</p>
+<p> </p>
+<p>Методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#setOnInfoWindowClickListener(com.google.android.gms.maps.GoogleMap.OnInfoWindowClickListener)" target="_blank" rel="noopener noreferrer">setOnInfoWindowClickListener</a> мы можем повесить слушателя <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnInfoWindowClickListener.html" target="_blank" rel="noopener noreferrer">OnInfoWindowClickListener</a>, который методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.OnInfoWindowClickListener.html#onInfoWindowClick(com.google.android.gms.maps.model.Marker)" target="_blank" rel="noopener noreferrer">onInfoWindowClick</a> оповестит нас о том, что произошло нажатие на инфоокно и даст нам Marker.</p>
+<p> </p>
+<h3>Фигуры</h3>
+<p>Карта дает нам возможность рисовать на ней простейшие фигуры: круги, линии, многоугольники.</p>
+<p>Для этого есть три объекта:</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Polyline.html" target="_blank" rel="noopener noreferrer">Polyline</a> – набор точек, которые будут соединены линиями</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Polygon.html" target="_blank" rel="noopener noreferrer">Polygon</a> –набор точек, которые будут соединены линиями в т.ч. и от последней точки к первой</p>
+<p>- <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/Circle.html" target="_blank" rel="noopener noreferrer">Circle</a> – круг, позволяет указать точку центра и радиус</p>
+<p>Эти объекты допускают графические настройки такие как толщина и цвет линий, цвет заливки.</p>
+<p> </p>
+<p>Давайте нарисуем три фигуры. Перепишем метод <b>init</b>:</p>
+<pre><code class="java">  private void init() {
+    PolylineOptions polylineOptions = new PolylineOptions()
+        .add(new LatLng(-5, -30)).add(new LatLng(-5, -20))
+        .add(new LatLng(5, -20)).add(new LatLng(5, -30))
+        .color(Color.MAGENTA).width(1);
+
+    map.addPolyline(polylineOptions);
+
+    PolygonOptions polygoneOptions = new PolygonOptions()
+        .add(new LatLng(-5, -10)).add(new LatLng(-5, 0))
+        .add(new LatLng(5, 0)).add(new LatLng(5, -10))
+        .strokeColor(Color.CYAN).strokeWidth(10).fillColor(Color.GREEN);
+
+    map.addPolygon(polygoneOptions);
+
+    CircleOptions circleOptions = new CircleOptions()
+        .center(new LatLng(0, 15)).radius(500000)
+        .fillColor(Color.YELLOW).strokeColor(Color.DKGRAY)
+        .strokeWidth(5);
+
+    map.addCircle(circleOptions);
+  }</code></pre>
+<p>Первая фигура – Polyline. Для настройки используется объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolylineOptions" target="_blank" rel="noopener noreferrer">PolylineOptions</a>. Указываем точки, цвет(color) и толщину(width) линий. Настройки цвета заливки здесь нет, т.к. фигура может быть незамкнутой. Добавляем фигуру к карте методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#addPolyline(com.google.android.gms.maps.model.PolylineOptions)" target="_blank" rel="noopener noreferrer">addPolyline</a>.</p>
+<p>Далее Polygon. Для настройки используется объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolygonOptions" target="_blank" rel="noopener noreferrer">PolygonOptions</a>. Указываем точки, цвет(strokeColor) и толщину линий(strokeWidth), и цвет заливки(fillColor). Добавляем методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#addPolygon(com.google.android.gms.maps.model.PolygonOptions)" target="_blank" rel="noopener noreferrer">addPolygon</a>.</p>
+<p>И Circle. Настраивается объектом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/CircleOptions" target="_blank" rel="noopener noreferrer">CircleOptions</a>.  Указываем точку центра, радиус (в метрах), цвет(strokeColor) и толщину линий(strokeWidth), и цвет заливки(fillColor). Добавляем методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#addCircle(com.google.android.gms.maps.model.CircleOptions)" target="_blank" rel="noopener noreferrer">addCircle</a>.</p>
+<p>Запускаем приложение и видим результат.</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_080.png.pagespeed.ic.qp3ojecsjo.png" alt="" width="404" height="205"/></p>
+<p>Как видите вторая фигура замкнутая, хотя я и указывал всего 4 точки. Линия от последней к первой рисуется автоматически.</p>
+<p> </p>
+<p>Фигуры также имеют настройки:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolylineOptions.html#visible(boolean)" target="_blank" rel="noopener noreferrer">visible</a> - видимость</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolylineOptions.html#zIndex(float)" target="_blank" rel="noopener noreferrer">zIndex</a> – который определяет, какая из двух фигур будет нарисована выше (поверх, ближе к нам) при их пересечении. Чем выше это значение, тем выше будет фигура.</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolylineOptions.html#geodesic(boolean)" target="_blank" rel="noopener noreferrer">geodesic</a> (для Polyline и Polygon) – если true, то линии будут не прямыми, а соответствовать поверхности земли, т.е. немного закругленными. Это будет заметно на больших расстояниях.</p>
+<p> </p>
+<p>Для PolygonOptions есть метод <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/PolygonOptions.html#addHole(java.lang.Iterable&lt;com.google.android.gms.maps.model.LatLng&gt;)" target="_blank" rel="noopener noreferrer">addHole</a>, он рисует Polygon внутри Polygon, образуя дыру</p>
+<p>Перепишем <b>init</b>:</p>
+<pre><code class="java">  private void init() {
+    List&lt;LatLng&gt; list = new ArrayList&lt;LatLng&gt;();
+    list.add(new LatLng(-4, -5));
+    list.add(new LatLng(0, -1));
+    list.add(new LatLng(4, -5));
+    list.add(new LatLng(0, -9));
+    
+    PolygonOptions polygoneOptions = new PolygonOptions()
+        .add(new LatLng(-5, -10))
+        .add(new LatLng(-5, 0))
+        .add(new LatLng(5, 0)) 
+        .add(new LatLng(5, -10))
+        .addHole(list)
+        .strokeColor(Color.CYAN).
+        strokeWidth(1).
+        fillColor(Color.GREEN); 
+
+    map.addPolygon(polygoneOptions);    
+  }<br/><br/></code></pre>
+<p>Результат будет таков</p>
+<p><img style="border: 1px solid black;" src="images/xl0140_090.png.pagespeed.ic.azvybrroyn.png" alt="" width="266" height="192"/></p>
+<p> </p>
+<p>Методы добавления фигур к карте возвращают вам эти объекты, и вы можете в дальнейшем менять их настройки (set*) или удалить методом remove.</p>
+<p> </p>
+<h3>Overlay</h3>
+<p>Когда мы ставим маркер, он не меняет свой размер при зуме.  А есть возможность наложить на карту изображение, которое будет так же, как и карта менять размер при приближении и отдалении.</p>
+<p>Перепишем метод <b>init</b>:</p>
+<pre><code class="java">  private void init() {
+    GroundOverlayOptions newarkMap = new GroundOverlayOptions()
+        .image(BitmapDescriptorFactory.fromResource(R.drawable.ic_launcher))
+        .position(new LatLng(0, 0), 500000f, 500000f);
+    map.addGroundOverlay(newarkMap);
+  }</code></pre>
+<p>Создаем и настраиваем объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html" target="_blank" rel="noopener noreferrer">GroundOverlayOptions</a>, указывая нужное нам изображение (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#image(com.google.android.gms.maps.model.BitmapDescriptor)" target="_blank" rel="noopener noreferrer">image</a>) и его расположение (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#position(com.google.android.gms.maps.model.LatLng, float, float)" target="_blank" rel="noopener noreferrer">position</a>), которое состоит из точки центра и размеров (ширина и высота) картинки в метрах.</p>
+<p>Добавляем объект на карту методом <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap.html#addGroundOverlay(com.google.android.gms.maps.model.GroundOverlayOptions)" target="_blank" rel="noopener noreferrer">addGroundOverlay</a>.</p>
+<p>Запускаем и видим результат.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0140_100.png.pagespeed.ic.clkhfntlji.png" alt="" width="640" height="400"/></p>
+<p>Приблизим и повернем.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0140_110.png.pagespeed.ic.yy4jt1xgyn.png" alt="" width="640" height="400"/></p>
+<p>Видно, что картинка привязана к карте.</p>
+<p> </p>
+<p>Расположение также можно указать методами:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#position(com.google.android.gms.maps.model.LatLng, float)" target="_blank" rel="noopener noreferrer">position(LatLng location, float width)</a> – аналогичен тому, что мы вызывали, но можно указать только ширину, а высота сама определится по размерам картинки</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#positionFromBounds(com.google.android.gms.maps.model.LatLngBounds)" target="_blank" rel="noopener noreferrer">positionFromBounds (LatLngBounds bounds)</a> – через объект LatLngBounds мы указываем юго-западную и северо-восточную точку на карте и картинка будет расположена в указанной области</p>
+<p> </p>
+<p>Также этот объект поддерживает настройки:</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#transparency(float)" target="_blank" rel="noopener noreferrer">transparency</a> – уровень прозрачности</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#visible(boolean)" target="_blank" rel="noopener noreferrer">visible</a> – видимость</p>
+<p><a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlayOptions.html#zIndex(float)" target="_blank" rel="noopener noreferrer">zIndex</a> – Z-уровень, кто кого выше при прорисовке</p>
+<p> </p>
+<p>Метод добавления (addGroundOverlay) вернет вам объект <a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlay.html" target="_blank" rel="noopener noreferrer">GroundOverlay</a>, который вы можете потом менять или удалять (<a href="https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/model/GroundOverlay.html#remove()" target="_blank" rel="noopener noreferrer">remove</a>).</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

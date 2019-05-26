@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 113. Android 3. ActionMode, как альтернатива контекстному меню</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с ActionMode</p>
+<p>Рассмотренный нами в прошлых уроках ActionBar – это альтернатива обычному меню прошлых версий. В третьей версии Андроида появилась также альтернатива и контекстному меню - <a href="http://developer.android.com/reference/android/view/ActionMode.html" target="_blank">ActionMode</a>. Посмотрим, как его можно использовать.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1131_ActionMode<br><b>Build Target</b>: Android 4.1 <br><b>Application name</b>: ActionMode<br><b>Package name</b>: ru.startandroid.develop.p1131actionmode<br><b>Create Activity</b>: MainActivity</p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="action_mode"&gt;Action Mode&lt;/string&gt;
+&lt;string name="item1"&gt;Item1&lt;/string&gt;
+&lt;string name="item2"&gt;Item2&lt;/string&gt;
+&lt;string name="item3"&gt;Item3&lt;/string&gt;
+&lt;string name="item4"&gt;Item4&lt;/string&gt;</code></pre>
+<p><b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;Button
+		android:id="@+id/btnActionMode"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:onClick="onClick"
+		android:text="@string/action_mode"&gt;
+	&lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Одна кнопка, по нажатию на которую будем показывать/скрывать ActionMode</p>
+<p>Пункты меню, <b>res/menu/context.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;menu
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;item
+		android:id="@+id/item1"
+		android:showAsAction="always"
+		android:title="@string/item1"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item2"
+		android:icon="@android:drawable/ic_menu_call"
+		android:showAsAction="ifRoom"
+		android:title="@string/item2"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item3"
+		android:icon="@android:drawable/ic_menu_info_details"
+		android:showAsAction="ifRoom|withText"
+		android:title="@string/item3"&gt;
+	&lt;/item&gt;
+	&lt;item
+		android:id="@+id/item4"
+		android:icon="@android:drawable/ic_menu_view"
+		android:showAsAction="never"
+		android:title="@string/item4"&gt;
+	&lt;/item&gt;
+&lt;/menu&gt;</code></pre>
+<p>Те же пункты, что мы использовали для примеров с ActionBar. Их будет отображать ActionMode.</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1131actionmode;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.ActionMode;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  ActionMode actionMode;
+  final String LOG_TAG = "myLogs";
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+  }
+
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+
+  public void onClick(View v) {
+    if (actionMode == null)
+      actionMode = startActionMode(callback);
+    else
+      actionMode.finish();
+  }
+
+  private ActionMode.Callback callback = new ActionMode.Callback() {
+
+    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+      mode.getMenuInflater().inflate(R.menu.context, menu);
+      return true;
+    }
+
+    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+      return false;
+    }
+
+    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+      Log.d(LOG_TAG, "item " + item.getTitle());
+      return false;
+    }
+
+    public void onDestroyActionMode(ActionMode mode) {
+      Log.d(LOG_TAG, "destroy");
+      actionMode = null;
+    }
+
+  };
+
+}</code></pre>
+<p>Чтобы вызвать ActionMode, используется метод <a href="http://developer.android.com/reference/android/app/Activity.html#startActionMode(android.view.ActionMode.Callback)" target="_blank">startActionMode</a>. На вход он берет объект callback, который будет обрабатывать все события, связанные с ActionMode. На выходе получаем объект ActionMode.</p>
+<p>В методе <b>onClick</b> мы проверяем, если ActionMode еще не был вызван, то вызываем. Иначе – убираем его с помощью его же метода <a href="http://developer.android.com/reference/android/view/ActionMode.html#finish()" target="_blank">finish</a>.</p>
+<p>Объект <b>callback</b> реализует интерфейс <a href="http://developer.android.com/reference/android/view/ActionMode.Callback.html" target="_blank">ActionMode.Callback</a>. Его методы:</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.Callback.html#onCreateActionMode(android.view.ActionMode, android.view.Menu)" target="_blank">onCreateActionMode</a> – вызывается при создании ActionMode. Возвращаем true, если ActionMode можно создавать. Здесь мы наполняем ActionMode пунктами меню (через объект Menu).</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.Callback.html#onPrepareActionMode(android.view.ActionMode, android.view.Menu)" target="_blank">onPrepareActionMode</a> – вызывается при обновлении ActionMode. Например, в случае вызова метода <a href="http://developer.android.com/reference/android/view/ActionMode.html#invalidate()" target="_blank">invalidate</a>. Возвращаем true, если ActionMode можно обновить.</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.Callback.html#onActionItemClicked(android.view.ActionMode, android.view.MenuItem)" target="_blank">onActionItemClicked</a> – обработка нажатия на какой-либо пункт ActionMode. Будем выводить в лог текст нажатого пункта.</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.Callback.html#onDestroyActionMode(android.view.ActionMode)" target="_blank">onDestroyActionMode</a> – вызывается при закрытии ActionMode. Пишем лог и обнуляем переменную actionMode, чтобы в onClick (см.выше) у нас работала проверка (actionMode == null).</p>
+<p>Все сохраняем, запускаем. Я включу горизонтальную ориентацию, чтобы лучше были видны пункты ActionMode.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_112_0.png" alt="" width="480" height="320"></p>
+<p>Жмем кнопку, появляется ActionMode</p>
+<p><img style="border: 1px solid black;" src="images/lesson_112_1.png" alt="" width="480" height="320"></p>
+<p>Располагается он там же, где и ActionBar. Да и выглядит также, только слева у него кнопка закрытия. Пункты меню видны так, как мы описывали в файле context.xml.</p>
+<p>Нажмем, например, на Item1, смотрим лог.</p>
+<p><i>item Item1</i></p>
+<p>Сработал метод <b>onActionItemClicked</b>.</p>
+<p>Закрыть ActionMode мы теперь можем снова нажав кнопку <b>Action Mode</b>, либо нажав на <b>галку </b>в левой части, либо нажав кнопку <b>Назад</b>. Во всех этих случаях будет выполнен метод <b>onDestroyActionMode</b>. Опробуйте эти способы и смотрите логи, там должна появиться строка:</p>
+<p><i>destroy</i></p>
+<p>Мы рассмотрели способ ручного вызова ActionMode, обрабатывая нажатие на кнопку. Т.к. ActionMode позиционируется как замена контекстному меню, то вполне можно повесить его вызов на долгое нажатие на какой-либо элемент экрана. Чтобы обработать долгое нажатие надо вызывать для элемента метод <a href="http://developer.android.com/reference/android/view/View.html#setOnLongClickListener(android.view.View.OnLongClickListener)" target="_blank">setOnLongClickListener</a>, передать туда объект, реализующий интерфейс <a href="http://developer.android.com/reference/android/view/View.OnLongClickListener.html" target="_blank">OnLongClickListener</a>, и в методе <a href="http://developer.android.com/reference/android/view/View.OnLongClickListener.html#onLongClick(android.view.View)" target="_blank">onLongClick</a> этого объекта написать вызов ActionMode.</p>
+<p>Для некоторых элементов вызов ActionMode по долгому нажатию уже реализован. Это наследники класса AbsListView, например GridView и ListView. Попробуем на ListView, как это работает.</p>
+<p>Меняем <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/LinearLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;ListView
+		android:id="@+id/lvActionMode"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"&gt;
+	&lt;/ListView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране будет только список.</p>
+<p>Меняем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1131actionmode;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.ActionMode;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.AbsListView.MultiChoiceModeListener;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  ActionMode actionMode;
+  ListView lvActionMode;
+  final String LOG_TAG = "myLogs";
+
+  String[] data = { "one", "two", "three", "four", "five" };
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+        android.R.layout.simple_list_item_activated_1, data);
+    lvActionMode = (ListView) findViewById(R.id.lvActionMode);
+    lvActionMode.setAdapter(adapter);
+    lvActionMode.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+    lvActionMode.setMultiChoiceModeListener(new MultiChoiceModeListener() {
+
+      public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+        mode.getMenuInflater().inflate(R.menu.context, menu);
+        return true;
+      }
+
+      public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+        return false;
+      }
+
+      public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+        mode.finish();
+        return false;
+      }
+
+      public void onDestroyActionMode(ActionMode mode) {
+      }
+
+      public void onItemCheckedStateChanged(ActionMode mode,
+          int position, long id, boolean checked) {
+        Log.d(LOG_TAG, "position = " + position + ", checked = "
+            + checked);
+      }
+    });
+
+  }
+
+  public boolean onCreateOptionsMenu(Menu menu) {
+    getMenuInflater().inflate(R.menu.main, menu);
+    return true;
+  }
+
+}</code></pre>
+<p>В <b>onCreate </b>мы создаем адаптер и присваиваем его списку. Далее для списка мы включаем режим выбора (Урок 43) <a href="http://developer.android.com/reference/android/widget/AbsListView.html#CHOICE_MODE_MULTIPLE_MODAL" target="_blank">CHOICE_MODE_MULTIPLE_MODAL</a> (появившийся в API Level 11) и устанавливаем объект обработчик, реализующий <a href="http://developer.android.com/reference/android/widget/AbsListView.MultiChoiceModeListener.html" target="_blank">AbsListView.MultiChoiceModeListener</a>. Методы здесь все те же, что и ранее нами рассмотренные в ActionMode.Callback, плюс добавляется один – <a href="http://developer.android.com/reference/android/widget/AbsListView.MultiChoiceModeListener.html#onItemCheckedStateChanged(android.view.ActionMode, int, long, boolean)" target="_blank">onItemCheckedStateChanged</a>, в котором мы получаем инфу о выделенных пунктах списка. Т.е. этот обработчик и выделение пунктов списка отслеживает и ActionMode контролирует.</p>
+<p>В <b>onCreateActionMode</b> мы указываем, из какого файла брать пункты меню, в <b>onActionItemClicked</b> закрываем ActionMode независимо от того, какой пункт меню был выбран, а в <b>onItemCheckedStateChanged</b> просто выводим в лог инфу о выбираемых пунктах списка. Остальные методы не трогаем, сейчас они не нужны.</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_112_2.png" alt="" width="480" height="320"></p>
+<p>Долгое нажатие на какой-либо пункт списка вызовет ActionMode</p>
+<p><img style="border: 1px solid black;" src="images/lesson_112_3.png" alt="" width="480" height="320"></p>
+<p>А в логах появится инфа о выбранном пункте:</p>
+<p><i>position = 2, checked = true</i></p>
+<p>Теперь мы можем дальше простыми нажатиями выбирать и «развыбирать» пункты списка</p>
+<p><img style="border: 1px solid black;" src="images/lesson_112_4.png" alt="" width="480" height="320"></p>
+<p>и после этого нажать на какой-либо пункт ActionMode для операции над группой выделенных пунктов. Получить список выбранных пунктов можно так же, как в Уроке 43 для множественного выбора.</p>
+<p>Как нам теперь закрыть ActionMode?</p>
+<p>- кнопка отмены (слева)</p>
+<p>- кнопка Назад</p>
+<p>- любой пункт в ActionMode, т.к. мы повесили вызов метода finish в onActionItemClicked</p>
+<p>При закрытии ActionMode «развыделятся» и все выделенные пункты.</p>
+<p>Еще, как вариант закрытия ActionMode, – это не оставить ни одного выделенного пункта. Если в процессе выделения пунктов не останется ни одного выделенного, то ActionMode закроется.</p>
+<p>Для списка в режиме CHOICE_MODE_MULTIPLE_MODAL есть еще один способ, кроме долгого нажатия на пункт, вызвать ActionMode. Это метод <a href="http://developer.android.com/reference/android/widget/AbsListView.html#setItemChecked(int, boolean)" target="_blank">setItemChecked</a>. Если выделить этим методом какой-либо пункт, то ActionMode появится.</p>
+<p>У ActionMode, как и у ActionBar есть методы:</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.html#setTitle(java.lang.CharSequence)" target="_blank">setTitle</a> - установить свой заголовок</p>
+<p><a href="http://developer.android.com/reference/android/view/ActionMode.html#setTitle(java.lang.CharSequence)" target="_blank">setSubtitle</a> - установить свой подзаголовок </p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

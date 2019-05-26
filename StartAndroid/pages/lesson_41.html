@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 41. Используем LayoutInflater для создания списка</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- делаем свой вариант списка</p>
+<p>На прошлом уроке мы узнали, зачем нужен класс <b>LayoutInflater </b>и сделали небольшой пример, на котором подробно рассмотрели метод <b>inflate </b>и его параметры. Для закрепления темы сделаем еще один, чуть более сложный пример.</p>
+<p>Мы сделаем свой аналог <b>списка</b>. Для начала придумаем данные. Пусть это снова будет <b>штатное расписание</b> с именами работников, должностями и зряплатой ) Т.е. каждый пункт нашего списка будет содержать три текстовых не редактируемых поля - <b>name</b>, <b>position</b>, <b>salary</b>. А пункты мы разместим в виде вертикального списка.</p>
+<p>Для реализации нам понадобятся <b>два layout</b>-файла: <br><b>main.xml</b> - основной экран для Activity, контейнер для пунктов списка <br><b>item.xml</b> - экран с FrameLayout и тремя текстовыми полями в нем. Это будет пункт списка.</p>
+<p>Приложение будет параллельно перебирать <b>три массива данных</b>, <b>создавать </b>для каждой тройки <b>View</b>-элемент из layout-файла <b>item.xml</b>, <b>заполнять </b>его данными и <b>добавлять </b>в вертикальный <b>LinearLayout </b>в <b>main.xml</b>.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0411_LayoutInflaterList<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: LayoutInflaterList<br><b>Package name</b>: ru.startandroid.develop.p0411layoutinflaterlist<br><b>Create Activity</b>: MainActivity</p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Staff list"
+        android:layout_gravity="center_horizontal"&gt;
+    &lt;/TextView&gt;
+    &lt;ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scroll"&gt;
+        &lt;LinearLayout
+            android:id="@+id/linLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"&gt;
+        &lt;/LinearLayout&gt;
+    &lt;/ScrollView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>ScrollView</b> обеспечит нам <b>прокрутку</b> списка, если все пункты не влезут в экран. А в нем <b>LinearLayout</b>, в который мы будем добавлять элементы.</p>
+<p> Экран <b>item.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    android:layout_marginTop="10dp"&gt;
+    &lt;TextView
+        android:id="@+id/tvName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        android:layout_gravity="top|center_horizontal"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvPosition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        android:layout_gravity="bottom|left"
+        android:layout_marginLeft="5dp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvSalary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="5dp"&gt;
+    &lt;/TextView&gt;
+&lt;/FrameLayout&gt; </code></pre>
+<p><b>FrameLayout</b>, и три <b>TextView</b> в нем.</p>
+<p>Кодим реализацию. <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p0411layoutinflaterlist;
+
+import android.app.Activity;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  String[] name = { "Иван", "Марья", "Петр", "Антон", "Даша", "Борис",
+      "Костя", "Игорь" };
+  String[] position = { "Программер", "Бухгалтер", "Программер",
+      "Программер", "Бухгалтер", "Директор", "Программер", "Охранник" };
+  int salary[] = { 13000, 10000, 13000, 13000, 10000, 15000, 13000, 8000 };
+
+  int[] colors = new int[2];
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    colors[0] = Color.parseColor("#559966CC");
+    colors[1] = Color.parseColor("#55336699");
+
+    LinearLayout linLayout = (LinearLayout) findViewById(R.id.linLayout);
+
+    LayoutInflater ltInflater = getLayoutInflater();
+
+    for (int i = 0; i &lt; name.length; i++) {
+      Log.d("myLogs", "i = " + i);
+      View item = ltInflater.inflate(R.layout.item, linLayout, false);
+      TextView tvName = (TextView) item.findViewById(R.id.tvName);
+      tvName.setText(name[i]);
+      TextView tvPosition = (TextView) item.findViewById(R.id.tvPosition);
+      tvPosition.setText("Должность: " + position[i]);
+      TextView tvSalary = (TextView) item.findViewById(R.id.tvSalary);
+      tvSalary.setText("Оклад: " + String.valueOf(salary[i]));
+      item.getLayoutParams().width = LayoutParams.MATCH_PARENT;
+      item.setBackgroundColor(colors[i % 2]);
+      linLayout.addView(item);
+    }
+  }
+} </code></pre>
+<p>Не так уж много нужно кода, чтобы сделать несложный список. Мы запускаем <b>цикл</b> по кол-ву элементов в массивах данных. В каждой итерации <b>создаем View</b>-элемент item из layout-файла <b>item.xml</b>. В нашем случае <b>item</b> - это <b>FrameLayout</b>, который содержит три <b>TextView</b>. Мы их находим в <b>созданном item</b> и <b>заполняем данными</b> из массивов.</p>
+<p>В методе <b>inflate</b> мы указали <b>root</b> - <b>linLayout</b>, чтобы получить от него <b>LayoutParams</b> и далее использовать для настройки ширины. Также для наглядности раскрашиваем пункты методом <a href="http://developer.android.com/reference/android/view/View.html#setBackgroundColor(int)" target="_blank">setBackgroundColor</a>.</p>
+<p>Обратите внимание - третий параметр <b>inflate </b>мы указали <b>false</b>. Т.е. мы <b>не стали сразу добавлять</b> создаваемый View-элемент к linLayout, а делаем это в конце кода методом <b>addView</b>. Этому есть объяснение. Если бы мы указали true - то метод добавил бы item к linLayout и вернул бы нам <b>linLayout</b>, общий для всех пунктов списка. Через <b>linLayout</b> заполнять <b>TextView </b>необходимым нам текстом было бы затруднительно. Поэтому мы получаем пункт <b>item </b>(FrameLayout), заполняем его <b>TextView </b>данными и только потом помещаем к остальным пунктам в <b>linLayout</b> методом addView.</p>
+<p>Все сохраним и запустим: </p>
+<p><img src="images/lesson_40_0.png" alt="" width="640" height="454"></p>
+<p>Список удался и работает прокрутка. </p>
+<p>Урок получился короткий, но полезный. На всякий случай хочу заметить, что это еще не классический Android-список называемый List. Но этот пример значительно облегчит понимание списка. Т.к. принцип схож. Для построения List мы также должны будем предоставлять массив данных и layout-файл для пунктов. Этим и займемся на следующем уроке.</p>
+</body>
+</html>
+
+            </div>
+     </div>   
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

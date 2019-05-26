@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 144. Рисование. Matrix-преобразования</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем Matrix для геометрических преобразований фигур</p>
+<p>Рисовать фигуры мы умеем, но бывает необходимость эти фигуры перемещать по экрану, поворачивать и менять их размеры. Тут нам поможет <a href="http://developer.android.com/reference/android/graphics/Matrix.html" target="_blank">Matrix</a>. Будем называть этот объект матрицей. Тем более, что это действительно 3х3 матрица из алгебры.</p>
+<p>Матрица умеет выполнять четыре основные операции над фигурой:</p>
+<p><b>translate</b> – перемещение</p>
+<p><b>scale</b> – изменение размера</p>
+<p><b>rotate</b> – поворот</p>
+<p><b>skew</b> - наклон</p>
+<p>Рассмотрим эти возможности на примерах. Начнем с перемещения.</p>
+<h3>Перемещение</h3>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1441_MatrixTransform<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: MatrixTransform<br/> <b>Package name</b>: ru.startandroid.develop.p1441matrixtransform<br/> <b>Create Activity</b>: MainActivity</p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1441matrixtransform;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint p;
+    Path path;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      path = new Path();
+      matrix = new Matrix();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // создаем крест в path
+      path.reset();
+      path.addRect(300, 150, 450, 200, Path.Direction.CW);
+      path.addRect(350, 100, 400, 250, Path.Direction.CW);
+
+      // рисуем path зеленым
+      p.setColor(Color.GREEN);
+      canvas.drawPath(path, p);
+
+      // настраиваем матрицу на перемещение на 300 вправо и 200 вниз
+      matrix.reset();
+      matrix.setTranslate(300, 200);
+      
+      // применяем матрицу к path
+      path.transform(matrix);
+
+      // рисуем path синим
+      p.setColor(Color.BLUE);
+      canvas.drawPath(path, p);
+
+    }
+
+  }
+
+}</code></pre>
+<p>Результат:</p>
+<p><script data-pagespeed-no-defer>(function(){for(var g="function"==typeof Object.defineProperties?Object.defineProperty:function(b,c,a){if(a.get||a.set)throw new TypeError("ES3 does not support getters and setters.");b!=Array.prototype&&b!=Object.prototype&&(b[c]=a.value)},h="undefined"!=typeof window&&window===this?this:"undefined"!=typeof global&&null!=global?global:this,k=["String","prototype","repeat"],l=0;l<k.length-1;l++){var m=k[l];m in h||(h[m]={});h=h[m]}var n=k[k.length-1],p=h[n],q=p?p:function(b){var c;if(null==this)throw new TypeError("The 'this' value for String.prototype.repeat must not be null or undefined");c=this+"";if(0>b||1342177279<b)throw new RangeError("Invalid count value");b|=0;for(var a="";b;)if(b&1&&(a+=c),b>>>=1)c+=c;return a};q!=p&&null!=q&&g(h,n,{configurable:!0,writable:!0,value:q});var t=this;function u(b,c){var a=b.split("."),d=t;a[0]in d||!d.execScript||d.execScript("var "+a[0]);for(var e;a.length&&(e=a.shift());)a.length||void 0===c?d[e]?d=d[e]:d=d[e]={}:d[e]=c};function v(b){var c=b.length;if(0<c){for(var a=Array(c),d=0;d<c;d++)a[d]=b[d];return a}return[]};function w(b){var c=window;if(c.addEventListener)c.addEventListener("load",b,!1);else if(c.attachEvent)c.attachEvent("onload",b);else{var a=c.onload;c.onload=function(){b.call(this);a&&a.call(this)}}};var x;function y(b,c,a,d,e){this.h=b;this.j=c;this.l=a;this.f=e;this.g={height:window.innerHeight||document.documentElement.clientHeight||document.body.clientHeight,width:window.innerWidth||document.documentElement.clientWidth||document.body.clientWidth};this.i=d;this.b={};this.a=[];this.c={}}function z(b,c){var a,d,e=c.getAttribute("data-pagespeed-url-hash");if(a=e&&!(e in b.c))if(0>=c.offsetWidth&&0>=c.offsetHeight)a=!1;else{d=c.getBoundingClientRect();var f=document.body;a=d.top+("pageYOffset"in window?window.pageYOffset:(document.documentElement||f.parentNode||f).scrollTop);d=d.left+("pageXOffset"in window?window.pageXOffset:(document.documentElement||f.parentNode||f).scrollLeft);f=a.toString()+","+d;b.b.hasOwnProperty(f)?a=!1:(b.b[f]=!0,a=a<=b.g.height&&d<=b.g.width)}a&&(b.a.push(e),b.c[e]=!0)}y.prototype.checkImageForCriticality=function(b){b.getBoundingClientRect&&z(this,b)};u("pagespeed.CriticalImages.checkImageForCriticality",function(b){x.checkImageForCriticality(b)});u("pagespeed.CriticalImages.checkCriticalImages",function(){A(x)});function A(b){b.b={};for(var c=["IMG","INPUT"],a=[],d=0;d<c.length;++d)a=a.concat(v(document.getElementsByTagName(c[d])));if(a.length&&a[0].getBoundingClientRect){for(d=0;c=a[d];++d)z(b,c);a="oh="+b.l;b.f&&(a+="&n="+b.f);if(c=!!b.a.length)for(a+="&ci="+encodeURIComponent(b.a[0]),d=1;d<b.a.length;++d){var e=","+encodeURIComponent(b.a[d]);131072>=a.length+e.length&&(a+=e)}b.i&&(e="&rd="+encodeURIComponent(JSON.stringify(B())),131072>=a.length+e.length&&(a+=e),c=!0);C=a;if(c){d=b.h;b=b.j;var f;if(window.XMLHttpRequest)f=new XMLHttpRequest;else if(window.ActiveXObject)try{f=new ActiveXObject("Msxml2.XMLHTTP")}catch(r){try{f=new ActiveXObject("Microsoft.XMLHTTP")}catch(D){}}f&&(f.open("POST",d+(-1==d.indexOf("?")?"?":"&")+"url="+encodeURIComponent(b)),f.setRequestHeader("Content-Type","application/x-www-form-urlencoded"),f.send(a))}}}function B(){var b={},c;c=document.getElementsByTagName("IMG");if(!c.length)return{};var a=c[0];if(!("naturalWidth"in a&&"naturalHeight"in a))return{};for(var d=0;a=c[d];++d){var e=a.getAttribute("data-pagespeed-url-hash");e&&(!(e in b)&&0<a.width&&0<a.height&&0<a.naturalWidth&&0<a.naturalHeight||e in b&&a.width>=b[e].o&&a.height>=b[e].m)&&(b[e]={rw:a.width,rh:a.height,ow:a.naturalWidth,oh:a.naturalHeight})}return b}var C="";u("pagespeed.CriticalImages.getBeaconData",function(){return C});u("pagespeed.CriticalImages.Run",function(b,c,a,d,e,f){var r=new y(b,c,a,e,f);x=r;d&&w(function(){window.setTimeout(function(){A(r)},0)})});})();pagespeed.CriticalImages.Run('/ngx_pagespeed_beacon','https://startandroid.ru/ru/uroki/vse-uroki-spiskom/317-urok-144-risovanie-matrix-preobrazovanija.html','idYwwreXdc',true,false,'u5wbNzoUp1Q');</script><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="4016128473" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>В конструкторе DrawView создаем объекты matrix и path.</p>
+<p>В onDraw очищаем path, добавляем к нему пару прямоугольников, чтобы получился крест, и выводим на экран зеленым цветом. Далее очищаем матрицу методом <a href="http://developer.android.com/reference/android/graphics/Matrix.html#reset()" target="_blank">reset</a> и настраиваем смещение на 300 вправо и 200 вниз методом <a href="http://developer.android.com/reference/android/graphics/Matrix.html#setTranslate(float, float)" target="_blank">setTranslate</a>. Матрица настроена и готова к выполнению преобразований.</p>
+<p>Методом <a href="http://developer.android.com/reference/android/graphics/Path.html#transform(android.graphics.Matrix)" target="_blank">transform</a> объекта path мы выполняем преобразование этого объекта согласно переданной в этот метод матрице. Т.е. фигура path должна сместиться вправо на 300 и вниз на 200.</p>
+<p>Включаем синий цвет и выводим измененную фигуру path на экран. На скриншоте видно, что синяя фигура смещена так, как мы и планировали.</p>
+<p>Вот и весь алгоритм использования матрицы. Т.е. сначала мы матрицу настраиваем, а потом применяем к какой-либо фигуре и фигура трансформируется согласно настройкам этой матрицы.</p>
+<h3>Изменение размера</h3>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    Path path;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      path = new Path();
+      matrix = new Matrix();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // создаем крест в path
+      path.reset();
+      path.addRect(300,150,450,200, Path.Direction.CW);
+      path.addRect(350,100,400,250, Path.Direction.CW);
+      
+      // рисуем path зеленым
+      p.setColor(Color.GREEN);
+      canvas.drawPath(path, p);
+      
+      // настраиваем матрицу на изменение размера:
+      // в 2 раза по горизонтали
+      // в 2,5 по вертикали
+      // относительно точки (375, 100)
+      matrix.reset();      
+      matrix.setScale(2f, 2.5f, 375, 100);
+      
+      // применяем матрицу к path
+      path.transform(matrix);
+      
+      // рисуем path синим
+      p.setColor(Color.BLUE);
+      canvas.drawPath(path, p);
+
+      // рисуем точку относительно которой было выполнено преобразование
+      p.setColor(Color.BLACK);
+      canvas.drawCircle(375, 100, 5, p);
+      
+    }
+    
+  }</code></pre>
+<p>Рассмотрим тот же path, что и в первом примере. Но теперь для настройки матрицы используем метод <a href="http://developer.android.com/reference/android/graphics/Matrix.html#setScale(float, float, float, float)" target="_blank">setScale</a>. На вход ему передаем коэффициенты изменения размера в ширину (2), в высоту (2.5) и координаты точки (375, 100), относительно которой будет выполнено изменение размера.</p>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3940912460" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что крест стал в два раза шире и в два с половиной раза выше. Точку, относительно которой было выполнено изменение размера, мы отметили черным кругом.</p>
+<p>Существует также вариант метода <a href="http://developer.android.com/reference/android/graphics/Matrix.html#setScale(float, float)" target="_blank">setScale</a>, который позволяет не указывать точку. В этом случае используется точка (0,0).</p>
+<h3>Поворот</h3>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    Path path;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      path = new Path();
+      matrix = new Matrix();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // создаем крест в path
+      path.reset();
+      path.addRect(300,150,450,200, Path.Direction.CW);
+      path.addRect(350,100,400,250, Path.Direction.CW);
+      path.addCircle(375, 125, 5, Path.Direction.CW);
+
+      // рисуем path зеленым
+      p.setColor(Color.GREEN);
+      canvas.drawPath(path, p);
+
+      // настраиваем матрицу на поворот на 120 градусов
+      // относительно точки (600,400)
+      matrix.reset();
+      matrix.setRotate(120, 600, 400);
+      
+      // применяем матрицу к path
+      path.transform(matrix);
+      
+      // рисуем path синим
+      p.setColor(Color.BLUE);
+      canvas.drawPath(path, p);
+      
+      // рисуем точку, относительно которой был выполнен поворот
+      p.setColor(Color.BLACK);
+      canvas.drawCircle(600, 400, 5, p);
+    }
+    
+  }</code></pre>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3865696447" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Здесь мы в path добавляем два прямоугольника, чтобы получился крест, и рисуем мелкий круг в верхней части креста. Выводим path на экран зеленым цветом.</p>
+<p>Далее настраиваем матрицу методом <a href="http://developer.android.com/reference/android/graphics/Matrix.html#setRotate(float, float, float)" target="_blank">setRotate</a>. На вход метод принимает угол (120) поворота и координаты точки (600,400), относительно которой будет выполнен поворот. Применяем матрицу к фигуре path и рисуем ее синим цветом.</p>
+<p>Черным цветом рисуем мелкий круг в точке (600,400), относительно которой был выполнен поворот. Делаем это для наглядности результата. На скриншоте видно, что фигура повернута относительно черного кружка по часовой на 120 градусов.</p>
+<p>Существует также вариант метода <a href="http://developer.android.com/reference/android/graphics/Matrix.html#setRotate(float)" target="_blank">setRotate</a>, который требует только угол, без координат. В этом случае, в качестве точки поворота будет использована точка (0,0).</p>
+<h3>Порядок операций</h3>
+<p>Методы <b>set</b>* настраивают матрицу на выполнение одной определенной трансформации. Но матрица может содержать в себе несколько трансформаций. Если возникает такая необходимость, то необходимо использовать методы <b>pre</b>* и <b>post</b>*.</p>
+<p>Методы pre* добавляют трансформацию в самое начало списка трансформаций матрицы. Методы post* - в самый конец.</p>
+<p>Причем это может сыграть очень существенную роль в результате выполнения преобразований. Тут та самая ситуация, когда от перемены мест слагаемых сумма очень даже может поменяться.</p>
+<p>Рассмотрим пример. Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+    
+    Paint p;
+    Path path;
+    Path pathDst;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      path = new Path();
+      pathDst = new Path();
+      matrix = new Matrix();
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+      
+      p.setColor(Color.BLACK);
+      canvas.drawCircle(400, 200, 10, p);
+
+      // прямоугольник
+      path.reset();
+      path.addRect(300,100,500,300, Path.Direction.CW);
+      canvas.drawPath(path, p);
+      
+      // перемещение после поворота
+      matrix.reset();
+      matrix.setRotate(45, 400, 200);
+      matrix.postTranslate(500, 0);
+      path.transform(matrix, pathDst);
+      p.setColor(Color.GREEN);
+      canvas.drawPath(pathDst, p);
+      
+      // перемещение до поворота
+      matrix.reset();
+      matrix.setRotate(45, 400, 200);
+      matrix.preTranslate(500, 0);
+      path.transform(matrix, pathDst);
+      p.setColor(Color.RED);
+      canvas.drawPath(pathDst, p);      
+    }
+  }</code></pre>
+<p>Создаем path из одного прямоугольника и рисуем его черным цветом.</p>
+<p>Настраиваем матрицу на поворот на 45 градусов относительно точки (400,200), а затем методом <a href="http://developer.android.com/reference/android/graphics/Matrix.html#postTranslate(float, float)" target="_blank">postTranslate</a> добавляем к матрице трансформу перемещения на 500 направо. Применяем результат к path методом <a href="http://developer.android.com/reference/android/graphics/Path.html#transform(android.graphics.Matrix, android.graphics.Path)" target="_blank">transform</a>, который полученный результат поместит в объект pathDst, а path оставит прежним. Это необходимо, т.к. нам дальше еще понадобится оригинальный path.  Выводим pathDst зеленым цветом.</p>
+<p>Далее делаем все аналогично, только используем метод <a href="http://developer.android.com/reference/android/graphics/Matrix.html#preTranslate(float, float)" target="_blank">preTranslate</a>, который добавит трансформу перемещения в начало матрицы. И результат выводим красным цветом.</p>
+<p>Для наглядности выведем мелкий круг в точке (400,200), которая у нас являлась точкой поворота в методах setRotate. Эта точка, кстати, является серединой первоначального квадрата.</p>
+<p>Смотрим результат:</p>
+<p><img src="/images/stories/lessons/L0144/640x400xL0144_040.png.pagespeed.ic.yvY1Z019HF.webp" alt="" width="640" height="400" data-pagespeed-url-hash="3790480434" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Как был получен зеленый квадрат? Матрица взяла черный квадрат, повернула (setRotate) его вокруг его же центра на 45 градусов и сместила (postTranslate) вправо на 500. Все примерно так и выглядит на скриншоте.</p>
+<p>А вот красный квадрат уехал. Разбираемся. Мы также, как и в случае с зеленым квадратом, сначала попросили матрицу повернуть (setRotate) черный квадрат на 45 относительно своего центра. А вот трансформацию смещения мы добавили методом preTranslate. Т.е. она пошла в начало матрицы и выполнилась до поворота. Т.е. красный квадрат сначала был смещен на 500 вправо, а потом повернут относительно точки (400,200), которая уже вовсе не являлась его центром. И поэтому квадрат уехал вниз по часовой стрелке на 45 градусов относительно точки (400,200).</p>
+<p>Этот простой пример позволяет увидеть насколько важно соблюдать порядок трансформаций в матрице.  Операции были одни и те же, а разный порядок дал разный результат.</p>
+<h3>Наклон</h3>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    Path path;
+    Path pathDst;
+    Matrix matrix;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+
+      path = new Path();
+      pathDst = new Path();
+      path.addRect(100, 100, 200, 200, Path.Direction.CW);
+
+      matrix = new Matrix();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      p.setColor(Color.BLACK);
+      canvas.drawPath(path, p);
+
+      p.setColor(Color.GREEN);
+
+      // перемещение на 200 вправо
+      // и наклон по вертикали на 0.5
+      // точка наклона - слева
+      matrix.reset();
+      matrix.setTranslate(200, 0);
+      matrix.postSkew(0.0f, 0.5f, 300, 100);
+      path.transform(matrix, pathDst);
+      canvas.drawPath(pathDst, p);
+      canvas.drawCircle(300, 100, 5, p);
+
+      // перемещение на 400 вправо
+      // и наклон по вертикали на 0.5
+      // точка наклона - справа
+      matrix.reset();
+      matrix.setTranslate(400, 0);
+      matrix.postSkew(0.0f, 0.5f, 600, 100);
+      path.transform(matrix, pathDst);
+      canvas.drawPath(pathDst, p);
+      canvas.drawCircle(600, 100, 5, p);
+
+      p.setColor(Color.BLUE);
+
+      // перемещение на 150 вниз
+      // и наклон по горизонтали на 0.5
+      // точка наклона - сверху
+      matrix.reset();
+      matrix.setTranslate(0, 150);
+      matrix.postSkew(0.5f, 0.0f, 100, 250);
+      path.transform(matrix, pathDst);
+      canvas.drawPath(pathDst, p);
+      canvas.drawCircle(100, 250, 5, p);
+
+      // перемещение на 300 вниз
+      // и наклон по горизонтали на 0.5
+      // точка наклона - снизу
+      matrix.reset();
+      matrix.setTranslate(0, 300);
+      matrix.postSkew(0.5f, 0.0f, 100, 500);
+      path.transform(matrix, pathDst);
+      canvas.drawPath(pathDst, p);
+      canvas.drawCircle(100, 500, 5, p);
+    }
+  }</code></pre>
+<p>Результат:</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3715264421" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>path содержит один прямоугольник. Выводим его на экран черным цветом.</p>
+<p>Далее настраиваем матрицу на смещение на 200 вправо. И методом <a href="http://developer.android.com/reference/android/graphics/Matrix.html#postSkew(float, float, float, float)" target="_blank">postSkew</a> настраиваем наклон. На вход ему передаем значения наклона по оси X (0), наклона по оси Y (0.5) и координаты точки, относительно которой будет выполнен наклон (300,100). Применяем матрицу к path и рисуем результат. Также для наглядности рисуем круг в точке, относительно которой был наклон.</p>
+<p>На скриншоте это левый зеленый наклоненный квадрат. Он наклонен по оси Y с коэффициентом 0.5. Видим, что его правая (относительно точки наклона) часть ушла вниз.</p>
+<p>Аналогично рисуем второй зеленый квадрат, но точку наклона используем другую. Тут уже видно, что при том же наклоне (0.5 по оси Y) левая часть уходит вверх.</p>
+<p>Далее аналогично выводим два синих квадрата, но у них уже наклон идет по оси X. Видно, что нижняя часть при этом наклоняется вправо, а верхняя влево.</p>
+<p>Несколько дополнений к наклону.</p>
+<p>Если задавать отрицательные значения наклона по осям, то направления наклона поменяются.</p>
+<p>Разумеется, можно сразу задавать наклон по обоим осям. Просто в этом примере для упрощения мы наклоняли каждый квадрат только по какой-то одной оси.</p>
+<p>Точка наклона может быть любой, она не должна принадлежать фигуре. Есть аналог метода setSkew, который принимает только коэффициенты наклона, а в качестве точки использует (0,0).</p>
+<p>Советую вам поэкспериментировать и позадавать различные значения наклонов по осям, если еще не до конца понятен механизм наклона.</p>
+<h3>Map методы</h3>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#mapRadius(float)" target="_blank">mapRadius</a> – даете на вход радиус (если собираетесь трансформировать круг), а метод вам вернет значение радиуса после трансформаци</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#mapPoints(float[], float[])" target="_blank">mapPoints</a> – даете массив точек, матрица выполняет над ними свои операции преобразования и возвращает вам в результате новый массив точек</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#mapVectors(float[], float[])" target="_blank">mapVectors</a> – то же, что и mapPoints, но преобразования перемещения выполнены не будут</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#mapRect(android.graphics.RectF, android.graphics.RectF)" target="_blank">mapRect</a> – возьмет на вход прямоугольник, выполнит для него преобразование и вернет прямоугольник, составляющий границы получившейся фигуры. Рассмотрим этот метод на примере.</p>
+<p>Перепишем класс <b>DrawView</b>:</p>
+<pre><code class="java">class DrawView extends View {
+
+    Paint p;
+    Matrix matrix;
+    RectF rectf;
+    RectF rectfDst;
+    Path path;
+
+    public DrawView(Context context) {
+      super(context);
+      p = new Paint();
+      p.setStrokeWidth(3);
+      p.setStyle(Paint.Style.STROKE);
+      rectf = new RectF(100, 100, 200, 200);
+      rectfDst = new RectF();
+      matrix = new Matrix();
+      path = new Path();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawARGB(80, 102, 204, 255);
+
+      // прямоугольник
+      path.reset();
+      path.addRect(rectf, Path.Direction.CW);
+      p.setColor(Color.BLACK);
+      canvas.drawPath(path, p);
+
+      // поворот, размер, пермещение
+      matrix.setRotate(45, 150, 150);
+      matrix.postScale(1.2f, 0.8f, 150, 150);
+      matrix.postTranslate(200, 0);
+      path.transform(matrix);
+      
+      // итоговая фигура зеленым цветом
+      p.setColor(Color.GREEN);
+      canvas.drawPath(path, p);
+
+      // границы, полученные от изначального прямоугольника 
+      matrix.mapRect(rectfDst, rectf);
+      p.setColor(Color.BLUE);
+      canvas.drawRect(rectfDst, p);
+
+    }
+  }</code></pre>
+<p>К path добавляем квадрат и выводим черным цветом.</p>
+<p>Настраиваем преобразования матрицы. Это поворот на 45 градусов относительно центра квадрата (150,150). Затем растянем его по горизонтали на 1.2 и сожмем по вертикали на 0.8. И переместим на 200 вправо.</p>
+<p>Применяем матрицу к path и выводим результат зеленым цветом.</p>
+<p>Далее выполним метод mapRect, который возьмет прямоугольник rectf, выполнит над ним все преобразования матрицы, и в rectfDst запишет границы получившейся фигуры. Выведем эти границы синим цветом.</p>
+<p><img src="data:image/webp;base64,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" alt="" data-pagespeed-url-hash="3640048408" onload="pagespeed.CriticalImages.checkImageForCriticality(this);"/></p>
+<p>Видим, что зеленым нарисована фигура, которая получилась из прямоугольника после преобразований, а синим – границы фигуры, которые были получены из прямоугольника методом mapRect. Т.е. mapRect сообщает нам, какие границы будут у прямоугольника после преобразований.</p>
+<h3>Операции над матрицами</h3>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#set(android.graphics.Matrix)" target="_blank">set</a> – считает настройки с переданной матрицы в нашу матрицу</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#setConcat(android.graphics.Matrix, android.graphics.Matrix)" target="_blank">setConcat</a> – соберет преобразования из двух матриц в вашу матрицу</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#preConcat(android.graphics.Matrix)" target="_blank">preConcat</a> – добавит преобразования из переданной матрицы в начало вашей матрицы</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#postConcat(android.graphics.Matrix)" target="_blank">postConcat</a> – добавит преобразования из переданной матрицы в конец вашей матрицы</p>
+<p><a href="http://developer.android.com/reference/android/graphics/Matrix.html#invert(android.graphics.Matrix)" target="_blank"> invert</a> – настроит вашу матрицу на преобразования, обратные тем, на которые настроена переданная матрица</p>
+<p>Мы рассмотрели почти все методы матрицы. Есть еще два интересных и полезных метода: setRectToRect и setPolyToPoly. Но по ним получилась целая простыня объяснений и я вынес их в следующий урок.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

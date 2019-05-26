@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 125. ViewPager</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	<body>
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+          <html>
+<body><p>В этом уроке:</p>
+<p>- разбираемся с ViewPager</p>
+<p><a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html" target="_blank">ViewPager</a> позволяет нам организовать удобный и красивый просмотр данных с возможностью перелистывания влево-вправо. Сам ViewPager отвечает за показ и прокрутку. Но ему нужен еще <a href="http://developer.android.com/reference/android/support/v4/view/PagerAdapter.html" target="_blank">PagerAdapter</a>, который отвечает за предоставление данных.</p>
+<p>PagerAdapter – это базовый абстрактный класс, для которого разработчик дописывает реализацию так, как ему надо. Существует распространенная стандартная (частичная) реализация PagerAdapter, которая работает с фрагментами – это <a href="http://developer.android.com/reference/android/support/v13/app/FragmentPagerAdapter.html" target="_blank">FragmentPagerAdapter</a>. Разработчику остается только создать фрагмент и определить кол-во страниц.</p>
+<p>Напишем простой пример и рассмотрим основные возможности ViewPager и FragmentPagerAdapter.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1251_ViewPager<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: ViewPager<br>
+<b>Package name</b>: ru.startandroid.develop.p1251viewpager<br>
+<b>Create Activity</b>: MainActivity</p>
+<p>В <b>main.xml</b> пишем:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".MainActivity"&gt;
+	&lt;android.support.v4.view.ViewPager
+		android:id="@+id/pager"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+	&lt;/android.support.v4.view.ViewPager&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Только компонент ViewPager.</p>
+<p>Создаем фрагмент.</p>
+<p>layout-файл <b>fragment.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/RelativeLayout1"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/tvPage"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:gravity="center"
+		android:textAppearance="?android:attr/textAppearanceLarge"&gt;
+	&lt;/TextView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Здесь только TextView, который будет показывать содержимое страницы.</p>
+<p>Класс <b>PageFragment.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1251viewpager;
+
+import java.util.Random;
+
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+public class PageFragment extends Fragment {
+  
+  static final String ARGUMENT_PAGE_NUMBER = "arg_page_number";
+  
+  int pageNumber;
+  int backColor;
+  
+  static PageFragment newInstance(int page) {
+    PageFragment pageFragment = new PageFragment();
+    Bundle arguments = new Bundle();
+    arguments.putInt(ARGUMENT_PAGE_NUMBER, page);
+    pageFragment.setArguments(arguments);
+    return pageFragment;
+  }
+  
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    pageNumber = getArguments().getInt(ARGUMENT_PAGE_NUMBER);
+    
+    Random rnd = new Random();
+    backColor = Color.argb(40, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+  }
+  
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment, null);
+    
+    TextView tvPage = (TextView) view.findViewById(R.id.tvPage);
+    tvPage.setText("Page " + pageNumber);
+    tvPage.setBackgroundColor(backColor);
+    
+    return view;
+  }
+}</code></pre>
+<p>Метод <b>newInstance </b>создает новый экземпляр фрагмента и записывает ему в атрибуты число, которое пришло на вход. Это число – номер страницы, которую хочет показать ViewPager. По нему фрагмент будет определять, какое содержимое создавать в фрагменте.</p>
+<p>В <b>onCreate </b>читаем номер страницы из аргументов. Далее формируем цвет из рандомных компонентов. Он будет использоваться для фона страниц, чтобы визуально отличать одну страницу от другой.</p>
+<p>В <b>onCreateView </b>создаем View, находим на нем TextView, пишем ему простой текст с номером страницы и ставим фоновый цвет.</p>
+<p>Т.е. на вход у нас идет номер страницы, а на выходе получаем фрагмент, который отображает этот номер и имеет случайный фоновый цвет.</p>
+<p>Фрагмент готов, пишем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1251viewpager;
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.Log;
+
+public class MainActivity extends FragmentActivity {
+
+  static final String TAG = "myLogs";
+  static final int PAGE_COUNT = 10;
+
+  ViewPager pager;
+  PagerAdapter pagerAdapter;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    pager = (ViewPager) findViewById(R.id.pager);
+    pagerAdapter = new MyFragmentPagerAdapter(getSupportFragmentManager());
+    pager.setAdapter(pagerAdapter);
+
+    pager.setOnPageChangeListener(new OnPageChangeListener() {
+
+      @Override
+      public void onPageSelected(int position) {
+        Log.d(TAG, "onPageSelected, position = " + position);
+      }
+
+      @Override
+      public void onPageScrolled(int position, float positionOffset,
+          int positionOffsetPixels) {
+      }
+
+      @Override
+      public void onPageScrollStateChanged(int state) {
+      }
+    });
+  }
+
+  private class MyFragmentPagerAdapter extends FragmentPagerAdapter {
+
+    public MyFragmentPagerAdapter(FragmentManager fm) {
+      super(fm);
+    }
+
+    @Override
+    public Fragment getItem(int position) {
+      return PageFragment.newInstance(position);
+    }
+
+    @Override
+    public int getCount() {
+      return PAGE_COUNT;
+    }
+
+  }
+
+}</code></pre>
+<p>В <b>onCreate </b>создаем адаптер и устанавливаем его для ViewPager. Также для ViewPager создаем <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.OnPageChangeListener.html" target="_blank">обработчик</a> событий. Он имеет три метода:</p>
+<p><a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.OnPageChangeListener.html#onPageSelected(int)" target="_blank">onPageSelected</a> – дает номер текущей отображенной страницы</p>
+<p><a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.OnPageChangeListener.html#onPageScrolled(int, float, int)" target="_blank">onPageScrolled</a> – достаточно сложно объяснить на словах. Метод дает нам представление о текущем значении скроллера при пролистывании. Рекомендую поставить там запись в лог, полистать и посмотреть, что получается.</p>
+<p><a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.OnPageChangeListener.html#onPageScrollStateChanged(int)" target="_blank">onPageScrollStateChanged</a> – сообщает нам о состоянии, в котором находится скроллер (<a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#SCROLL_STATE_IDLE" target="_blank">SCROLL_STATE_IDLE</a> – ничего не скролится, <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#SCROLL_STATE_DRAGGING" target="_blank">SCROLL_STATE_DRAGGING</a> – пользователь «тащит» страницу, <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#SCROLL_STATE_SETTLING" target="_blank">SCROLL_STATE_SETTLING</a> – скроллер долистывает страницу до конца)</p>
+<p>Класс FragmentPagerAdapter - абстрактный. Нам надо реализовать в нем пару методов. Для этого создаем класс <b>MyFragmentPagerAdapter</b>. В нем реализуем методы:</p>
+<p><a href="http://developer.android.com/reference/android/support/v13/app/FragmentPagerAdapter.html#getItem(int)" target="_blank">getItem</a> – по номеру страницы нам надо вернуть фрагмент, используем наш метод newInstance</p>
+<p><a href="http://developer.android.com/reference/android/support/v4/view/PagerAdapter.html#getCount()" target="_blank">getCount</a> – здесь мы должны возвращать кол-во страниц, используем константу</p>
+<p>Все сохраняем и запускаем приложение.</p>
+<p><img src="images/lesson_124_0.png" alt="" width="320" height="480"></p>
+<p>Полистаем страницы, в логах видим:</p>
+<p><em>onPageSelected, position = 1<br></em><em>onPageSelected, position = 2<br></em><em>onPageSelected, position = 3<br></em><em>onPageSelected, position = 4<br></em><em>onPageSelected, position = 3<br></em><em>onPageSelected, position = 2<br></em><em>onPageSelected, position = 1<br></em><em>onPageSelected, position = 0</em></p>
+<p>Срабатывает обработчик перелистываний.</p>
+<h3>PagerTitleStrip</h3>
+<p>К ViewPager можно прикрутить элемент, который будет показывать заголовки – <a href="http://developer.android.com/reference/android/support/v4/view/PagerTitleStrip.html" target="_blank">PagerTitleStrip</a>.</p>
+<p>Перепишем <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".MainActivity"&gt;
+	&lt;android.support.v4.view.ViewPager
+		android:id="@+id/pager"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+		&lt;android.support.v4.view.PagerTitleStrip
+			android:id="@+id/pagerTitleStrip"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="top"&gt;
+		&lt;/android.support.v4.view.PagerTitleStrip&gt;
+	&lt;/android.support.v4.view.ViewPager&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Помещаем PagerTitleStrip внутрь ViewPager.</p>
+<p>А в коде адаптера надо добавить метод <a href="http://developer.android.com/reference/android/support/v4/view/PagerAdapter.html#getPageTitle(int)" target="_blank">getPageTitle</a>, чтобы PagerTitleStrip знал какой текст показывать в заголовке. В класс <b>MyFragmentPagerAdapter</b> в <b>MainActivity.java</b> дописываем:</p>
+<pre><code class="java">    @Override
+    public CharSequence getPageTitle(int position) {
+      return "Title " + position;
+    }</code></pre>
+<p>Будем возвращать просто «Title» и номер страницы</p>
+<p>Сохраняем, запускаем.</p>
+<p><img src="images/lesson_124_1.png" alt="" width="320" height="480"></p>
+<p>Сверху появились заголовки.</p>
+<h3>PagerTabStrip</h3>
+<p>Заголовки могут участвовать в навигации. Для этого используется компонент <a href="http://developer.android.com/reference/android/support/v4/view/PagerTabStrip.html" target="_blank">PagerTabStrip</a>. Это аналог PagerTitleStrip, но при нажатии на заголовок он перелистывает страницу. Его встраивание полностью аналогично только что рассмотренному PagerTitleStrip</p>
+<p>Меняем <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	tools:context=".MainActivity"&gt;
+	&lt;android.support.v4.view.ViewPager
+		android:id="@+id/pager"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"&gt;
+		&lt;android.support.v4.view.PagerTabStrip
+			android:id="@+id/pagerTabStrip"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="top"&gt;
+		&lt;/android.support.v4.view.PagerTabStrip&gt;
+	&lt;/android.support.v4.view.ViewPager&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Он также требует от адаптера метод getPageTitle, который у нас уже реализован в MyFragmentPagerAdapter.</p>
+<p>Сохраняем, запускаем.</p>
+<p><img src="images/lesson_124_2.png" alt="" width="320" height="480"></p>
+<p>Понажимайте на левый и правый заголовки, страницы будут перелистываться.</p>
+<h3>Lifecycle</h3>
+<p>Давайте подробнее рассмотрим, что происходит с фрагментами в моменты перелистывания. Для этого перепишем <b>PageFragment.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1251viewpager;
+
+import java.util.Random;
+
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+public class PageFragment extends Fragment {
+  
+  static final String TAG = "myLogs";
+  
+  static final String ARGUMENT_PAGE_NUMBER = "arg_page_number";
+  static final String SAVE_PAGE_NUMBER = "save_page_number";
+  
+  int pageNumber;
+  int backColor;
+  
+  static PageFragment newInstance(int page) {
+    PageFragment pageFragment = new PageFragment();
+    Bundle arguments = new Bundle();
+    arguments.putInt(ARGUMENT_PAGE_NUMBER, page);
+    pageFragment.setArguments(arguments);
+    return pageFragment;
+  }
+  
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    pageNumber = getArguments().getInt(ARGUMENT_PAGE_NUMBER);
+    Log.d(TAG, "onCreate: " + pageNumber);
+    
+    Random rnd = new Random();
+    backColor = Color.argb(40, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+    
+    int savedPageNumber = -1;
+    if (savedInstanceState != null) {
+      savedPageNumber = savedInstanceState.getInt(SAVE_PAGE_NUMBER);
+    }
+    Log.d(TAG, "savedPageNumber = " + savedPageNumber);
+    
+  }
+  
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container,
+      Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment, null);
+    
+    TextView tvPage = (TextView) view.findViewById(R.id.tvPage);
+    tvPage.setText("Page " + pageNumber);
+    tvPage.setBackgroundColor(backColor);
+    
+    return view;
+  }
+  
+  @Override
+  public void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putInt(SAVE_PAGE_NUMBER, pageNumber);
+  }
+  
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    Log.d(TAG, "onDestroy: " + pageNumber);
+  }
+}</code></pre>
+<p>В <b>onCreate </b>мы добавили запись в лог и попытку чтения сохраненного значения из savedInstanceState.</p>
+<p>В <b>onSaveInstanceState </b>сохраняем номер страницы.</p>
+<p>В <b>onDestroy </b>просто пишем лог.</p>
+<p>Тем самым мы увидим, пересоздается ли фрагмент и может ли он при этом восстанавливать сохраненные значения.</p>
+<p>Все сохраним, запустим приложение.</p>
+<p><img src="images/lesson_124_3.png" alt="" width="320" height="480"></p>
+<p>В логах видим:</p>
+<p><em>onCreate: 0<br></em><em>savedPageNumber = -1<br></em><em>onCreate: 1<br></em><em>savedPageNumber = -1</em></p>
+<p>Создался фрагмент для нулевой и первой страницы. Хотя видна сейчас только нулевая. Адаптер разумно заранее создает следующую к показу страницу, чтобы при пролистывании не было тормозов. Фрагменты создаются первый раз, вытаскивать из savedInstanceState нечего, поэтому видим <em>savedPageNumber = -1</em>.</p>
+<p>Перелистнем на первую страницу</p>
+<p><img src="images/lesson_124_4.png" alt="" width="320" height="480"></p>
+<p>В логах:</p>
+<p><i>onPageSelected, position = 1<br>onCreate: 2<br>savedPageNumber = -1</i></p>
+<p>Первую показал, вторую заранее создал.</p>
+<p>Перелистнем еще пару страниц</p>
+<p><i>onPageSelected, position = 2<br>onCreate: 3<br>savedPageNumber = -1<br>onPageSelected, position = 3<br>onCreate: 4<br>savedPageNumber = -1</i></p>
+<p>Все также и остается. Заметьте, что не срабатывает onDestroy. Т.е. все страницы не уничтожаются, а хранятся в памяти.</p>
+<p>Полистаем назад.</p>
+<p><i>onPageSelected, position = 2<br>onPageSelected, position = 1<br>onPageSelected, position = 0</i></p>
+<p>Т.к. не было никаких уничтожений, то нет и никаких созданий. Достает страницы-фрагменты из памяти и показывает.</p>
+<p>Можно сделать вывод. Этот адаптер быстрый, т.к. не требует пересоздания. Но затратный, т.к. все держит в памяти. Т.е. подходит для небольшого количества страниц. Например, набор вкладок или Wizard.</p>
+<p>Правда есть нюанс: хоть сами фрагменты и не уничтожаются, но уничтожается их View-структура и потом создается заново. Вставьте лог в метод onCreateView и убедитесь. Хранится структура только текущей страницы и по одной справа и слева. Это кол-во соседних страниц с сохраняемой View-структурой может быть настроено методом <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#setOffscreenPageLimit(int)" target="_blank">setOffscreenPageLimit</a>.</p>
+<h3>FragmentStatePagerAdapter</h3>
+<p>Этот <a href="http://developer.android.com/reference/android/support/v13/app/FragmentStatePagerAdapter.html" target="_blank">адаптер</a> аналогичен FragmentPagerAdapter, он также работает с фрагментами. Но использует другие механизмы работы с страницами. Он не хранит страницы в памяти, а каждый раз создает их. Давайте используем его. Для этого надо в <b>MainActivity.java</b> просто заменить FragmentPagerAdapter на FragmentStatePagerAdapter в секции импорта и в описании класса MyFragmentPagerAdapter.</p>
+<pre><code class="java">...
+import android.support.v4.app.FragmentStatePagerAdapter;
+...
+private class MyFragmentPagerAdapter extends FragmentStatePagerAdapter {
+...</code></pre>
+<p>И все. Сохраняем, запускаем.</p>
+<p>Открылась нулевая страница. В логах видим:</p>
+<p><i>onCreate: 0<br>savedPageNumber = -1<br>onCreate: 1<br>savedPageNumber = -1</i></p>
+<p>Перелистнем на первую страницу</p>
+<p><i>onPageSelected, position = 1<br>onCreate: 2<br>savedPageNumber = -1</i></p>
+<p>Пока что поведение не отличается от прошлого адаптера.</p>
+<p>Перелистнем на вторую страницу.</p>
+<p><i>onPageSelected, position = 2<br>onDestroy: 0<br>onCreate: 3<br>savedPageNumber = -1</i></p>
+<p>Вот и отличие. Видим, что также открылась вторая страница, также создалась третья, но при этом уничтожилась нулевая.</p>
+<p>Перелистнем на третью:</p>
+<p><i>onPageSelected, position = 3<br>onDestroy: 1<br>onCreate: 4<br>savedPageNumber = -1</i></p>
+<p>Та же ситуация: отобразилась третья, уничтожилась первая, создалась четвертая.</p>
+<p>Перелистнем обратно на вторую:</p>
+<p><i>onPageSelected, position = 2<br>onDestroy: 4<br>onCreate: 1<br>savedPageNumber = 1</i></p>
+<p>Отобразилась вторая, уничтожилась четвертая, создалась первая (и прочла сохраненное значение из savedInstanceState).</p>
+<p>Т.е. видно, что адаптер хранит только текущую страницу и по одной соседней (справа и слева), чтобы быстро можно было перелистнуть.</p>
+<p>Можно сделать вывод. Этот адаптер не очень быстрый, он будет подтормаживать при многократном перелистывании в обе стороны, т.к. постоянно пересоздает страницы. Но при этом он требует минимум памяти. Т.е. он подходит для большого количества страниц. Например, просмотр писем, смс, страниц книги.</p>
+<p>Используйте тот адаптер, который вам больше подходит в данной ситуации. Или наследуйте класс PagerAdapter и создавайте адаптер под свои нужды.</p>
+<h3>Программное перелистывание</h3>
+<p>Чтобы программно перелистнуть страницу ViewPager используйте метод <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#setCurrentItem(int)" target="_blank">setCurrentItem</a>. А чтобы узнать текущую страницу - <a href="http://developer.android.com/reference/android/support/v4/view/ViewPager.html#getCurrentItem()" target="_blank">getCurrentItem</a>.</p></body>
+</html>
+
+            </div>
+     </div> 
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 138. Определение местоположения. GPS координаты.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- получаем данные о местоположении</p>
+ 
+<p> </p>
+<p>Android устройства могут предоставить нам данные по нашему текущему местоположению. Это, конечно, очень удобно и вовсю используется для, например, пользования картой, получения актуальной для вашей местности информации (прогноз погоды), всевозможных чекинов и пр.</p>
+<p>Реализация этого всего вполне проста. Мы вешаем слушателя на провайдера и получаем данные. На данный момент есть два провайдера: GPS и Network.</p>
+<p>GPS – тут все понятно, это данные с GPS-спутников.</p>
+<p>Network – это координаты, которые можно получить через сотовую связь или WiFi. Для этого провайдера нужен инет.</p>
+<p> </p>
+<p>Напишем простое приложение, которое будет запрашивать и отображать координаты.</p>
+<p> </p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1381_Location<br/> <b>Build Target</b>: Android 4.0 <br/> <b>Application name</b>: Location<br/> <b>Package name</b>: ru.startandroid.develop.p1381location<br/> <b>Create Activity</b>: MainActivity</p>
+<p> </p>
+<p>В <b>strings.xml</b> добавим строки:</p>
+<pre><code class="xml">&lt;string name="provider_gps"&gt;GPS&lt;/string&gt;
+&lt;string name="provider_network"&gt;Network&lt;/string&gt;
+&lt;string name="location_settings"&gt;Location settings&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Экран <b>main.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="5dp"&gt;
+    &lt;TextView
+        android:id="@+id/tvTitleGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/provider_gps"
+        android:textSize="30sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvEnabledGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvStatusGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvLocationGPS"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvTitleNet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/provider_network"
+        android:textSize="30sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvEnabledNet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvStatusNet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:id="@+id/tvLocationNet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"&gt;
+    &lt;/TextView&gt;
+    &lt;Button
+        android:id="@+id/btnLocationSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:onClick="onClickLocationSettings"
+        android:text="@string/location_settings"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Несколько TextView, в которые мы будем выводить данные, и кнопка для открытия настроек местоположения.</p>
+<p> </p>
+<p><b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1381location;
+
+import java.util.Date;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  TextView tvEnabledGPS;
+  TextView tvStatusGPS;
+  TextView tvLocationGPS;
+  TextView tvEnabledNet;
+  TextView tvStatusNet;
+  TextView tvLocationNet;
+
+  private LocationManager locationManager;
+  StringBuilder sbGPS = new StringBuilder();
+  StringBuilder sbNet = new StringBuilder();
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    tvEnabledGPS = (TextView) findViewById(R.id.tvEnabledGPS);
+    tvStatusGPS = (TextView) findViewById(R.id.tvStatusGPS);
+    tvLocationGPS = (TextView) findViewById(R.id.tvLocationGPS);
+    tvEnabledNet = (TextView) findViewById(R.id.tvEnabledNet);
+    tvStatusNet = (TextView) findViewById(R.id.tvStatusNet);
+    tvLocationNet = (TextView) findViewById(R.id.tvLocationNet);
+
+    locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+        1000 * 10, 10, locationListener);
+    locationManager.requestLocationUpdates(
+        LocationManager.NETWORK_PROVIDER, 1000 * 10, 10,
+        locationListener);
+    checkEnabled();
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    locationManager.removeUpdates(locationListener);
+  }
+
+  private LocationListener locationListener = new LocationListener() {
+
+    @Override
+    public void onLocationChanged(Location location) {
+      showLocation(location);
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+      checkEnabled();
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+      checkEnabled();
+      showLocation(locationManager.getLastKnownLocation(provider));
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+      if (provider.equals(LocationManager.GPS_PROVIDER)) {
+        tvStatusGPS.setText("Status: " + String.valueOf(status));
+      } else if (provider.equals(LocationManager.NETWORK_PROVIDER)) {
+        tvStatusNet.setText("Status: " + String.valueOf(status));
+      }
+    }
+  };
+
+  private void showLocation(Location location) {
+    if (location == null)
+      return;
+    if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+      tvLocationGPS.setText(formatLocation(location));
+    } else if (location.getProvider().equals(
+        LocationManager.NETWORK_PROVIDER)) {
+      tvLocationNet.setText(formatLocation(location));
+    }
+  }
+
+  private String formatLocation(Location location) {
+    if (location == null)
+      return "";
+    return String.format(
+        "Coordinates: lat = %1$.4f, lon = %2$.4f, time = %3$tF %3$tT",
+        location.getLatitude(), location.getLongitude(), new Date(
+            location.getTime()));
+  }
+
+  private void checkEnabled() {
+    tvEnabledGPS.setText("Enabled: "
+        + locationManager
+            .isProviderEnabled(LocationManager.GPS_PROVIDER));
+    tvEnabledNet.setText("Enabled: "
+        + locationManager
+            .isProviderEnabled(LocationManager.NETWORK_PROVIDER));
+  }
+
+  public void onClickLocationSettings(View view) {
+    startActivity(new Intent(
+        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+  };
+
+}</code></pre>
+<p>В <b>onCreate</b> определяем TextView-компоненты и получаем <a href="http://developer.android.com/reference/android/location/LocationManager.html" target="_blank" rel="noopener noreferrer">LocationManager</a>, через который и будем работать.</p>
+<p> </p>
+<p>В <b>onResume</b> вешаем слушателя с помощью метода <a href="http://developer.android.com/reference/android/location/LocationManager.html#requestLocationUpdates(java.lang.String, long, float, android.location.LocationListener)" target="_blank" rel="noopener noreferrer">requestLocationUpdates</a>. На вход передаем:</p>
+<p>- тип провайдера: <a href="http://developer.android.com/reference/android/location/LocationManager.html#GPS_PROVIDER" target="_blank" rel="noopener noreferrer">GPS_PROVIDER</a> или <a href="http://developer.android.com/reference/android/location/LocationManager.html#NETWORK_PROVIDER" target="_blank" rel="noopener noreferrer">NETWORK_PROVIDER</a><br/> - минимальное время (в миллисекундах) между получением данных. Я укажу здесь 10 секунд, мне этого вполне хватит. Если хотите получать координаты без задержек – передавайте 0. Но учитывайте, что это только минимальное время. Реальное ожидание может быть дольше. <br/> - минимальное расстояние (в метрах). Т.е. если ваше местоположение изменилось на указанное кол-во метров, то вам придут новые координаты. <br/> - слушатель, объект locationListener, который рассмотрим ниже</p>
+<p>Также здесь обновляем на экране инфу о включенности провайдеров.</p>
+<p> </p>
+<p>В <b>onPause</b> отключаем слушателя методом removeUpdates.</p>
+<p> </p>
+<p><b>locationListener</b> – слушатель, реализует интерфейс <a href="http://developer.android.com/reference/android/location/LocationListener.html" target="_blank" rel="noopener noreferrer">LocationListener</a> с методами:</p>
+<p><a href="http://developer.android.com/reference/android/location/LocationListener.html#onLocationChanged(android.location.Location)" target="_blank" rel="noopener noreferrer">onLocationChanged</a> – новые данные о местоположении, объект Location. Здесь мы вызываем свой метод showLocation, который на экране отобразит данные о местоположении.</p>
+<p><a href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderDisabled(java.lang.String)" target="_blank" rel="noopener noreferrer">onProviderDisabled</a> – указанный провайдер был отключен юзером. В этом методе вызываем свой метод checkEnabled, который на экране обновит текущие статусы провайдеров.</p>
+<p><a href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderEnabled(java.lang.String)" target="_blank" rel="noopener noreferrer">onProviderEnabled</a> – указанный провайдер был включен юзером. Тут также вызываем checkEnabled. Далее методом <a href="http://developer.android.com/reference/android/location/LocationManager.html#getLastKnownLocation(java.lang.String)" target="_blank" rel="noopener noreferrer">getLastKnownLocation</a> (он может вернуть null) запрашиваем последнее доступное местоположение от включенного провайдера и отображаем его. Оно может быть вполне актуальным, если вы до этого использовали какое-либо приложение с определением местоположения.</p>
+<p><a href="http://developer.android.com/reference/android/location/LocationListener.html#onStatusChanged(java.lang.String, int, android.os.Bundle)" target="_blank" rel="noopener noreferrer">onStatusChanged</a> – изменился статус указанного провайдера. В поле status могут быть значения <a href="http://developer.android.com/reference/android/location/LocationProvider.html#OUT_OF_SERVICE" target="_blank" rel="noopener noreferrer">OUT_OF_SERVICE</a> (данные будут недоступны долгое время), <a href="http://developer.android.com/reference/android/location/LocationProvider.html#TEMPORARILY_UNAVAILABLE" target="_blank" rel="noopener noreferrer">TEMPORARILY_UNAVAILABLE</a> (данные временно недоступны), <a href="http://developer.android.com/reference/android/location/LocationProvider.html#AVAILABLE" target="_blank" rel="noopener noreferrer">AVAILABLE</a> (все ок, данные доступны). В этом методе мы просто выводим новый статус на экран.</p>
+<p>Провайдеры включаются и отключаются в настройках системы. Тем самым, просто определяется доступен ли провайдер для получения от него координат. Чуть позже увидим, как можно отправить юзера в эти настройки. Программное включение/выключение провайдеров через стандартные методы недоступно.</p>
+<p> </p>
+<p>Далее идут свои методы.</p>
+<p><b>showLocation</b> на вход берет <a href="http://developer.android.com/reference/android/location/Location.html" target="_blank" rel="noopener noreferrer">Location</a>, определяет его провайдера методом <a href="http://developer.android.com/reference/android/location/Location.html#getProvider()" target="_blank" rel="noopener noreferrer">getProvider</a> и отображает координаты в соответствующем текстовом поле.</p>
+<p><b>formatLocation</b> на вход берет Location, читает из него данные и форматирует из них строку. Какие данные он берет: <a href="http://developer.android.com/reference/android/location/Location.html#getLatitude()" target="_blank" rel="noopener noreferrer">getLatitude</a> – широта, <a href="http://developer.android.com/reference/android/location/Location.html#getLongitude()" target="_blank" rel="noopener noreferrer">getLongitude</a> – долгота, <a href="http://developer.android.com/reference/android/location/Location.html#getTime()" target="_blank" rel="noopener noreferrer">getTime</a> – время определения.</p>
+<p><b>checkEnabled</b> определяет включены или выключены провайдеры методом <a href="http://developer.android.com/reference/android/location/LocationManager.html#isProviderEnabled(java.lang.String)" target="_blank" rel="noopener noreferrer">isProviderEnabled</a> и отображает эту инфу на экране.</p>
+<p>Метод <b>onClickLocationSettings</b> срабатывает по нажатию кнопки Location settings и открывает настройки, чтобы пользователь мог включить или выключить провайдер. Для этого используется Intent с action = <a href="http://developer.android.com/reference/android/provider/Settings.html#ACTION_LOCATION_SOURCE_SETTINGS" target="_blank" rel="noopener noreferrer">ACTION_LOCATION_SOURCE_SETTINGS</a>.</p>
+<p> </p>
+<p>Осталось в манифесте прописать разрешение на определение координат - <a href="http://developer.android.com/reference/android/Manifest.permission.html#ACCESS_FINE_LOCATION" target="_blank" rel="noopener noreferrer">ACCESS_FINE_LOCATION</a>, которое позволит нам использовать и Network и GPS. Также существует разрешение <a href="http://developer.android.com/reference/android/Manifest.permission.html#ACCESS_COARSE_LOCATION" target="_blank" rel="noopener noreferrer">ACCESS_COARSE_LOCATION</a>, но оно дает доступ только к Network-провайдеру.</p>
+<p> </p>
+<p>С кодом все, давайте смотреть, что получилось. Все сохраняем и запускаем приложение.</p>
+<p>У меня на планшете сейчас выключен GPS, выключен WiFi, вставлена симка и выключен мобильный интернет.</p>
+<p>Запускаю приложение и вижу такую картину:</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0138_010.png.pagespeed.ic.ibaixvc_ds.png" alt="" width="640" height="400"/></p>
+<p>GPS выключен, Network включен. Но инета нет, поэтому Network мне ничего не дает. Надо включить либо мобильный инет, либо WiFi.</p>
+<p> </p>
+<p>Я включаю WiFi. Проходит секунд 15-20 и инфа с Network пошла</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0138_020.png.pagespeed.ic.z899__byls.png" alt="" width="640" height="400"/></p>
+<p>Видим широту, долготу и время.</p>
+<p>Напомню, что мы ставили минимальную скорость обновления – 10 сек. Но у меня провайдер Network выдает данные не чаще, чем раз в минуту.</p>
+<p> </p>
+<p>Теперь давайте включим GPS. Для этого мы специально повесили кнопку Location settings, которую надо будет нажать пользователю, чтобы перейти в настройки. Жмем кнопку.</p>
+<p><img src="images/640x400xl0138_030.png.pagespeed.ic.1kmz5a2ydl.png" alt="" width="640" height="400"/></p>
+<p>Видим, что GPS выключен, а Network включен. Наше приложение показывало все верно.</p>
+<p><i>Разумеется, GPS можно включать и выключать через быстрые настройки системы (справа сверху). Но не все пользователи об этом знают. А тут мы их точно направим.</i></p>
+<p>Включаем GPS и жмем Назад, чтобы вернуться в приложение.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0138_040.png.pagespeed.ic.ishoplkup6.png" alt="" width="640" height="400"/></p>
+<p>GPS теперь показывает что он включен, ждем координаты. Для этого имеет смысл подойти к окну, больше вероятности, что поймаем сигнал.</p>
+<p>В итоге сигнал пойман и получен результат.</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0138_050.png.pagespeed.ic.nfidv--lq8.png" alt="" width="640" height="400"/></p>
+<p> </p>
+<p>У GPS через какое-то время включился статус 2 (AVAILABLE).</p>
+<p><img style="border: 1px solid black;" src="images/640x400xl0138_060.png.pagespeed.ic.zi7wnz_zmp.png" alt="" width="640" height="400"/></p>
+<p>А у Network тишина со статусом. Не знаю, нормально это или нет.</p>
+<p> </p>
+<p>Если с GPS сигналом все ок, то каждые 10 сек вы будете получать инфу о вашем местоположении. Если убрать планшет от окна, получим плохой сигнал: данные могут приходить реже и статус у меня иногда меняется на 1 (TEMPORARILY_UNAVAILABLE).</p>
+<p> </p>
+<p> </p>
+<h3>Прочее</h3>
+<p>Есть еще третий тип провайдера - <a href="http://developer.android.com/reference/android/location/LocationManager.html#PASSIVE_PROVIDER" target="_blank" rel="noopener noreferrer">PASSIVE_PROVIDER</a>. Сам по себе этот провайдер никакие данные не вернет. Но повесив на него слушателя, вы сможете получать данные о местоположении, когда кто-то еще в системе пытается определить местоположение через обычные провайдеры. Система будет дублировать результаты и вам.</p>
+<p> </p>
+<p>Метод <a href="http://developer.android.com/reference/android/location/LocationManager.html#getAllProviders()" target="_blank" rel="noopener noreferrer">getAllProviders</a> вернет вам список всех доступных провайдеров. Метод <a href="http://developer.android.com/reference/android/location/LocationManager.html#getProviders(boolean)" target="_blank" rel="noopener noreferrer">getProviders(boolean enabledOnly)</a> вернет либо все, либо только включенные. </p>
+<p> </p>
+<p>Объект Location кроме координат, времени и провайдера имеет еще несколько атрибутов, которые могут прийти и пустыми:</p>
+<p><a href="http://developer.android.com/reference/android/location/Location.html#getAccuracy()" target="_blank" rel="noopener noreferrer">getAccuracy</a> – точность показания в метрах</p>
+<p><a href="http://developer.android.com/reference/android/location/Location.html#getAltitude()" target="_blank" rel="noopener noreferrer">getAltitude</a> – высота над уровнем моря в метрах</p>
+<p><a href="http://developer.android.com/reference/android/location/Location.html#getSpeed()" target="_blank" rel="noopener noreferrer">getSpeed</a> – скорость движения в м/с</p>
+<p><a href="http://developer.android.com/reference/android/location/Location.html#getBearing()" target="_blank" rel="noopener noreferrer">getBearing</a> – насколько я понял, это угол, на который текущая траектория движения отклоняется от траектории на север. Он же азимут.</p>
+<p> </p>
+<p>Местоположение можно протестировать и через AVD эмулятор. Для этого надо в Eclipse открыть DDMS (Window &gt; Open Perspective &gt; DDMS) и выбрать вкладку Emulator Control. Внизу будет вкладка Manual, на которой есть поля для ввода координат и кнопка отправки.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

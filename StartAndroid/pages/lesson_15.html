@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 15. Контекстное меню</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- создадим контекстное меню</p>
+<p>Контекстное меню вызывается в Андроид длительным нажатием на каком-либо экранном компоненте. Обычно оно используется в списках. Когда на экран выводится список однородных объектов (например письма в почт.ящике) и, чтобы выполнить действие с одним из этих объектов, мы вызываем контекстное меню для него. Но т.к. списки мы еще не проходили, сделаем пример попроще и будем вызывать контекстное меню для TextView.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0151_ContextMenu<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: ContextMenu<br><b>Package name</b>: ru.startandroid.develop.contextmenu<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем main.xml и нарисуем там два TextView:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"&gt;
+    &lt;TextView
+        android:layout_height="wrap_content"
+        android:textSize="26sp"
+        android:layout_width="wrap_content"
+        android:id="@+id/tvColor"
+        android:layout_marginBottom="50dp"
+        android:layout_marginTop="50dp"
+        android:text="Text color"&gt;
+    &lt;/TextView&gt;
+    &lt;TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="22sp"
+        android:id="@+id/tvSize"
+        android:text="Text size"&gt;
+    &lt;/TextView&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Для первого TextView мы сделаем контекстное меню, с помощью которого будем менять цвет текста. Для второго – будем менять размер текста.</p>
+<p>Принцип создания контекстного меню похож на создание обычного меню. Но есть и отличия.</p>
+<p>Метод создания <a href="http://developer.android.com/reference/android/app/Activity.html#onCreateContextMenu(android.view.ContextMenu, android.view.View, android.view.ContextMenu.ContextMenuInfo)" target="_blank">onCreateContextMenu</a> вызывается каждый раз перед показом меню. На вход ему передается:</p>
+<p>- <b>ContextMenu</b>, в который мы будем добавлять пункты<br>- <b>View </b>- элемент экрана, для которого вызвано контекстное меню<br>- <b>ContextMenu.ContextMenuInfo </b>– содержит доп.информацию, когда контекстное меню вызвано для элемента списка. Пока мы это не используем, но, когда будем изучать списки, увидим, что штука полезная.</p>
+<p>Метод обработки <a href="http://developer.android.com/reference/android/app/Activity.html#onContextItemSelected(android.view.MenuItem)" target="_blank">onContextItemSelected</a> аналогичный методу <b>onOptionsItemSelected </b>для обычного меню. На вход передается <b>MenuItem </b>– пункт меню, который был нажат.</p>
+<p>Также нам понадобится третий метод <a href="http://developer.android.com/reference/android/app/Activity.html#registerForContextMenu(android.view.View)" target="_blank">registerForContextMenu</a>. На вход ему передается <b>View </b>и это означает, что для этой View необходимо создавать контекстное меню. Если не выполнить этот метод, контекстное меню для View создаваться не будет.</p>
+<p><b>MainActivity.java</b>. Опишем и найдем <b>TextView </b>и укажем, что необходимо создавать для них контекстное меню.</p>
+<pre><code class="java">  TextView tvColor, tvSize;
+  
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        tvColor = (TextView) findViewById(R.id.tvColor);
+        tvSize = (TextView) findViewById(R.id.tvSize);
+        
+        // для tvColor и tvSize необходимо создавать контекстное меню
+        registerForContextMenu(tvColor);
+        registerForContextMenu(tvSize);
+            
+    }</code></pre>
+<p>Теперь опишем создание контекстных меню. Используем константы для хранения ID пунктов меню.</p>
+<pre><code class="java">  final int MENU_COLOR_RED = 1;
+  final int MENU_COLOR_GREEN = 2;
+  final int MENU_COLOR_BLUE = 3;
+  
+  final int MENU_SIZE_22 = 4;
+  final int MENU_SIZE_26 = 5;
+  final int MENU_SIZE_30 = 6;</code></pre>
+<p>И создаем</p>
+<pre><code class="java">    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v,
+        ContextMenuInfo menuInfo) {
+      // TODO Auto-generated method stub
+      switch (v.getId()) {
+    case R.id.tvColor:
+      menu.add(0, MENU_COLOR_RED, 0, "Red");
+      menu.add(0, MENU_COLOR_GREEN, 0, "Green");
+      menu.add(0, MENU_COLOR_BLUE, 0, "Blue");
+      break;
+    case R.id.tvSize:
+      menu.add(0, MENU_SIZE_22, 0, "22");
+      menu.add(0, MENU_SIZE_26, 0, "26");
+      menu.add(0, MENU_SIZE_30, 0, "30");
+      break;
+    }
+    }</code></pre>
+<p>Обратите внимание, что мы по <b>ID </b>определяем <b>View</b>, для которого вызвано<b> контекстное меню</b> и в зависимости от этого создаем определенное меню. Т.е. если контекстное меню вызвано для <b>tvColor</b>, то мы создаем<b> меню с перечислением цветов</b>, а если для <b>tvSize </b>– <b>с размерами шрифта</b>.</p>
+<p>В качестве ID пунктов мы использовали константы. Группировку и сортировку не используем, поэтому используем нули в качестве соответствующих параметров.</p>
+<p>Можно все сохранить и запустить. При долгом нажатии на TextView должны появляться контекстные меню.</p>
+<p><img src="images/lesson_14_0.png" alt="" width="640" height="454" border="0"></p>
+<p>Но нажатие на них ничего не дает, т.к. мы не прописали обработку в методе onContextItemSelected. Давайте пропишем:</p>
+<pre><code class="java">    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+      // TODO Auto-generated method stub
+      switch (item.getItemId()) {
+      // пункты меню для tvColor
+    case MENU_COLOR_RED:
+      tvColor.setTextColor(Color.RED);
+      tvColor.setText("Text color = red");
+      break;
+    case MENU_COLOR_GREEN:
+      tvColor.setTextColor(Color.GREEN);
+      tvColor.setText("Text color = green");
+      break;
+    case MENU_COLOR_BLUE:
+      tvColor.setTextColor(Color.BLUE);
+      tvColor.setText("Text color = blue");
+      break;
+    // пункты меню для tvSize
+    case MENU_SIZE_22:
+      tvSize.setTextSize(22);
+      tvSize.setText("Text size = 22");
+      break;
+    case MENU_SIZE_26:
+      tvSize.setTextSize(26);
+      tvSize.setText("Text size = 26");
+      break;
+    case MENU_SIZE_30:
+      tvSize.setTextSize(30);
+      tvSize.setText("Text size = 30");
+      break;
+      }
+      return super.onContextItemSelected(item);
+    }</code></pre>
+<p>В этом методе мы определяем по <b>ID</b>, какой пункт меню был нажат. И выполняем соответствующие действия: меняем цвет текста для tvColor или размер шрифта для tvSize. Сохраняем, запускаем и проверяем, что контекстные меню теперь реагируют на нажатия и делают то, что от них требуется.</p>
+<p>Для расширения кругозора я хотел бы еще кое-что написать по этой теме. Возможно, это покажется пока сложноватым, так что если вдруг будет непонятно, ничего страшного. Итак, мысли вслух.</p>
+<p>Мы использовали метод registerForContextMenu (View view) для включения контекстного меню для определенного View. Этот метод принадлежит классу Activity. Я посмотрел исходники этого метода, там написано следующее:</p>
+<pre><code class="java">  public void registerForContextMenu(View view) {
+    view.setOnCreateContextMenuListener(this);
+  }</code></pre>
+<p>Вспоминаем <a href="http://startandroid.ru/uroki/vse-uroki-spiskom/16-urok-9-obrabotchiki-sobytij-na-primere-button.html" target="_blank">наш урок по обработчикам</a> и смотрим документацию по методу <a href="http://developer.android.com/reference/android/view/View.html#setOnCreateContextMenuListener(android.view.View.OnCreateContextMenuListener)" target="_blank">setOnCreateContextMenuListener (View.OnCreateContextMenuListener l)</a>. Получается, что <b>View </b>в качестве обработчика создания контекстного меню использует объект <b>this</b>. В данном случае, этот код в <b>Activity</b>, значит this – это Activity и есть. Т.е. когда View хочет<b> показать контекстное меню</b>, оно обращается к <b>обработчику </b>(Activity), а он уже выполняет свой метод<b> onCreateContextMenu</b>. Т.е. тот же самый принцип, что и при обычном нажатии (Click).</p>
+<p>И строка в MainActivity.java:</p>
+<pre><code class="java">registerForContextMenu(tvColor);</code></pre>
+<p>абсолютно равнозначна этой строке:</p>
+<pre><code class="java">tvColor.setOnCreateContextMenuListener(this);</code></pre>
+<p>Вообще мы можем создать свой объект, реализующий интерфейс View.OnCreateContextMenuListener и использовать его вместо Activity в качестве обработчика создания контекстного меню.</p>
+<p>Не забывайте, что для контекстного меню вы также можете использовать XML-способ, который был рассмотрен в конце прошлого урока. Попробуйте сделать этот же урок, но уже с использованием XML-меню.</p>
+<p>Полный код урока:</p>
+<pre><code class="java">public class MainActivity extends Activity {
+
+  final int MENU_COLOR_RED = 1;
+  final int MENU_COLOR_GREEN = 2;
+  final int MENU_COLOR_BLUE = 3;
+
+  final int MENU_SIZE_22 = 4;
+  final int MENU_SIZE_26 = 5;
+  final int MENU_SIZE_30 = 6;
+
+  TextView tvColor, tvSize;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tvColor = (TextView) findViewById(R.id.tvColor);
+    tvSize = (TextView) findViewById(R.id.tvSize);
+
+    // для tvColor и tvSize необходимо создавать контекстное меню
+    registerForContextMenu(tvColor);
+    registerForContextMenu(tvSize);
+  }
+
+  @Override
+  public void onCreateContextMenu(ContextMenu menu, View v,
+      ContextMenuInfo menuInfo) {
+    // TODO Auto-generated method stub
+    switch (v.getId()) {
+    case R.id.tvColor:
+      menu.add(0, MENU_COLOR_RED, 0, "Red");
+      menu.add(0, MENU_COLOR_GREEN, 0, "Green");
+      menu.add(0, MENU_COLOR_BLUE, 0, "Blue");
+      break;
+    case R.id.tvSize:
+      menu.add(0, MENU_SIZE_22, 0, "22");
+      menu.add(0, MENU_SIZE_26, 0, "26");
+      menu.add(0, MENU_SIZE_30, 0, "30");
+      break;
+    }
+  }
+
+  @Override
+  public boolean onContextItemSelected(MenuItem item) {
+    // TODO Auto-generated method stub
+    switch (item.getItemId()) {
+    // пункты меню для tvColor
+    case MENU_COLOR_RED:
+      tvColor.setTextColor(Color.RED);
+      tvColor.setText("Text color = red");
+      break;
+    case MENU_COLOR_GREEN:
+      tvColor.setTextColor(Color.GREEN);
+      tvColor.setText("Text color = green");
+      break;
+    case MENU_COLOR_BLUE:
+      tvColor.setTextColor(Color.BLUE);
+      tvColor.setText("Text color = blue");
+      break;
+    // пункты меню для tvSize
+    case MENU_SIZE_22:
+      tvSize.setTextSize(22);
+      tvSize.setText("Text size = 22");
+      break;
+    case MENU_SIZE_26:
+      tvSize.setTextSize(26);
+      tvSize.setText("Text size = 26");
+      break;
+    case MENU_SIZE_30:
+      tvSize.setTextSize(30);
+      tvSize.setText("Text size = 30");
+      break;
+    }
+    return super.onContextItemSelected(item);
+  }
+}</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

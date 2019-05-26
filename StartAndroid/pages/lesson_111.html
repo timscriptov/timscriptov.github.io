@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 111. Android 3. Fragments. PreferenceFragment - настройки. Headers</title>
+
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- работаем с PreferenceFragment<br> - используем Headers </p>
+<p>В <b>Уроках 71-75</b> мы рассматривали особый вид Activity – <b>PreferenceActivity</b>. Оно позволяет нам удобно работать с <b>Preferences</b>. Для фрагментов есть аналог – это <a href="http://developer.android.com/reference/android/preference/PreferenceFragment.html" target="_blank">PreferenceFragment</a>, имеющий тот же функционал.</p>
+<p>В Android 3 у PreferenceActivity появилась новая возможность – <a href="http://developer.android.com/guide/topics/ui/settings.html#PreferenceHeaders" target="_blank">Headers</a> (заголовки). Они позволяют на больших экранах без труда отображать настройки, разделенные на две панели по вертикали. Если же экран мал для такого разделения, то эти панели будут на разных экранах.</p>
+<p>Создадим приложение, в котором используем <b>PreferenceFragment </b>с простыми настройками. А далее переделаем его под использование заголовков.</p>
+<p>Создадим проект:</p>
+<p><b>Project</b> <b>name</b>: P1111_PreferenceFragment<br><b>Build</b> <b>Target</b>: Android 4.1 <br><b>Application</b> <b>name</b>: PreferenceFragment<br><b>Package</b> <b>name</b>: ru.startandroid.develop.p1111preferencefragment<br><b>Create</b> <b>Activity</b>: MainActivity</p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="checkbox1_title"&gt;CheckBox 1&lt;/string&gt;
+&lt;string name="checkbox1_summary"&gt;Summary of CheckBox 1&lt;/string&gt;
+&lt;string name="edittext1_title"&gt;EditText 1&lt;/string&gt;
+&lt;string name="edittext1_summary"&gt;Summary of EditText 1&lt;/string&gt;
+&lt;string name="list1_title"&gt;List 1&lt;/string&gt;
+&lt;string name="list1_summary"&gt;Summary of List 1&lt;/string&gt;
+&lt;string-array name="entries"&gt;
+	&lt;item&gt;one&lt;/item&gt;
+	&lt;item&gt;two&lt;/item&gt;
+	&lt;item&gt;three&lt;/item&gt;
+&lt;/string-array&gt;
+&lt;string-array name="entry_values"&gt;
+	&lt;item&gt;1&lt;/item&gt;
+	&lt;item&gt;2&lt;/item&gt;
+	&lt;item&gt;3&lt;/item&gt;
+&lt;/string-array&gt;</code></pre>
+<p>Тексты будут использоваться для описания настроек, а массивы – для списка.</p>
+<p>Cоздадим файл, описывающий настройки. Для этого в папке <b>res </b>создаем папку <b>xml</b>, если ее там нет.  И создаем файл: <b>res/xml/pref1.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;CheckBoxPreference
+		android:key="chb1"
+		android:summary="@string/checkbox1_summary"
+		android:title="@string/checkbox1_title"&gt;
+	&lt;/CheckBoxPreference&gt;
+	&lt;EditTextPreference
+		android:key="address1"
+		android:summary="@string/edittext1_summary"
+		android:title="@string/edittext1_title"&gt;
+	&lt;/EditTextPreference&gt;
+	&lt;ListPreference
+		android:entries="@array/entries"
+		android:entryValues="@array/entry_values"
+		android:key="list1"
+		android:summary="@string/list1_summary"
+		android:title="@string/list1_title"&gt;
+	&lt;/ListPreference&gt;
+&lt;/PreferenceScreen&gt;</code></pre>
+<p>Три простейших настройки. Я не буду повторяться, и описывать значения элементов и атрибутов. Все это уже описано в <b>Уроке 71</b>.</p>
+<p>Итак, файл настроек создан. Нужен фрагмент, который эти настройки нам покажет. Создаем класс <b>Fragment1</b>, наследующий <b>android.preference.PreferenceFragment</b>.</p>
+<p><b>Fragment1.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1111preferencefragment;
+
+import android.os.Bundle;
+import android.preference.PreferenceFragment;
+
+public class Fragment1 extends PreferenceFragment {
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    addPreferencesFromResource(R.xml.pref1);
+  }
+
+}</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/preference/PreferenceFragment.html#addPreferencesFromResource(int)" target="_blank">addPreferencesFromResource</a> прочитает файл с описанием настроек и выведет их на экран.</p>
+<p>Осталось немного подправить <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1111preferencefragment;
+
+import android.app.Activity;
+import android.os.Bundle;
+
+public class MainActivity extends Activity {
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    getFragmentManager().beginTransaction()
+        .replace(android.R.id.content, new Fragment1()).commit();
+
+  }
+}</code></pre>
+<p>Мы здесь не используем никакой layout, а сразу добавляем наш фрагмент в качестве контента, используя корневой контейнер с ID android.R.id.content.</p>
+<p>Все сохраняем и запускаем приложение. Видим экран настроек</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_0.png" alt="" width="384" height="640"></p>
+<p>Можно поставить галку или нажать на два других пункта настроек и получить диалоговое окно для ввода значения. Все как обычно.</p>
+<h3>Заголовки</h3>
+<p>Теперь рассмотрим, что нам дают заголовки. Можно сказать, что заголовки - это корневые ветки дерева настроек. Мы сделаем три таких ветки: первые две будут открывать наши фрагменты с настройками, а третья откроет настройки звука.</p>
+<p>Один фрагмент с настройками у нас уже есть, создадим второй.</p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="checkbox2_title"&gt;CheckBox 2&lt;/string&gt;
+&lt;string name="checkbox2_summary"&gt;Summary of CheckBox 2&lt;/string&gt;
+&lt;string name="edittext2_title"&gt;EditText 2&lt;/string&gt;
+&lt;string name="edittext2_summary"&gt;Summary of EditText 2&lt;/string&gt;
+&lt;string name="list2_title"&gt;List 2&lt;/string&gt;
+&lt;string name="list2_summary"&gt;Summary of List 2&lt;/string&gt;
+&lt;string name="category1"&gt;Category 1&lt;/string&gt;
+&lt;string name="category2"&gt;Category 2&lt;/string&gt;
+&lt;string name="screen1_title"&gt;Screen 1&lt;/string&gt;
+&lt;string name="screen1_summary"&gt;Summary of Screen 1&lt;/string&gt;
+&lt;string name="screen2_title"&gt;Screen 2&lt;/string&gt;
+&lt;string name="screen2_summary"&gt;Summary of Screen 2&lt;/string&gt;
+&lt;string name="header1_title"&gt;Header 1&lt;/string&gt;
+&lt;string name="header1_summary"&gt;Summary of Header 1&lt;/string&gt;
+&lt;string name="header2_title"&gt;Header 2&lt;/string&gt;
+&lt;string name="header2_summary"&gt;Summary of Header 2&lt;/string&gt;
+&lt;string name="header3_title"&gt;Header 3&lt;/string&gt;
+&lt;string name="header3_summary"&gt;Summary of Header 3&lt;/string&gt;</code></pre>
+<p>Создадим файл <b>res/xml/pref2.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;PreferenceCategory
+		android:title="@string/category1"&gt;
+		&lt;CheckBoxPreference
+			android:key="chb2"
+			android:summary="@string/checkbox2_summary"
+			android:title="@string/checkbox2_title"&gt;
+		&lt;/CheckBoxPreference&gt;
+		&lt;EditTextPreference
+			android:key="address2"
+			android:summary="@string/edittext2_summary"
+			android:title="@string/edittext2_title"&gt;
+		&lt;/EditTextPreference&gt;
+		&lt;ListPreference
+			android:entries="@array/entries"
+			android:entryValues="@array/entry_values"
+			android:key="list2"
+			android:summary="@string/list2_summary"
+			android:title="@string/list2_title"&gt;
+		&lt;/ListPreference&gt;
+	&lt;/PreferenceCategory&gt;
+	&lt;PreferenceCategory
+		android:title="@string/category2"&gt;
+		&lt;PreferenceScreen
+			android:fragment="ru.startandroid.develop.p1111preferencefragment.Fragment1"
+			android:summary="@string/screen1_summary"
+			android:title="@string/screen1_title"&gt;
+		&lt;/PreferenceScreen&gt;
+		&lt;PreferenceScreen
+			android:summary="@string/screen2_summary"
+			android:title="@string/screen2_title"&gt;
+			&lt;intent
+				android:action="android.intent.action.VIEW"
+				android:data="http://www.developer.android.com"&gt;
+			&lt;/intent&gt;
+		&lt;/PreferenceScreen&gt;
+	&lt;/PreferenceCategory&gt;
+&lt;/PreferenceScreen&gt;</code></pre>
+<p>Здесь используем те же простые элементы, что и ранее, а также – категории и экраны (Урок 72). Только в экранах мы указываем не дочерние элементы, а перенаправления. В первом экране с помощью атрибута <b>android:fragment</b> мы указываем <b>Fragment1</b>, который мы создали в начале урока. А во втором экране указываем intent, который откроет в браузере страницу.</p>
+<p>Создаем фрагмент, который нам эти настройки покажет.</p>
+<p><b>Fragment2.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1111preferencefragment;
+
+import android.os.Bundle;
+import android.preference.PreferenceFragment;
+
+public class Fragment2 extends PreferenceFragment {
+
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    addPreferencesFromResource(R.xml.pref2);
+  }
+
+}</code></pre>
+<p>Переходим к созданию заголовков</p>
+<p>Создаем файл с описанием заголовков <b>res/xml/pref_head.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;preference-headers
+	xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+	&lt;header
+		android:fragment="ru.startandroid.develop.p1111preferencefragment.Fragment1"
+		android:icon="@android:drawable/ic_menu_call"
+		android:summary="@string/header1_summary"
+		android:title="@string/header1_title"&gt;
+	&lt;/header&gt;
+	&lt;header
+		android:fragment="ru.startandroid.develop.p1111preferencefragment.Fragment2"
+		android:icon="@android:drawable/ic_menu_info_details"
+		android:summary="@string/header2_summary"
+		android:title="@string/header2_title"&gt;
+	&lt;/header&gt;
+	&lt;header
+		android:icon="@android:drawable/ic_menu_view"
+		android:summary="@string/header3_summary"
+		android:title="@string/header3_title"&gt;
+		&lt;intent
+			android:action="android.settings.DISPLAY_SETTINGS"&gt;
+		&lt;/intent&gt;
+	&lt;/header&gt;
+&lt;/preference-headers&gt;</code></pre>
+<p>Три заголовка. Первый откроет Fragment1, второй – Fragment2, третий, используя intent, – настройки экрана. Иконки взяты случайные.</p>
+<p>Ок. Заголовки есть, теперь надо их отобразить. Для этого используем MainActivity. Но, чтобы оно умело работать с заголовками, оно должно наследовать PreferenceActivity.</p>
+<p>Перепишем <b>MainActivity.java</b>:</p>
+<pre><code class="java">package ru.startandroid.develop.p1111preferencefragment;
+
+import java.util.List;
+
+import android.preference.PreferenceActivity;
+
+public class MainActivity extends PreferenceActivity {
+
+  public void onBuildHeaders(List&lt;Header&gt; target) {
+    loadHeadersFromResource(R.xml.pref_head, target);
+  }
+}</code></pre>
+<p>Метод <a href="http://developer.android.com/reference/android/preference/PreferenceActivity.html#onBuildHeaders(java.util.List&lt;android.preference.PreferenceActivity.Header&gt;)" target="_blank">onBuildHeaders</a> вызывается системой, когда надо строить заголовки. На вход он принимает список List&lt;Header&gt;, который нам надо наполнить. Для этого вызываем метод <a href="http://developer.android.com/reference/android/preference/PreferenceActivity.html#loadHeadersFromResource(int, java.util.List&lt;android.preference.PreferenceActivity.Header&gt;)" target="_blank">loadHeadersFromResource</a>, и передаем ему наш файл с заголовками и наполняемый список.</p>
+<p>Все сохраняем и запускаем. Я использую для запуска AVD, эмулирующий планшет на 4.1</p>
+<p><img src="images/lesson_110_1.png" alt="" width="412" height="591"></p>
+<p>Приложение выглядит так:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_2.png" alt="" width="640" height="400"></p>
+<p>Мы видим три заголовка, которые мы прописывали в файле <b>pref_head.xml</b>. Открыт первый - <b>Header 1</b>, он отображает <b>Fragment1</b>. А <b>Fragment1</b> отображает настройки из <b>pref1.xml</b>.</p>
+<p>Нажмем на второй заголовок - <b>Header 2</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_3.png" alt="" width="640" height="400"></p>
+<p>Видим <b>Fragment2 </b>с настройками из <b>pref2.xml</b>. Видны категории и экраны, которые мы создавали. Напомню, что <b>Screen 1</b> должен открыть <b>Fragment1</b>, а <b>Screen 2</b> – сайт. Проверим.</p>
+<p>Жмем <b>Screen 1</b>.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_4.png" alt="" width="640" height="400"></p>
+<p>Открылся <b>Fragment1</b> как вложенный экран. Сверху отображается полный путь вложенности. Вернуться можно кнопкой Назад. Таким образом, вы можете создавать вложенные экраны с настройками, не уходя от заголовков.</p>
+<p>Нажатие на <b>Screen 2</b> запустит браузер и откроет ссылку.</p>
+<p>Нажатие на <b>Header 3</b> откроет настройки экрана.</p>
+<p>Если запустить это же приложение на планшете с Android 3.2, оно будет выглядеть так:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_5.png" alt="" width="640" height="400"></p>
+<p>Если запустить, не на планшете, а на смартфоне с 4.1, то приложение само для себя каким-то образом решает, что разбить экран на две части здесь не получится и показывает заголовки на одном экране</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_6.png" alt="" width="384" height="640"></p>
+<p>а содержимое на другом</p>
+<p><img style="border: 1px solid black;" src="images/lesson_110_7.png" alt="" width="384" height="640"></p>
+<p>Чтобы программно определить, будет экран делиться на две части или нет, можно использовать метод <a href="http://developer.android.com/reference/android/preference/PreferenceActivity.html#isMultiPane()" target="_blank">isMultiPane</a>.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

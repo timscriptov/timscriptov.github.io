@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 63. Диалоги. AlertDialog. Список с одиночным выбором</title>
+	 
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- формируем список с одиночным выбором в диалоге</p>
+<p>Урок будет аналогичен прошлому, только теперь мы не будем обновлять данные списка диалога.</p>
+<p>Мы будем формировать в диалоге список с одиночным выбором и определять какой элемент был выбран (чекнут).</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0631_AlertDialogItemsSingle<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: AlertDialogItemsSingle<br><b>Package name</b>: ru.startandroid.develop.p0631alertdialogitemssingle<br><b>Create Activity</b>: MainActivity</p>
+<p>В <b>strings.xml</b> пропишем тексты:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;resources&gt;
+    &lt;string name="app_name"&gt;AlertDialogItemsSingle&lt;/string&gt;
+    &lt;string name="items"&gt;Items&lt;/string&gt;
+    &lt;string name="adapter"&gt;Adapter&lt;/string&gt;
+    &lt;string name="cursor"&gt;Cursor&lt;/string&gt;
+    &lt;string name="ok"&gt;OK&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+<p><b>main.xml</b>, три кнопки:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"&gt;
+    &lt;Button
+        android:id="@+id/btnItems"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/items"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnAdapter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/adapter"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:id="@+id/btnCursor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/cursor"
+        android:onClick="onclick"&gt;
+    &lt;/Button&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p><b>DB.java</b> аналогичен с прошлого урока, только уберем метод изменения записей</p>
+<pre><code class="java">package ru.startandroid.develop.p0631alertdialogitemssingle;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DB {
+  
+  private static final String DB_NAME = "mydb";
+  private static final int DB_VERSION = 1;
+  private static final String DB_TABLE = "mytab";
+  
+  public static final String COLUMN_ID = "_id";
+  public static final String COLUMN_TXT = "txt";
+  
+  private static final String DB_CREATE = 
+    "create table " + DB_TABLE + "(" +
+      COLUMN_ID + " integer primary key, " +
+      COLUMN_TXT + " text" +
+    ");";
+  
+  private final Context mCtx;
+  
+  
+  private DBHelper mDBHelper;
+  private SQLiteDatabase mDB;
+  
+  public DB(Context ctx) {
+    mCtx = ctx;
+  }
+  
+  // открыть подключение
+  public void open() {
+    mDBHelper = new DBHelper(mCtx, DB_NAME, null, DB_VERSION);
+    mDB = mDBHelper.getWritableDatabase();
+  }
+  
+  // закрыть подключение
+  public void close() {
+    if (mDBHelper!=null) mDBHelper.close();
+  }
+  
+  // получить все данные из таблицы DB_TABLE
+  public Cursor getAllData() {
+    return mDB.query(DB_TABLE, null, null, null, null, null, null);
+  }
+  
+  // класс по созданию и управлению БД
+  private class DBHelper extends SQLiteOpenHelper {
+
+    public DBHelper(Context context, String name, CursorFactory factory,
+        int version) {
+      super(context, name, factory, version);
+    }
+
+    // создаем и заполняем БД
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+      db.execSQL(DB_CREATE);
+      
+      ContentValues cv = new ContentValues();
+      for (int i = 1; i &lt; 5; i++) {
+        cv.put(COLUMN_ID, i);
+        cv.put(COLUMN_TXT, "sometext " + i);
+        db.insert(DB_TABLE, null, cv);
+      }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    }
+  }
+}</code></pre>
+<p><b>MainActivity.java</b> немного изменился:</p>
+<pre><code class="java">package ru.startandroid.develop.p0631alertdialogitemssingle;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class MainActivity extends Activity {
+
+  final String LOG_TAG = "myLogs";
+
+  final int DIALOG_ITEMS = 1;
+  final int DIALOG_ADAPTER = 2;
+  final int DIALOG_CURSOR = 3;
+  DB db;
+  Cursor cursor;
+
+  String data[] = { "one", "two", "three", "four" };
+
+  /** Called when the activity is first created. */
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    // открываем подключение к БД
+    db = new DB(this);
+    db.open();
+    cursor = db.getAllData();
+    startManagingCursor(cursor);
+  }
+
+  public void onclick(View v) {
+    switch (v.getId()) {
+    case R.id.btnItems:
+      showDialog(DIALOG_ITEMS);
+      break;
+    case R.id.btnAdapter:
+      showDialog(DIALOG_ADAPTER);
+      break;
+    case R.id.btnCursor:
+      showDialog(DIALOG_CURSOR);
+      break;
+    default:
+      break;
+    }
+  }
+
+  protected Dialog onCreateDialog(int id) {
+    AlertDialog.Builder adb = new AlertDialog.Builder(this);
+    switch (id) {
+    // массив
+    case DIALOG_ITEMS:
+      adb.setTitle(R.string.items);
+      adb.setSingleChoiceItems(data, -1, myClickListener);
+      break;
+    // адаптер
+    case DIALOG_ADAPTER:
+      adb.setTitle(R.string.adapter);
+      ArrayAdapter&lt;String&gt; adapter = new ArrayAdapter&lt;String&gt;(this,
+          android.R.layout.select_dialog_singlechoice, data);
+      adb.setSingleChoiceItems(adapter, -1, myClickListener);
+      break;
+    // курсор
+    case DIALOG_CURSOR:
+      adb.setTitle(R.string.cursor);
+      adb.setSingleChoiceItems(cursor, -1, DB.COLUMN_TXT, myClickListener);
+      break;
+    }
+    adb.setPositiveButton(R.string.ok, myClickListener);
+    return adb.create();
+  }
+
+  // обработчик нажатия на пункт списка диалога или кнопку
+  OnClickListener myClickListener = new OnClickListener() {
+    public void onClick(DialogInterface dialog, int which) {
+      ListView lv = ((AlertDialog) dialog).getListView();
+      if (which == Dialog.BUTTON_POSITIVE)
+        // выводим в лог позицию выбранного элемента
+        Log.d(LOG_TAG, "pos = " + lv.getCheckedItemPosition());
+      else
+        // выводим в лог позицию нажатого элемента
+        Log.d(LOG_TAG, "which = " + which);
+    }
+  };
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    db.close();
+  }
+
+}</code></pre>
+<p>В <b>onCreate </b>подключаемся к базе.</p>
+<p><b>onclick </b>– в зависимости от нажатой кнопки вызываем соответствующий диалог.</p>
+<p><b>onCreateDialog </b>– создаем вызываемый диалог, используя AlertDialog.Builder. Диалог может построить список, используя один из следующих объектов:</p>
+<p>1) <b>Массив </b>строк. Используется метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setSingleChoiceItems(java.lang.CharSequence[], int, android.content.DialogInterface.OnClickListener)" target="_blank">setSingleChoiceItems</a>. На вход подается массив, позиция выбранного элемента и обработчик нажатия.  Если мы в значение выбранного элемента передаем -1, то в списке не будет выбранного элемента.</p>
+<p>2) <b>Адаптер</b>. Мы создаем ArrayAdapter, используя массив data и стандартный layout select_dialog_singlechoice, и передаем его в метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setSingleChoiceItems(android.widget.ListAdapter, int, android.content.DialogInterface.OnClickListener)" target="_blank">setSingleChoiceItems</a>. Также передаем туда позицию выбранного элемента и обработчик.</p>
+<p>3) <b>Курсор </b>БД. Вызываем метод <a href="http://developer.android.com/reference/android/app/AlertDialog.Builder.html#setSingleChoiceItems(android.database.Cursor, int, java.lang.String, android.content.DialogInterface.OnClickListener)" target="_blank">setSingleChoiceItems</a>. Передаем туда курсор, позицию выбранного элемента, имя поля (значение которого будет показано в списке) и обработчик нажатия.</p>
+<p>Кроме списка указываем только заголовок. В конце добавим кнопку ОК, создаем и возвращаем Dialog.</p>
+<p>Как видим для всех трех способов создания используются методы с одинаковым названием setSingleChoiceItems, но с разными аргументами на вход.</p>
+<p><b>myClickListener </b>– обработчик нажатия на пункты списка и на кнопку. Если было нажатие на кнопку (а значит - закрытие диалога), то в лог выводим информацию о выбранном элементе. Иначе (нажатие на пункт списка) – выводим позицию нажатого элемента. Если диалог содержит список с <b>одиночным </b>или <b>множественным </b>выбором, то нажатие на пункт списка <b>не приводит к закрытию </b>диалога. Но это можно без проблем реализовать программно.</p>
+<p>В <b>onDestroy</b> закрываем подключение к БД.</p>
+<p>Все сохраним и запустим. Вызовем какой-нибудь диалог.</p>
+<p><img src="images/lesson_62_0.png" alt="" width="640"></p>
+<p>Ничего не выбрано, т.к. мы указали -1 в методе setSingleChoiceItems.</p>
+<p>Нажмем на пункт, он выделился</p>
+<p><img src="images/lesson_62_1.png" alt="" width="640"></p>
+<p>А в логе появился текст</p>
+<p><em>which = 2</em></p>
+<p>Если нажмем на ОК, то диалог закроется. А лог отобразит позицию выбранного элемента.</p>
+<p><em>pos</em><em> = 2</em></p>
+<p>Если теперь снова откроете диалог, то выбранный пункт так и останется выбранным. Т.к. диалог не уничтожается при закрытии. Если хотите перед каждым вызовом менять выбранный элемент, реализуйте метод <b>onPrepareDialog</b>. В нем надо добраться до списка и вызвать метод <b>setItemChecked</b>.</p>
+<p>Пример кода, в котором выбирается третий элемент (нумерация с нуля):</p>
+<pre><code class="java">  protected void onPrepareDialog(int id, Dialog dialog) {
+    ((AlertDialog) dialog).getListView().setItemChecked(2, true);
+  };</code></pre>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

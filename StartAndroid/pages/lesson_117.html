@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 117. Виджеты. Создание. Lifecycle</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- создаем простой виджет<br> - разбираемся в его Lifecycle</p>
+<p> </p>
+<p>Добрались таки и до этой долгожданной темы. Вообще, интересно было бы глянуть статистику, какое количество из всех существующих приложений содержит в себе виджеты. Подозреваю, что не чаще, чем одно из десяти. Возможно, ближайшие несколько уроков эту статистику изменят  )</p>
+<p>Для понимания темы виджетов желательно знать, что такое BroadcastReceiver. Я о нем упоминал в Уроках 96 и 100. Это просто слушатель, который регистрируется в системе, ловит с помощью настроенного Intent Filter сообщения (Intent) и выполняет какой-либо код. Почему-то не сделал я отдельного урока по нему. Но, думаю, еще сделаю. Есть там свои интересные особенности, о которых можно поговорить.</p>
+<p>Думаю, нет особой необходимости подробно объяснять, что такое виджеты. Все их видели на своих девайсах. Это что-то типа мини-приложений расположенных на рабочем столе (Home). Они позволяют просмотреть какую-либо информацию из основных приложений, либо повлиять на поведение этих приложений. В качестве примера можно привести – прогноз погоды, текущее время, баланс какого-либо счета, список сообщений в различных мессенджерах, управление состоянием WiFi/3G/GPS/Bluetooth, яркость экрана и т.д. и т.п. В этом уроке сделаем простейший виджет, который отобразит статичный текст.</p>
+<p> </p>
+<p>Чтобы создать простейший виджет нам понадобятся три детали:</p>
+<p>1) Layout-файл.</p>
+<p>В нем мы формируем внешний вид виджета. Все аналогично layout-файлам для Activity и фрагментов, только набор доступных компонентов здесь ограничен следующим списком:</p>
+<p>FrameLayout<br>LinearLayout<br>RelativeLayout<br>GridLayout</p>
+<p>AnalogClock<br>Button<br>Chronometer<br>ImageButton<br>ImageView<br>ProgressBar<br>TextView<br>ViewFlipper<br>ListView<br>GridView<br>StackView<br>AdapterViewFlipper</p>
+<p> </p>
+<p>2) XML-файл c метаданными</p>
+<p>В нем задаются различные характеристики виджета. Мы пока что укажем следующие параметры:</p>
+<p>- layout-файл (из п.1.), чтобы виджет знал, как он будет выглядеть<br>- размер виджета, чтобы виджет знал, сколько места он должен занять на экране<br>- интервал обновления, чтобы система знала, как часто ей надо будет обновлять виджет</p>
+<p> </p>
+<p>3) Класс, наследующий <a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html" target="_blank">AppWidgetProvider</a>. В этом классе нам надо будет реализовать Lifecycle методы виджета.</p>
+<p> </p>
+<p>Давайте создадим три этих детали. Activity нам не понадобится, поэтому не забудьте убрать галку Create Activity в Wizard создания нового проекта</p>
+<p> </p>
+<p>Создадим проект без Activity:</p>
+<p><b>Project name</b>: P1171_SimpleWidget<br>
+<b>Build Target</b>: Android 4.0<br>
+<b>Application name</b>: SimpleWidget<br>
+<b>Package name</b>: ru.startandroid.develop.p1171simplewidget</p>
+<p> </p>
+<p>Добавим строки в <b>strings.xml</b>:</p>
+<pre><code class="xml">&lt;string name="widget_name"&gt;My first widget&lt;/string&gt;
+&lt;string name="widget_text"&gt;Text in widget&lt;/string&gt;</code></pre>
+<p> </p>
+<p>Создаем layout-файл <b>widget.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"&gt;
+	&lt;TextView
+		android:id="@+id/tv"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="#6600ff00"
+		android:gravity="center"
+		android:text="@string/widget_text"
+		android:textColor="#000"
+		android:textSize="18sp"&gt;
+	&lt;/TextView&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>RelativeLayout, а внутри зеленый TextView с текстом по центру. Т.е. виджет просто будет показывать текст на зеленом фоне.</p>
+<p> </p>
+<p>Создаем файл метаданных <b>res/xml/widget_metadata.xml</b>:</p>
+<pre><code class="xml">&lt;appwidget-provider
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:initialLayout="@layout/widget"
+	android:minHeight="40dp"
+	android:minWidth="110dp"
+	android:updatePeriodMillis="2400000"&gt;
+&lt;/appwidget-provider&gt;</code></pre>
+<p>В атрибуте <b>initialLayout </b>указываем layout-файл для виджета.</p>
+<p>Атрибуты <b>minHeight </b>и <b>minWidth </b>содержат минимальные размеры виджета по высоте и ширине.</p>
+<p>Есть <a href="http://developer.android.com/guide/practices/ui_guidelines/widget_design.html#anatomy_determining_size" target="_blank">определенный алгоритм</a> расчета этих цифр. Как вы наверняка замечали, при размещении виджета, экран делится на ячейки, и виджет занимает одну или несколько из этих ячеек по ширине и высоте. Чтобы конвертнуть ячейки в dp, используется формула 70 * n – 30, где n – это количество ячеек. Т.е. если мы, например, хотим, чтобы наш виджет занимал 2 ячейки в ширину и 1 в высоту, мы высчитываем ширину = 70 * 2 – 30 = 110 и высоту = 70 * 1 – 30 = 40. Эти полученные значения и будем использовать в атрибутах minWidth  и minHeight.</p>
+<p>Атрибут <b>updatePeriodMillis </b>содержит количество миллисекунд. Это интервал обновления виджета. Насколько я понял документацию, указать мы тут можем хоть 5 секунд, но чаще, чем раз в 30 минут (1 800 000) виджет обновляться все равно не будет - это системное ограничение. Давайте пока что поставим интервал 40 минут (2 400 000). В следующих уроках мы разберемся, как самим обновлять виджет с необходимым интервалом.</p>
+<p> </p>
+<p>Осталось создать класс, наследующий AppWidgetProvider.</p>
+<pre><code class="java">package ru.startandroid.develop.p1171simplewidget;
+
+import java.util.Arrays;
+
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.content.Context;
+import android.util.Log;
+
+public class MyWidget extends AppWidgetProvider {
+
+  final String LOG_TAG = "myLogs";
+
+  @Override
+  public void onEnabled(Context context) {
+    super.onEnabled(context);
+    Log.d(LOG_TAG, "onEnabled");
+  }
+
+  @Override
+  public void onUpdate(Context context, AppWidgetManager appWidgetManager,
+      int[] appWidgetIds) {
+    super.onUpdate(context, appWidgetManager, appWidgetIds);
+    Log.d(LOG_TAG, "onUpdate " + Arrays.toString(appWidgetIds));
+  }
+
+  @Override
+  public void onDeleted(Context context, int[] appWidgetIds) {
+    super.onDeleted(context, appWidgetIds);
+    Log.d(LOG_TAG, "onDeleted " + Arrays.toString(appWidgetIds));
+  }
+
+  @Override
+  public void onDisabled(Context context) {
+    super.onDisabled(context);
+    Log.d(LOG_TAG, "onDisabled");
+  }
+
+}</code></pre>
+<p><a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html#onEnabled(android.content.Context)" target="_blank">onEnabled</a> вызывается системой при создании первого экземпляра виджета (мы ведь можем добавить в Home несколько экземпляров одного и того же виджета).</p>
+<p><a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html#onUpdate(android.content.Context, android.appwidget.AppWidgetManager, int[])" target="_blank">onUpdate</a> вызывается при обновлении виджета. На вход, кроме контекста, метод получает объект AppWidgetManager и список ID экземпляров виджетов, которые обновляются. Именно этот метод обычно содержит код, который обновляет содержимое виджета. Для этого нам нужен будет AppWidgetManager, который мы получаем на вход.</p>
+<p><a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html#onDeleted(android.content.Context, int[])" target="_blank">onDeleted</a> вызывается при удалении каждого экземпляра виджета. На вход, кроме контекста, метод получает список ID экземпляров виджетов, которые удаляются.</p>
+<p><a href="http://developer.android.com/reference/android/appwidget/AppWidgetProvider.html#onDisabled(android.content.Context)" target="_blank">onDisabled</a> вызывается при удалении последнего экземпляра виджета.</p>
+<p>Во всех методах выводим в лог одноименный текст и список ID для onUpdate и onDeleted.</p>
+<p>Повторюсь - в onUpdate мы, по идее, должны написать какое-то обновление виджета. Т.е. если наш виджет отображает, например, текущее время, то при очередном обновлении (вызове onUpdate) надо получать текущее время и передавать эту инфу в виджет для отображения. В этом уроке мы пока не будем с этим возиться.</p>
+<p> </p>
+<p>Осталось немного подрисовать манифест. Добавьте туда ваш класс как Receiver</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_0.png" alt="" width="640" height="327"></p>
+<p>- укажите для него свои <b>label</b> и <b>icon</b>. Этот текст и эту иконку вы увидите в списке выбираемых виджетов, когда будете добавлять виджет на экран.</p>
+<p>- настройте для него фильтр с <b>action </b>= <i><b>android.appwidget.action.APPWIDGET_UPDATE</b></i></p>
+<p>- добавьте метаданные с именем <i><b>android.appwidget.provider</b></i> и указанием файла метаданных <b>xml/widget_metadata.xml</b> в качестве ресурса</p>
+<p> </p>
+<p>После этого секция receiver в манифесте должна получиться примерно такая:</p>
+<pre><code class="xml">&lt;receiver
+	android:name="MyWidget"
+	android:icon="@android:drawable/star_big_on"
+	android:label="@string/widget_name"&gt;
+	&lt;intent-filter&gt;
+		&lt;action
+			android:name="android.appwidget.action.APPWIDGET_UPDATE"&gt;
+		&lt;/action&gt;
+	&lt;/intent-filter&gt;
+	&lt;meta-data
+		android:name="android.appwidget.provider"
+		android:resource="@xml/widget_metadata"&gt;
+	&lt;/meta-data&gt;
+&lt;/receiver&gt;</code></pre>
+<p> </p>
+<p>Виджет готов. Все сохраняем и запускаем. Никаких Activity, разумеется, не всплывет. В консоли должен появиться текст:</p>
+<p><i>\P1171_SimpleWidget\bin\P1171_SimpleWidget.apk installed on device<br> Done!</i></p>
+<p><i> </i></p>
+<p>Открываем диалог создания виджета и видим в списке наш виджет с иконкой и текстом, которые мы указывали в манифесте для receiver.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_1.png" alt="" width="320" height="480"></p>
+<p>Выбираем его и добавляем на экран.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_2.png" alt="" width="320" height="480"></p>
+<p>Виджет появился, смотрим логи.</p>
+<p><i>onEnabled<br> onUpdate [8]</i></p>
+<p>Сработал <b>onEnabled</b>, т.к. мы добавили <b>первый </b>экземпляр виджета. И сразу после добавления, сработал метод <b>onUpdate </b>для этого экземпляра. Видим, что ему назначен ID = 8. (У вас, скорее всего, будет другой ID). Т.е. система добавила экземпляр виджета на экран и вызвала метод обновления с указанием ID экземпляра.</p>
+<p> </p>
+<p>Добавим еще один экземпляр</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_3.png" alt="" width="320" height="480"></p>
+<p>Смотрим лог</p>
+<p><i>onUpdate [9]</i></p>
+<p><b>onEnabled </b>не сработал, т.к. добавляемый экземпляр виджета уже <b>не первый</b>. <b>onUpdate </b>же снова отработал для нового добавленного экземпляра и получил на вход ID = 9.</p>
+<p> </p>
+<p>Теперь давайте удалим с экрана два этих экземпляра виджета. Сначала второй. В логах увидим:</p>
+<p><i>onDeleted [9]</i></p>
+<p>Сработал <b>onDeleted</b> и получил на вход ID удаляемого экземпляра виджета.</p>
+<p> </p>
+<p>Удаляем первый экземпляр. В логах:</p>
+<p><i>onDeleted [8]<br> onDisabled</i></p>
+<p>Снова сработал <b>onDeleted </b>- нас оповестили, что экземпляр виджета с ID=8 был удален. И сработал <b>onDisabled</b>, т.е. был удален <b>последний</b> экземпляр виджета, больше работающих экземпляров не осталось.</p>
+<p> </p>
+<p>Наш виджет обновляется (получает вызов метода onUpdate) раз в 40 минут. Если кому не лень, добавьте снова пару виджетов на экран и подождите. Когда они снова обновятся, в логах это отразится.</p>
+<p>Так создается и работает простой виджет. Пока остановимся на этом, чтобы уложились в голове схема создания виджета и его lifecycle-методы. Из интересного хотелось бы еще отметить пару вещей.</p>
+<p> </p>
+<h3>BroadcastReceiver</h3>
+<p>Класс AppWidgetProvider является расширением класса BroadcastReceiver (в манифесте мы его и прописали как Receiver). Он просто получает от системы сообщение в onReceive, определяет по значениям из Intent, какое именно событие произошло (добавление, удаление или обновление виджета), и вызывает соответствующий метод (onEnabled, onUpdate и пр.).</p>
+<p>В манифесте мы для нашего Receiver-класса настроили фильтр с action, который ловит события update. Каким же образом этот Receiver ловит остальные события (например, удаление)? Документация <a href="http://developer.android.com/guide/topics/appwidgets/index.html#Manifest" target="_blank">пишет</a> об этом так:</p>
+<p><i>The &lt;intent-filter&gt; element must include an &lt;action&gt; element with the android:name attribute. This attribute specifies that the AppWidgetProvider accepts the ACTION_APPWIDGET_UPDATE broadcast. This is the only broadcast that you must explicitly declare. The AppWidgetManager automatically sends all other App Widget broadcasts to the AppWidgetProvider as necessary.</i></p>
+<p>Т.е. ACTION_APPWIDGET_UPDATE – это единственный action, который необходимо прописать явно. Остальные события AppWidgetManager каким-то образом сам доставит до нашего AppWidgetProvider-наследника.</p>
+<p> </p>
+<h3>Отступы</h3>
+<p>Если мы расположим рядом несколько экземпляров виджета, увидим следующую картину</p>
+<p><img src="images/lesson_116_4.png" alt="" width="320" height="480"></p>
+<p>Не очень приятное зрелище. Надо бы сделать отступ.</p>
+<p> </p>
+<p>Добавим <i>android:padding="8dp"</i> к RelativeLayout в нашем layout-файле</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_5.png" alt="" width="640" height="501"></p>
+<p>Сохраняем, запускаем.</p>
+<p> </p>
+<p>Виджеты на экране поменялись автоматически и теперь выглядят более пристойно.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_6.png" alt="" width="320" height="480"></p>
+<p>Кстати, для них сработал onUpdate, смотрите логи. В метод был передан массив ID всех работающих экземпляров виджета.</p>
+<p> </p>
+<p>В Android 4.0 (API Level 14) и выше этот недостаток с отступами был устранен, и вручную делать отступы больше не надо. Давайте проверим. Уберите ранее добавленный в RelativeLayout отступ. И укажите в манифесте <b>android:targetSdkVersion</b> версию 14 (или выше), чтобы система знала, что можно использовать стандартные возможности, а не режим совместимости.</p>
+<p>Все сохраняем, запускаем наш виджет на эмуляторе с 4.1. Добавим три экземпляра.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_116_7.png" alt="" width="320" height="480"></p>
+<p>Система сама делает отступы между виджетами.</p>
+<p>Получается для версий, ниже 4 надо делать отступ в layout, а для старших версий не надо. Документация дает подсказку, как сделать так, чтобы ваш виджет корректно работал на всех версиях. Для этого используются квалификаторы версий.</p>
+<p> </p>
+<p>В layout для RelativeLayuot указываете:</p>
+<p><i>android:padding="@dimen/widget_margin"</i></p>
+<p> </p>
+<p>И создаете два файла.</p>
+<p><b>res/values/dimens.xml</b> с записью:</p>
+<pre><code class="xml">&lt;dimen name="widget_margin"&gt;8dp&lt;/dimen&gt;</code></pre>
+<p> </p>
+<p>и <b>res/values-v14/dimens.xml</b> с записью:</p>
+<pre><code class="xml">&lt;dimen name="widget_margin"&gt;0dp&lt;/dimen&gt;</code></pre>
+<p> </p>
+<p>В манифесте <b>android:targetSdkVersion</b> должен быть 14 или выше.</p>
+<p> </p>
+<p>Таким образом, на старых версиях (без системного отступа) отступ будет 8dp, а на новых – 0dp и останется только системный отступ.</p>
+</body>
+</html>
+						
+            </div>
+     </div>               
+</div>    
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content="Ramzan Elmurzaev"/>
+    
+	<title>Урок 141. Рисование. Доступ к Canvas</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- - получаем доступ к Canvas</p>
+<p>Наконец-то начинаем цикл уроков по графике в Android. Не прошло и двух с половиной лет с момента создания сайта.</p>
+<p>Для начала рассмотрим обычное 2D рисование.</p>
+<p>Для рисования используется объект Canvas. Сразу договоримся, что я буду называть его «канва». Тем более, что в русском языке даже есть такое слово, известное в узких кругах вышивающих крестиком. Можно еще, конечно, Canvas перевести как «холст» или «полотно», но как-то пафосно получается. «Канва» - проще и удобнее для меня.</p>
+<p>В этом уроке разберем два способа получения доступа к канве.</p>
+<p>Первый способ – через наследника View класса. Нам нужно просто переопределить его метод onDraw и он даст нам доступ к канве. Кода тут минимум и все предельно просто. Но есть недостаток – все рисование выполняется в основном потоке. Это прокатит, если у вас статичная картинка или не слишком динамичная анимация.</p>
+<p>Второй способ – через SurfaceView. Этот способ подойдет, если планируете рисовать что-то тяжелое и динамичное. Под рисование здесь будет выделен отдельный поток. Это уже немного посложнее в реализации, чем первый способ.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P1411_CanvasView<br/> <b>Build Target</b>: Android 4.0<br/> <b>Application name</b>: CanvasView<br/> <b>Package name</b>: ru.startandroid.develop.p1411canvasview<br/>
+<p>Код MainActivity.java:</p>
+<pre><code class="java">package ru.startandroid.develop.p1411canvasview;
+ 
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.View;
+ 
+public class MainActivity extends Activity {
+ 
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+ 
+  class DrawView extends View {
+ 
+    public DrawView(Context context) {
+      super(context);
+    }
+     
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawColor(Color.GREEN);
+    }
+     
+  }
+   
+}</code></pre>
+<p>Кнопка и фрагмент-карта</p>
+<p>В <b>onCreate</b> мы в метод setContentView передаем не layout-файл, как обычно, а свой view-компонент DrawView. Он будет занимать все содержимое Activity.</p>
+<p>Класс <b>DrawView</b> является наследником View и переопределяет его метод onDraw. А этот метод дает нам доступ к объекту Canvas. Пока что не будем рисовать ничего особенного, а просто закрасим все зеленым цветом с помощью метода drawColor.</p>
+<p>Собственно, все. Готово первое приложение, которое что-то рисует на экране.</p>
+<p>Все сохраняем, запускаем и видим результат.</p>
+<p><img src="images/lesson141/lesson1.png" alt="" width="640" height="385"/></p>
+<p>Экран зеленый, как мы и просили.</p>
+<p>Метод onDraw был вызван системой, когда возникла необходимость прорисовать View-компонент на экране. Это также произойдет, например, если выключить-включить экран. Попробуйте поставить в onDraw лог и посмотреть результат.</p>
+<p>Если вам надо, чтобы на канве была какая-то анимация, необходимо самим постоянно вызывать перерисовку экрана, когда ваши изменения готовы к отображению. Для этого используется метод invalidate. Вызываете его и он в свою очередь вызовет onDraw. Также есть реализации метода invalidate, которые позволяет перерисовать не весь компонент, а только его часть, указав координаты.</p>
+<p>Если нужна цикличная прорисовка, можно поместить метод invalidate прямо в onDraw и View будет постоянно перерисовываться. В некоторых уроках, думаю, будем так делать, но только для упрощения кода. А в действительности это не очень хорошая практика, т.к. это все будет идти в основном потоке. И правильнее будет реализовать такую постоянную перерисовку через SurfaceView.</p>
+<p>Давайте посмотрим как это делается.</p>
+<p>SurfaceView</p>
+<p>Перепишем <b>MainActivity.java:</b></p>
+<pre><code class="java">package ru.startandroid.develop.p1411canvasview;
+ 
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+ 
+public class MainActivity extends Activity {
+ 
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+ 
+  class DrawView extends SurfaceView implements SurfaceHolder.Callback {
+ 
+    private DrawThread drawThread;
+ 
+    public DrawView(Context context) {
+      super(context);
+      getHolder().addCallback(this);
+    }
+ 
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width,
+        int height) {
+ 
+    }
+ 
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+      drawThread = new DrawThread(getHolder());
+      drawThread.setRunning(true);
+      drawThread.start();
+    }
+ 
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+      boolean retry = true;
+      drawThread.setRunning(false);
+      while (retry) {
+        try {
+          drawThread.join();
+          retry = false;
+        } catch (InterruptedException e) {
+        }
+      }
+    }
+ 
+    class DrawThread extends Thread {
+ 
+      private boolean running = false;
+      private SurfaceHolder surfaceHolder;
+ 
+      public DrawThread(SurfaceHolder surfaceHolder) {
+        this.surfaceHolder = surfaceHolder;
+      }
+ 
+      public void setRunning(boolean running) {
+        this.running = running;
+      }
+ 
+      @Override
+      public void run() {
+        Canvas canvas;
+        while (running) {
+          canvas = null;
+          try {
+            canvas = surfaceHolder.lockCanvas(null);
+            if (canvas == null)
+              continue;
+            canvas.drawColor(Color.GREEN);
+          } finally {
+            if (canvas != null) {
+              surfaceHolder.unlockCanvasAndPost(canvas);
+            }
+          }
+        }
+      }
+    }
+ 
+  }
+ 
+}</code></pre>
+<p>Стало чуть сложнее, правда? )  Сейчас разберемся что к чему.</p>
+<p>Метод <b>onCreate</b>, собственно, ничуть не изменился. Мы также в метод setContentView передаем наш объект DrawView.</p>
+<p>Смотрим <b>DrawView</b>. Он является наследником SurfaceView и заодно реализует интерфейс обработчика SurfaceHolder.Callback. Напоминаю, что с SurfaceView мы уже работали в уроке про камеру (Урок 132). Этот компонент только отображает контент. А работа с ним ведется через обработчика SurfaceHolder.</p>
+<p>В <b>конструкторе</b> DrawView мы получаем SurfaceHolder и сообщаем ему, что сами будем обрабатывать его события. Таких событий три:</p>
+<p>surfaceChanged - был изменен формат или размер SurfaceView</p>
+<p>surfaceCreated – SurfaceView создан и готов к отображению информации</p>
+<p>surfaceDestroyed – вызывается перед тем, как SurfaceView будет уничтожен</p>
+<p>В <b>surfaceCreated</b> мы создаем свой поток прорисовки (о нем чуть позже), передаем ему SurfaceHolder. Вызовом метода setRunning(true) ставим ему метку о том, что он может работать и стартуем его.</p>
+<p>В <b>surfaceDestroyed</b> мы своему потоку сообщаем (setRunning(false)) о том, что его работа должна быть прекращена, т.к. SurfaceView сейчас будет уничтожено. Далее запускаем цикл, который ждет, пока не завершит работу наш поток прорисовки. Дождаться надо обязательно, иначе поток может попытаться нарисовать что-либо на уничтоженном SurfaceView.</p>
+<p><b>DrawThread</b>, наследник Thread, – это наш поток прорисовки. В нем и будет происходить рисование.</p>
+<p>В <b>конструктор</b> передаем SurfaceHolder. Он нам нужен, чтобы добраться до канвы.</p>
+<p>Метод setRunning ставит метку работы, сообщающую потоку, можно ли работать.</p>
+<p>Метод <b>run</b>. В нем видим цикл, который выполняется пока позволяет метка работы (running). В цикле обнуляем переменную канвы, затем от SurfaceHolder получаем канву методом lockCanvas. На всякий случай проверяем, что канва не null, и можно рисовать: снова просто закрашиваем все зеленым цветом. После того, как нарисовали, что хотели, мы возвращаем канву объекту SurfaceHolder методом unlockCanvasAndPost в секции finally (обязательной для выполнения) и SurfaceView отобразит наши художества.</p>
+<p>Соответственно, когда в <b>surfaceDestroyed</b> вызывается метод setRunning(false), происходит выход из цикла в методе <b>run</b> и поток завершает свою работу.</p>
+<p>Все сохраняем, запускаем и видим результат.</p>
+<p><img style="border: 1px solid black;" src="images/lesson141/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Экран зеленый.</p>
+<p>Когда мы рассматривали первый способ получения канвы (через onDraw), я упомянул, что надо самим вызывать invalidate, если нужна постоянная перерисовка. Во втором способе ничего такого делать уже не надо. У нас итак идет постоянная перерисовка в цикле.</p>
+<p>На этом вводный урок закончим. Мы рассмотрели два способа получения канвы. В последующих уроках я буду использовать первый способ, т.к. он проще, кода в нем значительно меньше и можно будет сосредоточиться непосредственно на работе с канвой и рисовании.</p>
+<p>На этом вводный урок закончим. Мы рассмотрели два способа получения канвы. В последующих уроках я буду использовать первый способ, т.к. он проще, кода в нем значительно меньше и можно будет сосредоточиться непосредственно на работе с канвой и рисовании.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

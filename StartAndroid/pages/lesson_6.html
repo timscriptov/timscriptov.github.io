@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 6. Виды Layouts. Ключевые отличия и свойства.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>Расположение View-элементов на экране зависит от <b>ViewGroup </b>(Layout), в которой они находятся. В этом уроке мы рассмотрим основные виды <b>Layout</b>.</p>
+<p><b>LinearLayout </b>– отображает View-элементы в виде одной строки (если он Horizontal) или одного столбца (если он Vertical). Я использовал это на прошлом уроке, когда демонстрировал использование layout-файлов при смене ориентации.</p>
+<p><b>TableLayout </b>– отображает элементы в виде таблицы, по строкам и столбцам.</p>
+<p><b>RelativeLayout </b>– для каждого элемента настраивается его положение относительно других элементов.</p>
+<p><b>AbsoluteLayout </b>– для каждого элемента указывается явная позиция на экране в системе координат (x,y)</p>
+<p>Рассмотрим эти виды</p>
+<h3>LinearLayout (LL)</h3>
+<p>Этот вид ViewGroup по умолчанию предлагается при создании новых layout-файлов. Он действительно удобен и достаточно гибок, чтобы создавать экраны различной сложности. LL имеет свойство Orientation, которое определяет, как будут расположены дочерние элементы – горизонтальной или вертикальной линией.</p>
+<p>Сделаем простой и наглядный пример.</p>
+<p>Создайте проект:</p>
+<p><b>Project name</b>: P0061_Layouts<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: Layouts<br><b>Package name</b>: ru.startandroid.develop.layouts<br><b>Create Activity</b>: MainActivity</p>
+<p>Откроем layout-файл <b>main.xml</b>, и поместите в него следующий код:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>Теперь корневой элемент у нас LinearLayout с вертикальной ориентацией.</p>
+<p>Перетащите слева в корневой LinearLayout три кнопки. Они выстроились вертикально.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_0.png" alt="" width="516" height="309"></p>
+<p> </p>
+<p>Теперь в Properties меняем для LL свойство <b>Orientation </b>на <b>horizontal</b> и сохраняем (CTRL+SHIFT+S) – кнопки выстроились горизонтально.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_1.png" alt="" width="640" height="252"></p>
+<p>GroupView можно вкладывать друг в друга. Вложим в один LL два других. Удалите в main.xml все элементы (три кнопки) кроме корневого LL. Ориентацию корневого LL укажем вертикальную и добавим в него два новых горизонтальных LL. В списке элементов слева они находятся в разделе Layouts. Напоминаю, что вы можете перетаскивать элементы из списка не только на экран, но и на конкретный элемент на вкладке Outline.</p>
+<p>В каждый горизонтальный LL добавим по три кнопки. Получилось два горизонтальных ряда кнопок.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_2.png" alt="" width="562" height="311"></p>
+<h3>TableLayout (TL)</h3>
+<p>TL состоит из строк <b>TableRow </b>(TR). Каждая TR в свою очередь содержит View-элементы, формирующие столбцы. Т.е. кол-во View в TR - это кол-во столбцов. Но кол-во столбцов в таблице должно быть равным для всех строк. Поэтому, если в разных TR разное кол-во View-элементов (столбцов), то общее кол-во определяется по TR с максимальным кол-вом. Рассмотрим на примере.</p>
+<p>Создадим layout-файл <b>tlayout.xml</b>. с корневым элементом TableLayout</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_3.png" alt="" width="500" height="532"></p>
+<p>Добавим в корневой TableLayout три TableRow-строки (из раздела Layouts слева) и в каждую строку добавим по две кнопки. Результат: наша таблица имеет три строки и два столбца.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_4.png" alt="" width="561" height="302"></p>
+<p>Добавим в первую строку еще пару кнопок. Кол-во столбцов для всех строк теперь равно 4, т.к. оно определяется по строке с максимальным кол-вом элементов, т.е. по первой строке. Для второй и третьей строки третий и четвертый столбцы просто ничем не заполнены.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_5.png" alt="" width="563" height="287"></p>
+<p>Во вторую строку добавим TextView и Button, и текст в добавленном TextView сделаем пустым. В третьей строке сделаем тоже самое. Мы видим, что эти элементы легли в третий и четвертый столбец. И т.к. TextView у нас без текста и на экране не виден, кажется что третий столбец во второй и третьей строке пустой.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_6.png" alt="" width="640" height="234"></p>
+<p>Ширина столбца определяется по самому широкому элементу из этого столбца. Введем текст в один из TextView и видим, что он расширил столбец.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_7.png" alt="" width="640" height="232"></p>
+<p>Я уберу элементы четвертого столбца и построю такой экран. Попробуйте сами сделать так же в качестве упражнения.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_8.png" alt="" width="335" height="319"></p>
+<p>TL может содержать не только TR, но и обычные View. Добавьте, например, Button прямо в TL, а не в TR и увидите, что она растянулась на ширину всей таблицы.</p>
+<h3>RelativeLayout (RL)</h3>
+<p>В этом виде Layout каждый View-элемент может быть расположен определенным образом относительно указанного View-элемента.</p>
+<p>Виды отношений:</p>
+<p>1) слева, справа, сверху, снизу указанного элемента (layout_toLeftOf, layout_toRightOf, layout_above, layout_below)</p>
+<p>2) выравненным по левому, правому, верхнему, нижнему краю указанного элемента (layout_alignLeft, layout_alignRight, layout_alignTop, layout_alignBottom)</p>
+<p>3) выравненным по левому, правому, верхнему, нижнему краю родителя (layout_alignParentLeft, layout_alignParentRight, layout_alignParentTop, layout_alignParentBottom)</p>
+<p>4) выравненным по центру вертикально, по центру горизонтально, по центру вертикально и горизонтально относительно родителя (layout_centerVertical, layout_centerHorizontal, layout_centerInParent)</p>
+<p>Подробно можно почитать в <a href="http://developer.android.com/reference/android/widget/RelativeLayout.LayoutParams.html" target="_blank">документацие</a>.</p>
+<p>Создадим <b>rlayout.xml</b> и скопируем туда такой xml-код:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;TextView
+        android:id="@+id/label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Type here:"&gt;
+    &lt;/TextView&gt;
+    &lt;EditText
+        android:id="@+id/entry"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/label"
+        android:background="@android:drawable/editbox_background"&gt;
+    &lt;/EditText&gt;
+    &lt;Button
+        android:id="@+id/ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/entry"
+        android:layout_marginLeft="10dip"
+        android:text="OK"&gt;
+    &lt;/Button&gt;
+    &lt;Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/ok"
+        android:layout_toLeftOf="@+id/ok"
+        android:text="Cancel"&gt;
+    &lt;/Button&gt;
+&lt;/RelativeLayout&gt;</code></pre>
+<p>Здесь у нас корневой элемент - RelativeLayout.</p>
+<p>Получился такой экран:</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_9.png" alt="" width="367" height="534"></p>
+<p>Нам интересен xml-код. Сразу кратко опишу незнакомые атрибуты и их значения:</p>
+<p><span class="layoutFormatter_attrName">android:layout_width</span>=<span class="layoutFormatter_attrValue">"match_parent"</span> <br><span class="layoutFormatter_attrName">android:layout_height</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> <br><span class="layoutFormatter_attrName">android:id</span>=<span class="layoutFormatter_attrValue">"@+id/entry"</span></p>
+<p>- слово <b>android</b> в названии каждого аттрибута – это <a href="http://www.w3schools.com/xml/xml_namespaces.asp" target="_blank">namespace</a>, я его буду опускать при объяснениях.<br><b>- id</b> – это ID элемента, <br><b>- layout_width</b> (ширина элемента) и <b>layout_height</b> (высота элемента) могут задаваться в асболютных значениях, а могут быть следующими: <b>fill_parent</b> (максимально возможная ширина или высота в пределах родителя) и <b>wrap_content</b> (ширина или высота определяется по содержимому элемента). В <a href="http://developer.android.com/reference/android/view/ViewGroup.LayoutParams.html" target="_blank">документацие</a> указывается, что есть еще <b>match_parent</b>. Это тоже самое, что и fill_parent. По каким-то причинам, разработчики системы решили, что название match_parent удобнее, и от fill_parent постепенно будут отказываться. А пока его оставили для совместимости. Так что запомните, что <b>match_parent = fill_parent</b> и в дальнейшем будем стараться использовать <b>match_parent</b>. Позже мы еще остановимся на этом и разберем подробнее.</p>
+<p>Сейчас вернемся к нашим элементам. В примере мы видим TextView, EditText и два Button – OK и Cancel. Давайте подробно разберем интересующие нас атрибуты.</p>
+<p><b>TextView </b><br><span class="layoutFormatter_attrName">android:id</span>=<span class="layoutFormatter_attrValue">"@+id/label"</span> - ID<br><span class="layoutFormatter_attrName">android:layout_width</span>=<span class="layoutFormatter_attrValue">"match_parent"</span> - занимает всю доступную ему ширину (хоть это и не видно на экране); <br><span class="layoutFormatter_attrName">android:layout_height</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> - высота по содержимому; <br>ни к чему никак не относится</p>
+<p><b>EditText </b><br><span class="layoutFormatter_attrName">android:id</span>=<span class="layoutFormatter_attrValue">"@+id/entry"</span> - ID<br><span class="layoutFormatter_attrName">android:layout_width</span>=<span class="layoutFormatter_attrValue">"match_parent"</span> - вся доступная ему ширина<br><span class="layoutFormatter_attrName">android:layout_height</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> - высота по содержимому<br><span class="layoutFormatter_attrName">android:layout_below</span>=<span class="layoutFormatter_attrValue">"@id/label"</span> - расположен <b>ниже </b>TextView (ссылка по ID)</p>
+<p><b>Button_OK </b><br><span class="layoutFormatter_attrName">android:id</span>=<span class="layoutFormatter_attrValue">"@+id/ok"</span> – ID<br><span class="layoutFormatter_attrName">android:layout_width</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> - ширина по содержимому <br><span class="layoutFormatter_attrName">android:layout_height</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> – высота по содержимому <br><span class="layoutFormatter_attrName">android:layout_below</span>=<span class="layoutFormatter_attrValue">"@id/entry"</span> - расположен ниже EditText<br><span class="layoutFormatter_attrName">android:layout_alignParentRight</span>=<span class="layoutFormatter_attrValue">"true"</span> - <b>выравнен по правому краю родителя</b><br><span class="layoutFormatter_attrName">android:layout_marginLeft</span>=<span class="layoutFormatter_attrValue">"10dip"</span> – имеет отступ слева (чтобы Button_Cancel был не впритык)</p>
+<p><b>Button_Cancel</b><br><span class="layoutFormatter_attrName">android:layout_width</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> - ширина по содержимому <br><span class="layoutFormatter_attrName">android:layout_height</span>=<span class="layoutFormatter_attrValue">"wrap_content"</span> – высота по содержимому <br><span class="layoutFormatter_attrName">android:layout_toLeftOf</span>=<span class="layoutFormatter_attrValue">"@id/ok"</span> - расположен <b>слева </b>от Button_OK<br><span class="layoutFormatter_attrName">android:layout_alignTop</span>=<span class="layoutFormatter_attrValue">"@id/ok"</span> - <b>выравнен по верхнему краю</b> Button_OK</p>
+<p>Вы можете подобавлять элементы и поэкспериментировать с их размещением.</p>
+<p>Обратите внимание, что у View-элемента может не быть ID (android:id). Например, для TextView он обычно не нужен, т.к. они чаще всего статичны и мы к ним почти не обращаемся при работе приложения. Другое дело EditText – мы работаем с содержимым текстового поля, и Button – нам надо обрабатывать нажатия и соответственно знать, какая именно кнопка нажата. В будущем мы увидим еще одну необходимость задания ID для View-элемента.</p>
+<h3>AbsoluteLayout (AL)</h3>
+<p>Обеспечивает абсолютное позиционирование элементов на экране. Вы указываете координаты для левого верхнего угла компонента.</p>
+<p>Создадим <b>alayout.xml</b> с корневым AbsoluteLayout</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_10.png" alt="" width="500" height="532"></p>
+<p>Теперь попробуйте перетаскиванием подобавлять различные элементы на экран. Они не выстраиваются, как при LinearLayout или TableLayout, а ложатся там, куда вы их перетащили. Т.е. это абсолютное позиционирование.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_5_11.png" alt="" width="646" height="581"></p>
+<p>Открываем xml-код и видим, что для задания координат используются <b>layout_x</b> и <b>layout_y</b>.</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;AbsoluteLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="42dp"
+        android:layout_y="62dp"
+        android:text="Button"&gt;
+    &lt;/Button&gt;
+    &lt;TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="142dp"
+        android:layout_y="131dp"
+        android:text="TextView"&gt;
+    &lt;/TextView&gt;
+    &lt;CheckBox
+        android:id="@+id/checkBox1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="55dp"
+        android:layout_y="212dp"
+        android:text="CheckBox"&gt;
+    &lt;/CheckBox&gt;
+    &lt;RadioButton
+        android:id="@+id/radioButton1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="171dp"
+        android:layout_y="318dp"
+        android:text="RadioButton"&gt;
+    &lt;/RadioButton&gt;
+&lt;/AbsoluteLayout&gt;</code></pre>
+<p>Поначалу кажется, что это наиболее удобный и интуитивно понятный способ расположения элементов на экране - они сразу располагаются там где надо. Но это только в случае, когда вы разрабатываете для экрана с конкретным разрешением. Если открыть такое приложение на другом экране, все элементы сместятся и получится не так, как вы планировали. Поэтому этот Layout не рекомендуется использовать. И его совместимость с будущими версиями Android не гарантируется.</p>
+<p>Есть еще <a href="http://developer.android.com/guide/topics/ui/layout-objects.html#viewgroupsummary" target="_blank">много видов</a> ViewGroup, и мы постепенно будем их осваивать. А пока нам хватит этих.</p>
+<p>В этом уроке мы:</p>
+<p>Рассмотрели основные виды Layout: LinearLayout, TableLayout, RelativeLayout, AbsoluteLayout</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

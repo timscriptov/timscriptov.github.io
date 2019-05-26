@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 40. LayoutInflater. Учимся использовать.</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+	  
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке:</p>
+<p>- разбираем как можно использовать LayoutInflater</p>
+<p>После изучения SQLite самое время приступить к изучению списков – List. Но перед этим полезно будет узнать про <b>LayoutInflater</b>. Это знание пригодится нам в создании расширенных списков. Также перед этим уроком рекомендую снова прочесть урок про <a href="/ru/uroki/vse-uroki-spiskom/49-16-layoutparams.html">LayoutParams</a>, освежить знания.</p>
+<p><a href="http://developer.android.com/reference/android/view/LayoutInflater.html" target="_blank">LayoutInflater</a> – это класс, который умеет из содержимого layout-файла создать View-элемент. Метод который это делает называется <b>inflate</b>. Есть несколько реализаций этого метода с различными параметрами. Но все они используют друг друга и результат их выполнения один – <b>View</b>.</p>
+<p>Мы рассмотрим эту реализацию – <a href="http://developer.android.com/reference/android/view/LayoutInflater.html#inflate(int, android.view.ViewGroup, boolean)" target="_blank">public View inflate (int resource, ViewGroup root, boolean attachToRoot)</a> </p>
+<p>Как видим, на вход метод принимает три параметра:</p>
+<p><b>resource</b> - ID layout-файла, который будет использован для создания View. Например - R.layout.main<br><b>root</b> – родительский ViewGroup-элемент для создаваемого View. LayoutParams от этого ViewGroup присваиваются создаваемому View.<br><b>attachToRoot</b> – присоединять ли создаваемый View к root. Если true, то root становится родителем создаваемого View. Т.е. это равносильно команде root.addView(View).  Если false – то создаваемый View просто получает LayoutParams от root, но его дочерним элементом не становится.</p>
+<p>Посмотрим на практике.</p>
+<p>Создадим проект:</p>
+<p><b>Project name</b>: P0401_LayoutInflater<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: LayoutInflater<br><b>Package name</b>: ru.startandroid.develop.p0401layoutinflater<br><b>Create Activity</b>: MainActivity</p>
+<p>Открываем <b>main.xml</b> и рисуем такой экран:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"&gt;
+    &lt;LinearLayout
+        android:id="@+id/linLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Linear Layout: "&gt;
+        &lt;/TextView&gt;
+    &lt;/LinearLayout&gt;
+    &lt;RelativeLayout
+        android:id="@+id/relLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Relative Layout: "&gt;
+        &lt;/TextView&gt;
+    &lt;/RelativeLayout&gt;
+&lt;/LinearLayout&gt;</code></pre>
+<p>На экране две ViewGroup - <b>linLayout </b>и <b>relLayout</b>. В них по TextView с соответствующим текстом.</p>
+<p>Создадим еще один layout-файл<b> text.xml</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tvLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:text="Layout with TextView"&gt;
+&lt;/TextView&gt;</code></pre>
+<p>Тут просто <b>TextView </b>без всяких <b>ViewGroup</b>. На нем мы и будем испытывать <b>LayoutInflater</b>.</p>
+<p>Открываем <b>MainActivity.java</b> и пишем код:</p>
+<pre><code class="java">package ru.startandroid.develop.p0401layoutinflater;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+  
+  final String LOG_TAG = "myLogs";
+  
+    /** Called when the activity is first created. */
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+        
+        LayoutInflater ltInflater = getLayoutInflater();
+        View view = ltInflater.inflate(R.layout.text, null, false);
+        LayoutParams lp = view.getLayoutParams();
+        
+        Log.d(LOG_TAG, "Class of view: " + view.getClass().toString());
+        Log.d(LOG_TAG, "LayoutParams of view is null: " + (lp == null));
+        Log.d(LOG_TAG, "Text of view: " + ((TextView) view).getText());
+    }
+}</code></pre>
+<p>Мы получаем <b>LayoutInflater</b> методом <a href="http://developer.android.com/reference/android/app/Activity.html#getLayoutInflater()" target="_blank">getLayoutInflater</a>, используем его для получения <b>View</b>-элемента из layout-файла<b> text.xml</b> и считываем <b>LayoutParams </b>у свежесозданного view.</p>
+<p>Обратите внимание, на параметры, которые мы использовали для метода <b>inflate</b>. Мы указали <b>ID </b>layout-ресурса, передали <b>null </b>в качестве родительского элемента и, соответственно, привязка к родителю - <b>false</b>.</p>
+<p>Все сохраним и запустим.</p>
+<p>На экране ничего не изменилось. Т.к. мы конвертнули layout в view, но никуда его не поместили. Он просто висит в памяти.</p>
+<p><img src="images/lesson_39_0.png" alt="" width="640" height="454" border="0"></p>
+<p>Смотрим лог:</p>
+<p><em>Class of view: class android.widget.TextView<br></em><em>LayoutParams of view is null: true<br></em><em>Text of view: Layout with TextView</em></p>
+<p>Мы видим класс созданного элемента - <b>TextView</b>. Все верно - этот элемент и был в файле <b>text.xml</b>. Далее видим <b>null </b>вместо <b>LayoutParams</b>. Это произошло потому, что родителя в методе inflate мы указали <b>null</b>. А именно от родителя <b>view </b>и должен был получить <b>LayoutParams</b>. Третья строка лога показывает текст TextView. Он тот же, что и в layout-файле <b>text.xml</b> – все верно.</p>
+<p>Давайте немного изменим программу. Будем добавлять наш созданный элемент в <b>linLayout</b> из <b>main.xml</b>. Делается это просто – командой <b>addView</b>.</p>
+<pre><code class="xml; highlight">LayoutParams lp = view.getLayoutParams();
+        
+LinearLayout linLayout = (LinearLayout) findViewById(R.id.linLayout);
+linLayout.addView(view);
+        
+Log.d(LOG_TAG, "Class of view: " + view.getClass().toString());  </code></pre>
+<p>(добавляете только выделенные строки)</p>
+<p>Мы нашли <b>linLayout </b>с экрана и добавили в него созданный с помощью LayoutInflater элемент.</p>
+<p>Сохраняем, запускаем. Видим, что элемент добавился на экран в linLayout.</p>
+<p><img src="images/lesson_39_1.png" alt="" width="640" height="454" border="0"></p>
+<p>Теперь давайте попробуем указать родителя (<b>root</b>) при вызове метода <b>inflate</b>. Перепишем метод <b>onCreate</b>:</p>
+<pre><code class="java">  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    LayoutInflater ltInflater = getLayoutInflater();
+
+    LinearLayout linLayout = (LinearLayout) findViewById(R.id.linLayout);
+    View view1 = ltInflater.inflate(R.layout.text, linLayout, false);
+    LayoutParams lp1 = view1.getLayoutParams();
+
+    Log.d(LOG_TAG, "Class of view1: " + view1.getClass().toString());
+    Log.d(LOG_TAG, "Class of layoutParams of view1: " + lp1.getClass().toString());
+    Log.d(LOG_TAG, "Text of view1: " + ((TextView) view1).getText());
+
+    RelativeLayout relLayout = (RelativeLayout) findViewById(R.id.relLayout);
+    View view2 = ltInflater.inflate(R.layout.text, relLayout, false);
+    LayoutParams lp2 = view2.getLayoutParams();
+
+    Log.d(LOG_TAG, "Class of view2: " + view2.getClass().toString());
+    Log.d(LOG_TAG, "Class of layoutParams of view2: " + lp2.getClass().toString());
+    Log.d(LOG_TAG, "Text of view2: " + ((TextView) view2).getText());
+  }</code></pre>
+<p>Мы находим элементы <b>linLayout </b>и <b>relLayout </b>с экрана и с помощью <b>LayoutInflater </b>создаем два View-элемента из layout-файла text.xml. Для <b>первого </b>указываем root – <b>linLayout</b>, для <b>второго </b>– <b>relLayout</b>. Но третий параметр <b>attachToRoot</b> оставляем <b>false</b>. Это значит, что созданный <b>View</b>-элемент <b>получит LayoutParams </b>от <b>root</b>-элемента, но <b>не добавится</b> к нему.</p>
+<p>Все сохраним, запустим. На экране ничего не поменялось. Т.к. мы ни к чему новые элементы не добавляли и <b>attachToRoot </b>= <b>false</b>.</p>
+<p><img src="images/lesson_39_2.png" alt="" width="640" height="454" border="0"></p>
+<p>Смотрим лог:</p>
+<p><em>Class of view1: class android.widget.TextView<br></em><em>Class of layoutParams of view1: class android.widget.LinearLayout$LayoutParams<br></em><em>Text of view1: Layout with TextView<br></em><em>Class of view2: class android.widget.TextView<br></em><em>Class of layoutParams of view2: class android.widget.RelativeLayout$LayoutParams<br></em><em>Text of view2: Layout with TextView</em></p>
+<p>По логам видно, что класс созданных элементов – <b>TextView</b>. А класс <b>LayoutParams </b>различается. В <b>первом </b>случае – это <b>LinearLayout$LayoutParams</b>, т.к. в качестве <b>root </b>элемента в методе inflate мы указали <b>linLayout</b>, а это объект класса <b>LinearLayout</b>. Во втором случае класс <b>LayoutParams </b>у созданного элемента - <b>RelativeLayout$LayoutParams</b>. Потому, что в качестве root указали <b>relLayout </b>(класс <b>RelativeLayout</b>).</p>
+<p>Теперь у нас два варианта, как добавить созданные <b>view1 </b>и <b>view2 </b>на экран.</p>
+<p>1) Снова использовать методы <b>addView</b></p>
+<p>2) Передавать <b>true </b>в качестве третьего параметра метода <b>inflate</b>. Тогда созданный <b>View</b>-элемент будет добавлен к root.</p>
+<p>Выберем второй вариант и внесем изменения в код:</p>
+<pre><code class="java">  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    LayoutInflater ltInflater = getLayoutInflater();
+
+    LinearLayout linLayout = (LinearLayout) findViewById(R.id.linLayout);
+    View view1 = ltInflater.inflate(R.layout.text, linLayout, true);
+    LayoutParams lp1 = view1.getLayoutParams();
+
+    Log.d(LOG_TAG, "Class of view1: " + view1.getClass().toString());
+    Log.d(LOG_TAG, "Class of layoutParams of view1: " + lp1.getClass().toString());
+
+    RelativeLayout relLayout = (RelativeLayout) findViewById(R.id.relLayout);
+    View view2 = ltInflater.inflate(R.layout.text, relLayout, true);
+    LayoutParams lp2 = view2.getLayoutParams();
+
+    Log.d(LOG_TAG, "Class of view2: " + view2.getClass().toString());
+    Log.d(LOG_TAG, "Class of layoutParams of view2: " + lp2.getClass().toString());
+  }</code></pre>
+<p>Передаем <b>true </b>в качестве <b>третьего </b>параметра в методе <b>inflate </b>и убираем строки выведения в лог текстов из TextView. Сейчас будет понятно почему.</p>
+<p>Все сохраним и запустим приложение.</p>
+<p><img src="images/lesson_39_3.png" alt="" width="640" height="454" border="0"></p>
+<p>Как видим, созданные <b>TextView </b>появились в своих родителях, которых мы указали в методе <b>inflate</b>. В <b>RelativeLayout </b>элементы наложились друг на друга, т.к. мы не настроили расположение. В данный момент это не существенно. </p>
+<p>Смотрим лог:</p>
+<p><em>Class of view1: class android.widget.LinearLayout<br> Class of layoutParams of view1: class android.widget.LinearLayout$LayoutParams<br> Class of view2: class android.widget.RelativeLayout<br> Class of layoutParams of view2: class android.widget.LinearLayout$LayoutParams</em></p>
+<p>Обратите внимание на класс элементов. В первом случае - это <b>LinearLayout</b>, а во втором - <b>RelativeLayout</b>. Т.е. метод <b>inflate </b>вернул нам <b>не созданные</b> из layout-файла View-элементы, а те, что мы указывали как <b>root</b>. А <b>созданные </b>из layout-файла <b>View </b>элементы он <b>добавил </b>в <b>root </b>как дочерние аналогично команде <b>addView</b>. Это произошло потому, что мы указали <b>true </b>в третьем параметре (attachToRoot) метода inflate. </p>
+<p>Соответственно <b>LayoutParams </b>для <b>view1 </b>и <b>view2 </b>будет<b> LinearLayout$LayoutParams</b>, т.к. <b>linLayout </b>и <b>relLayout </b>имеют родителя <b>LinearLayout</b>. И <b>LayoutParams </b>берут от него.</p>
+<p>Для закрепления темы на следующем уроке сделаем пример поинтереснее.</p>
+</body>
+</html>
+
+            </div>
+     </div>     
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

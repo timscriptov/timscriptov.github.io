@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+  
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="author" content=""/>
+    
+	<title>Урок 167. Рисование. Метод Canvas saveLayer.</title>
+ <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+	
+	<body>
+      <div class="page__inner">
+      <div class="main main_width-limit">
+      <div class="content">
+      
+		<p>В этом уроке:</p>
+<p>- используем метод Canvas.saveLayer</p>
+<p>В Уроке 146 мы разбирались с методом save. С его помощью можно сохранить состояние канвы, выполнить различные преобразования и вернуться к сохраненному состоянию методом restore. Метод <a href="http://developer.android.com/reference/android/graphics/Canvas.html#saveLayer(android.graphics.RectF, android.graphics.Paint, int)" target="_blank" rel="noopener noreferrer">saveLayer</a> создает отдельный от канвы Bitmap и переадресует ему все последующие операции канвы. А чтобы потом записать получившийся результат с Bitmap-а на канву, необходимо вызвать метод restore. Те, кто хотя бы минимально работал с графическими редакторами, могут провести аналогию со слоями. Вы создаете отдельный слой, рисуете на нем что-либо, затем сливаете его с основным изображением. Собственно, метод так и называется saveLayer – «сохранить слой».</p>
+<p>Поначалу кажется, что этот метод – абсолютно бессмысленный. Какой смысл выделять отдельный слой, чтобы нарисовать на нем что-то и потом все равно вывести это на основной канве? Проще сразу на канве и рисовать. Оказывается, смысл есть. И сейчас мы разберем пример, после которого станет понятно, зачем может понадобиться этот механизм.</p>
+<p>Возьмем картинку</p>
+<p><img src="images/lesson167/lesson1.png" alt="" width="640" height="385"/></p>
+<p>и попробуем нарисовать такой эффект.</p>
+<p><img src="images/lesson167/lesson2.png" alt="" width="640" height="385"/></p>
+<p>Т.е. на картинку наложена рамка. В центре рамка прозрачная, а к краям становится затемненной полупрозрачной.</p>
+<p>Идею для примера я любезно спер <a href="http://blog.sephiroth.it/2014/07/06/android-create-a-vignette-effect" target="_blank" rel="noopener noreferrer">отсюда</a>. Но чтобы уж совсем не палиться, картинку взял другую.</p>
+<p>План такой:</p>
+<p>1) Выводим на канву картинку</p>
+<p>2) Создаем слой, на котором нарисуем полупрозрачную рамку</p>
+<p>3) Накладываем слой-рамку на картинку</p>
+<p>Начнем с создания полупрозрачной рамки. </p>
+<p>Класс <b>MainActivity</b>:</p>
+<pre><code class="java">public class MainActivity extends Activity {
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(new DrawView(this));
+  }
+
+  class DrawView extends View {
+
+    Paint mShaderPaint;
+    Paint mBlackPaint;
+    Paint mPaint;
+    Bitmap mBitmap;
+    Rect mRect = new Rect(0, 40, 750, 370);
+    RectF mRectF = new RectF(mRect);
+
+    public DrawView(Context context) {
+      super(context);
+      setLayerType(LAYER_TYPE_SOFTWARE, null);
+      init();
+    }
+
+    private void init() {
+      mShaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mShaderPaint.setShader(createShader());
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawOval(mRectF, mShaderPaint);
+    }
+
+    private Shader createShader() {
+      final int[] colors = new int[] { 0xff000000, 0xff000000, 0 };
+      final float[] anchors = new float[] { 0, 0.5f, 1 };
+      Shader shader = new android.graphics.RadialGradient(0, 0, 1,
+          colors, anchors, Shader.TileMode.CLAMP);
+
+      Matrix matrix = new Matrix();
+      matrix.postTranslate(mRect.centerX(), mRect.centerY());
+      matrix.postScale(mRect.width() / 2, mRect.height() / 2,
+          mRect.centerX(), mRect.centerY());
+
+      shader.setLocalMatrix(matrix);
+      return shader;
+    }
+
+  }
+
+}</code></pre>
+<p> В методе <b>init</b> создаем кисть и устанавливаем ей шейдер, созданный в методе createShader.</p>
+<p>Для создания шейдера в <b>createShader</b> используем градиент-шейдер (Урок 165). Он черный (ff000000) в центре и будет становиться прозрачным (00000000) к краям. Обратите внимание, что мы создали его в точке (0,0) и радиусом он всего 1. Далее мы применяем к нему матрицу (Урок 144), чтобы поместить его в нужную точку и придать ему необходимые размеры.</p>
+<p>mRect – это координаты прямоугольника, в котором будет выведена картинка. Соответственно центр градиента нам надо поместить в центр mRect, а размер градиента должен быть равен размеру mRect.</p>
+<p>В методе <b>onDraw</b> нарисуем на экране овал, используя созданный шейдер.</p>
+<p><img src="images/lesson167/lesson3.png" alt="" width="640" height="385"/></p>
+<p>Центр градиента находится в центре mRect-прямоугольника. А форма градиента, изначально круглая, немного сжата по вертикали, чтобы влезть в прямоугольник. Это результат работы матрицы.</p>
+<p>Этот градиент мы сейчас будем использовать для создания необходимой нам рамки. Для этого мы возьмем полупрозрачный черный фон</p>
+<p><img src="images/lesson167/lesson4.png" alt="" width="640" height="385"/></p>
+<p>и сверху нарисуем на нем градиент в режиме PorterDuff.Mode.DST_OUT (Урок 154).</p>
+<p>Смотрим формулу расчета итоговых альфы и цвета для режима DST_OUT: [Da * (1 - Sa), Dc * (1 - Sa)].</p>
+<p>В нашем случае: <br/> Da - уровень прозрачности черного фона<br/> Dc - цвет черного фона<br/> Sa - уровень прозрачности градиента</p>
+<p><em>Заметьте, что от градиента в формуле используется только альфа. Т.е. цвет там может быть хоть красно-зеленый. Он будет проигнорирован этим режимом наложения.</em></p>
+<p>Т.е. там, где градиент наиболее непрозрачен, выражение (1 - Sa) стремится к нулю, а следовательно и стремятся к нулю итоговые значения альфы и цвета, полученные в результате наложения. И пикселы там будут максимально прозрачные.</p>
+<p>А там, где градиент наименее прозрачен, выражение (1 - Sa) стремится к единице, а следовательно итоговые значения альфы и цвета стремятся к Da и Dc. Т.е. пикселы там будут такие же, что и в черном фоне.</p>
+<p>В итоге мы получим черный фон с прозрачным центром, а края останутся почти без изменений.</p>
+<p>Реализуем это в коде. Перепишем метод <b>init</b>:</p>
+<pre><code class="java">    private void init() {
+      mShaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mShaderPaint.setShader(createShader());
+      mShaderPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+      
+      mBlackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mBlackPaint.setColor(Color.BLACK);
+      mBlackPaint.setAlpha(100);
+    }</code></pre>
+<p>Добавляем DST_OUT к кисти шейдера. И создаем кисть с полупрозрачным черным цветом.</p>
+<p>и метод <b>onDraw</b>:</p>
+<pre><code class="java">    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawRect(mRect, mBlackPaint);
+      canvas.drawOval(mRectF, mShaderPaint);
+    }</code></pre>
+<p>Выводим фон, а на него овал с шейдером.</p>
+<p>Мы получили слой с рамкой прозрачности.</p>
+<p><img src="images/lesson167/lesson5.png" alt="" width="640" height="385"/></p>
+<p>Центр этой рамки не белый, а прозрачный, через него просто просвечивает белый фон. </p>
+<p>Попробуем нарисовать все это на картинке сразу, без использования метода saveLayer.</p>
+<p>Перепишем <b>init</b>:</p>
+<pre><code class="java">    private void init() {
+      mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mBitmap = BitmapFactory.decodeResource(getResources(),
+          R.drawable.image);
+      mBitmap = Bitmap.createScaledBitmap(mBitmap, mRect.width(),
+          mRect.height(), true);
+
+      mShaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mShaderPaint.setShader(createShader());
+      mShaderPaint.setXfermode(new PorterDuffXfermode(
+          PorterDuff.Mode.DST_OUT));
+
+      mBlackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      mBlackPaint.setColor(Color.BLACK);
+      mBlackPaint.setAlpha(100);
+    }</code></pre>
+<p>Добавляем создание картинки и обычной кисти для ее вывода.</p>
+<p>и <b>onDraw</b></p>
+<pre><code class="java">    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawBitmap(mBitmap, 0, 0, mPaint);
+      canvas.drawRect(mRect, mBlackPaint);
+      canvas.drawOval(mRectF, mShaderPaint);
+    }</code></pre>
+<p>Рисуем сначала картинку, затем фон, затем овал.</p>
+<p><img src="images/lesson167/lesson6.png" alt="" width="640" height="385"/></p>
+<p>Получилось не совсем то, что мы ожидали. Сама картинка в центре тоже стала прозрачной. Так произошло потому, что сначала на картинку мы нарисовали темный фон, получив просто затемненную картинку, а затем выполнили DST_OUT-наложение градиента. И это наложение повлияло на цвета и альфу самой картинки, сделав ее прозрачной в центре.</p>
+<p>Именно поэтому необходимо создавать отдельный слой, рисовать там рамку и потом обычной кистью без всяких режимов рисовать ее поверх картинки. Проверим.</p>
+<p>Перепишем <b>onDraw</b>:</p>
+<pre><code class="java">    @Override
+    protected void onDraw(Canvas canvas) {
+      canvas.drawBitmap(mBitmap, 0, 0, mPaint);
+      canvas.saveLayer(mRectF, mPaint, Canvas.ALL_SAVE_FLAG);
+      canvas.drawRect(mRect, mBlackPaint);
+      canvas.drawOval(mRectF, mShaderPaint);
+      canvas.restore();
+    }</code></pre>
+<p>Рисуем картинку. Затем переключаемся на отдельный слой методом saveLayer, рисуем на нем рамку (фон + овал с градиентом в режиме DST_OUT) и методом restore накладываем эту рамку на картинку. </p>
+<p>Результат:</p>
+<p><img src="images/lesson167/lesson7.png" alt="" width="640" height="385"/></p>
+<p>Рамка легла сверху, обеспечив нужный уровень прозрачности и не затирая оригинал.</p>
+<p>Если вы вместо метода saveLayer просто сами создадите Bitmap, нарисуете рамку на нем и потом просто наложите этот Bitmap поверх картинки, то вы получите тот же результат. В принципе, метод saveLayer именно это и делает, судя по его описанию в документацие.</p>
+</div>
+</div>
+</div>
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>

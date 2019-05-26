@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+	<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Урок 20. Анимация</title>
+    
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+	</head>
+
+	<body>
+		
+<div class="page__inner">
+     <div class="main main_width-limit">
+            <div class="content">
+
+          <html>
+  <body><p>В этом уроке мы:</p>
+<p>- рассмотрим анимацию View-компонентов</p>
+<p>Перед серьезными темами я решил все таки рассмотреть еще одну интересную и, на мой взгляд, несложную тему. Правда рассмотрю я только вершину и в дебри не полезу. Тема – анимация. Мы научимся проделывать следующие трансформации с обычными View-компонентами:<br>- менять прозрачность<br>- менять размер<br>- перемещать<br>- поворачивать</p>
+<p><b>Создадим</b> <b>проект</b><b>:</b></p>
+<p><b>Project name</b>: P0201_SimpleAnimation<br><b>Build Target</b>: Android 4.0<br><b>Application name</b>: SimpleAnimation<br><b>Package name</b>: ru.startandroid.develop.p0201simpleanimation<br><b>Create Activity</b>: MainActivity</p>
+<p>Трансформации конфигурируются в XML файлах, затем в коде программы считываются и присваиваются View-элементам. Я не буду дублировать <a href="http://developer.android.com/guide/topics/resources/animation-resource.html#View" target="_blank">документацию</a> и все расписывать, а сразу перейду к практике.</p>
+<p>В нашем проекте есть папка <b>res</b>. Надо в ней создать папку <b>anim</b>. Сделать это можно, например, так:  правой кнопкой на <b>res </b>и в меню выбираем <b>New </b>-&gt; <b>Folder</b>. В папке <b>anim </b>надо создать файлы. Делается это аналогично: правой кнопкой на <b>anim </b>и в меню выбираем <b>New </b>-&gt; <b>File</b>. В этих файлах будем конфигурировать анимацию.</p>
+<p>Создаем следующие файлы в папке res/anim:</p>
+<p><b>Имя файла</b>: myalpha.xml</p>
+<p><b>Содержимое</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;alpha
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromAlpha="0.0"
+    android:toAlpha="1.0"
+    android:duration="3000"&gt;
+&lt;/alpha&gt;</code></pre>
+<p><b>Описание трансформации</b>: меняется прозрачность с 0 до 1 в течение трех секунд.</p>
+<p><b>Имя файла</b>: myscale.xml</p>
+<p><b>Содержимое</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;scale
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromXScale="0.1"
+    android:toXScale="1.0"
+    android:fromYScale="0.1"
+    android:toYScale="1.0"
+    android:pivotX="50%"
+    android:pivotY="50%"
+    android:duration="3000"&gt;
+&lt;/scale&gt;</code></pre>
+<p><b>Описание трансформации</b>: изменение размера с 0.1 от оригинальной ширины и высоты до 1. Точка, относительно которой будет производиться масштабирование, лежит ровно посередине объекта (pivotX, pivotY). Продолжительность – 3 сек.</p>
+<p><b>Имя файла</b>: mytrans.xml</p>
+<p><b>Содержимое</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;translate
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromXDelta="-150"
+    android:toXDelta="0"
+    android:fromYDelta="-200"
+    android:toYDelta="0"
+    android:duration="3000"&gt;
+&lt;/translate&gt;</code></pre>
+<p><b>Описание трансформации</b>: перемещение с -150 относительно текущей позиции по оси X и -200 по оси Y в текущую позицию (0,0). Продолжительность – 3 сек.</p>
+<p><b>Имя файла</b>: myrotate.xml</p>
+<p><b>Содержимое</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;rotate
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromDegrees="0"
+    android:toDegrees="360"
+    android:duration="3000"&gt;
+&lt;/rotate&gt;</code></pre>
+<p><b>Описание трансформации</b>: поворот относительно левого верхнего угла (т.к. не указаны pivotX, pivotY) на 360 градусов в течение трех секунд</p>
+<p><b>Имя файла</b>: mycombo.xml</p>
+<p><b>Содержимое</b>:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;set
+    xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+    &lt;rotate
+        android:fromDegrees="0"
+        android:toDegrees="360"
+        android:duration="3000"
+        android:pivotX="50%"
+        android:pivotY="50%"&gt;
+    &lt;/rotate&gt;
+    &lt;scale
+        android:fromXScale="0.1"
+        android:toXScale="1.0"
+        android:fromYScale="0.1"
+        android:toYScale="1.0"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:duration="3000"&gt;
+    &lt;/scale&gt;
+&lt;/set&gt;</code></pre>
+<p><b>Описание трансформации</b>: одновременно увеличение размера и вращение в течение трех секунд. Обратите внимание, для комбинации трансформ использован тег &lt;set&gt;</p>
+<p>Итак, мы создали 5 файлов анимации.</p>
+<p><img style="border: 1px solid black;" src="images/lesson_19_0.png" alt="" width="249" height="275"></p>
+<p>И теперь можем применять их к View-компонентам.</p>
+<p>Открываем <b>main.xml</b> и создадим экран:</p>
+<pre><code class="xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:id="@+id/frameLayout1"
+    android:layout_height="match_parent"&gt;
+    &lt;TextView
+        android:text="TextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:id="@+id/tv"
+        android:textSize="38sp"&gt;
+    &lt;/TextView&gt;
+&lt;/FrameLayout&gt;</code></pre>
+<p>По центру экрана находится <b>TextView</b>, к нему и будем применять трансформации. Для этого создадим контекстное меню для TextView, добавим пункты меню, соответствующие нашим наборам и при нажатии будем запускать анимацию.</p>
+<pre><code class="java">package ru.startandroid.develop.p0201simpleanimation;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+
+  // константы для ID пунктов меню
+  final int MENU_ALPHA_ID = 1;
+  final int MENU_SCALE_ID = 2;
+  final int MENU_TRANSLATE_ID = 3;
+  final int MENU_ROTATE_ID = 4;
+  final int MENU_COMBO_ID = 5;
+
+  TextView tv;
+
+  /** Called when the activity is first created. */
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    tv = (TextView) findViewById(R.id.tv);
+    // регистрируем контекстное меню для компонента tv
+    registerForContextMenu(tv);
+  }
+
+  @Override
+  public void onCreateContextMenu(ContextMenu menu, View v,
+      ContextMenuInfo menuInfo) {
+    // TODO Auto-generated method stub
+    switch (v.getId()) {
+    case R.id.tv:
+      // добавляем пункты
+      menu.add(0, MENU_ALPHA_ID, 0, "alpha");
+      menu.add(0, MENU_SCALE_ID, 0, "scale");
+      menu.add(0, MENU_TRANSLATE_ID, 0, "translate");
+      menu.add(0, MENU_ROTATE_ID, 0, "rotate");
+      menu.add(0, MENU_COMBO_ID, 0, "combo");
+      break;
+    }
+    super.onCreateContextMenu(menu, v, menuInfo);
+  }
+
+  @Override
+  public boolean onContextItemSelected(MenuItem item) {
+    Animation anim = null;
+    // определяем какой пункт был нажат
+    switch (item.getItemId()) {
+    case MENU_ALPHA_ID:
+      // создаем объект анимации из файла anim/myalpha
+      anim = AnimationUtils.loadAnimation(this, R.anim.myalpha);
+      break;
+    case MENU_SCALE_ID:
+      anim = AnimationUtils.loadAnimation(this, R.anim.myscale);
+      break;
+    case MENU_TRANSLATE_ID:
+      anim = AnimationUtils.loadAnimation(this, R.anim.mytrans);
+      break;
+    case MENU_ROTATE_ID:
+      anim = AnimationUtils.loadAnimation(this, R.anim.myrotate);
+      break;
+    case MENU_COMBO_ID:
+      anim = AnimationUtils.loadAnimation(this, R.anim.mycombo);
+      break;
+    }
+    // запускаем анимацию для компонента tv
+    tv.startAnimation(anim);
+    return super.onContextItemSelected(item);
+  }
+}</code></pre>
+<p>Анимация читается из xml-файла методом <a href="http://developer.android.com/reference/android/view/animation/AnimationUtils.html#loadAnimation(android.content.Context, int)" target="_blank">AnimationUtils.loadAnimation</a>, на выходе получается объект типа <a href="http://developer.android.com/reference/android/view/animation/Animation.html" target="_blank">Animation</a>. Его используем в методе <a href="http://developer.android.com/reference/android/view/View.html#startAnimation(android.view.animation.Animation)" target="_blank">startAnimation</a>, который запускает анимацию.</p>
+<p>Все сохраним и запустим приложение. Вызываем контекстное меню для TextView, и тестируем анимации</p>
+<p><img src="images/lesson_19_1.png" alt="" width="640" height="454"></p>
+<p>Я использовал не все возможности и параметры. Есть еще, например, параметр <b>android:startOffset</b> – он указывает задержку при старте анимации. Т.е. если указать android:startOffset=”1000”, то анимация начнется через секунду. Это удобно использовать если вы делаете набор трансформ (&lt;set&gt;) и вам надо чтобы они запускались не одновременно, а в определенном порядке. Также полезный параметр <b>android:repeatCount</b> – это количество повторов.</p>
+<p>Рекомендую поиграть параметрами в XML файлах и посмотреть, что получается.</p>
+</body>
+</html>
+
+            </div>
+     </div>
+</div>
+
+    <script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
+</html>
