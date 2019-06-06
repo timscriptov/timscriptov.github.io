@@ -2,10 +2,10 @@
 "data": [
 {
 "package_name":"com.nativeaddon.superstone.ahebheched",
-"manifest_url":"https://raw.githubusercontent.com/Listerily/Listerily.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/nmod_manifest.json",
-"banner_url":"https://raw.githubusercontent.com/Listerily/Listerily.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/banner.png",
-"icon_url":"https://raw.githubusercontent.com/Listerily/Listerily.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/icon.png",
-"package_url":"https://raw.githubusercontent.com/Listerily/Listerily.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/example.nmod"
+"manifest_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/nmod_manifest.json",
+"banner_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/banner.png",
+"icon_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/icon.png",
+"package_url":"https://raw.githubusercontent.com/TimScriptov/timscriptov.github.io/master/nmod_server/com.nativeaddon.superstone.ahebheched/example.nmod"
 }
 ]
 }
