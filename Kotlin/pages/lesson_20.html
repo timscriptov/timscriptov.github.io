@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
 		<meta name="description" content="">
 		<meta name="author" content="Иван Тимашков">
-		<title>Урок 20. break и continue</title>
+		<title>Урок 20. return, break и continue</title>
 
 		<link href="../css/bootstrap.css" rel="stylesheet">
 		<link href="../css/article_style.css" rel="stylesheet">
@@ -21,6 +21,12 @@
 				<div class="content">
 
 					<html>
+<h3>Операторы перехода</h3>
+<p>В <b>Kotlin</b> определено три оператора перехода:</p>
+<p><b>return</b> по умолчанию производит возврат из ближайшей окружающей его функции или анонимной функции</p>
+<p><b>break</b> завершает выполнение цикла</p>
+<p><b>continue</b> продолжает выполнение цикла со следующего его шага, без обработки оставшегося кода текущей итерации</p>
+<h3>Break</h3>
 <body><p>Оператор <b>break</b> завершает выполнение цикла.</p>
 <pre><code class="kotlin">fun main(args: Array&lt;String>) {
   var x = 5;
@@ -35,7 +41,9 @@
 5
 4
 </code></pre>
-<p>Если вы хотите оставаться в цикле, но пропустите итерацию, используйте оператор <b>continue</b>:</p>
+<!-- next -->
+<h3>Continue</h3>
+<p>Если вы хотите продолжить выполнение цикла, но пропустить итерацию, используйте оператор <b>continue</b>:</p>
 <pre><code class="kotlin">fun main(args: Array&lt;String>) {
   var x = 0;
   while (x &lt; 5) {
@@ -52,6 +60,52 @@
 4
 5
 </code></pre>
+<!-- next -->
+<h3>Метки операторов <b>break</b> и <b>continue</b></h3>
+<p>Любое выражение в <b>Kotlin</b> может быть помечено меткой <b>label</b>. Метки имеют идентификатор в виде знака <i><mark>@</mark></i>. Например: метки <i><mark>abc@</mark></i>, <i><mark>fooBar@</mark></i> являются корректными. Для того, чтобы пометить выражение, мы просто ставим метку перед ним:</p>
+<pre><code class="kotlin">loop@ for(i in 1..100) {
+  // ...
+}</code></pre>
+<p>Теперь мы можем уточнить значения операторов <b>break</b> или <b>continue</b> с помощью меток:</p>
+<pre><code class="kotlin">loop@ for (i in 1..100) {
+  for (j in 1..100) {
+    if (...) break@loop
+  }
+}</code></pre>
+<p>Оператор <b>break</b>, отмеченный <b><mark>@loop</mark></b>, переводит выполнение кода к той его части, которая находится сразу после соответствующей метки <b><mark>loop@</mark></b>. Оператор <b>continue</b> продолжает цикл со следующей его итерации.</p>
+<!-- next -->
+<h3>Возврат к меткам</h3>
+<p>В <b>Kotlin</b> функции могут быть вложены друг в друга с помощью анонимных объектов, локальных функций (ориг.:<i>local functions</i>) и <i>function literals</i>. Подходящий <b>return</b> позволит вернуться из внешней функции. Одним из самых удачных применений этой синтаксической конструкции служит возврат из лямбда-выражения. Подумайте над этим утверждением, читая данный пример:</p>
+<pre><code class="kotlin">fun foo() {
+  ints.forEach {
+    if (it == 0) return
+      print(it)
+  }
+}</code></pre>
+<p>Опертор <b>return</b> возвращается из ближайшей функции, в нашем случае <i><mark>foo</mark></i>. (Обратите внимание, что такой местный возврат поддерживается только лямбда-выражениями, переданными инлайн-функциям.) Если нам надо вернуться из лямбда-выражения, к оператору стоит поставить метку и тем самым сделать уточнение для ключевого слова <b>return</b>:</p>
+<pre><code class="kotlin">fun foo() {
+  ints.forEach lit@ {
+    if (it == 0) return@lit
+    print(it)
+  }
+}</code></pre>
+<p>Теперь он возвращается только из лямда-выражения. Зачастую намного более удобно указывать метки неявно: такие метки имеют такое же имя, как и функция, к которой относится лямбда.</p>
+<pre><code class="kotlin">fun foo() {
+  ints.forEach {
+    if (it == 0) return@forEach
+    print(it)
+  }
+}</code></pre>
+<p>Возможно также использование анонимной функции в качестве альтернативы лямбда-выражениям. Оператор <b>return</b> вовзращается из самой анонимной функции.</p>
+<pre><code class="kotlin">fun foo() {
+  ints.forEach(fun(value: Int) {
+    if (value == 0) return
+    print(value)
+  })
+}</code></pre>
+<p>При возвращении значения парсер отдаёт предпочтение специализированному возврату, типа</p>
+<pre><code class="kotlin">return@a 1</code></pre>
+<p>что значит "верни <mark>1</mark> в метке <mark>@a</mark>, а не "верни выражение с меткой <mark>(@a 1)"</mark>.</p>
 						</body>
 					</html>
 
