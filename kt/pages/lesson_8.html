@@ -8,7 +8,8 @@
 		<meta name="description" content="">
 		<meta name="author" content="Иван Тимашков">
 		<title>Урок 8. Ввод</title>
-
+		
+	  <link href="../css/style.css" rel="stylesheet">
 		<link href="../css/bootstrap.css" rel="stylesheet">
 		<link href="../css/article_style.css" rel="stylesheet">
 		<link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
@@ -26,7 +27,7 @@
   val test = readLine();
   println("Your input is $test");
 }</code></pre>
-<p>Все, что пользователь вводит автоматически, преобразуется в <b>String</b>.</p>
+<p class="cite">Все, что пользователь вводит автоматически, преобразуется в <b>String</b>.</p>
 <p>Чтобы преобразовать ввод целого числа, используйте функцию <b>toInt()</b>:</p>
 <pre><code class="kotlin">fun main(args: Array&lt;String>) {
   var age = readLine()!!.toInt();
