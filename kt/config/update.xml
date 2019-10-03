@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<update>
+	<version_code>1160</version_code>
+	<version_name>11.6.0</version_name>
+	<release_notes>
+Updated application interface
+Change application language (beta)
+</release_notes>
+	<download_link>market://details?id=com.mcal.kotlin</download_link>
+</update>
