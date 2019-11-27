@@ -4,6 +4,13 @@ Google Code style (c) Aahan Krish <geekpanth3r@gmail.com>
  
 */
  
+.cite {
+padding: 5px 10px;
+font-style: italic;
+background-color: #f5f5f5;
+border-left: 2px solid #cccccc;
+}
+
 .hljs {
   display: block;
   overflow-x: auto;
