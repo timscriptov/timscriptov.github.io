@@ -2,6 +2,12 @@
 Date: 24 Fev 2015
 Author: Pedro Oliveira <kanytu@gmail . com>
 */
+.cite {
+padding: 5px 10px;
+font-style: italic;
+background-color: #000000;
+border-left: 2px solid #cccccc;
+}
 
 .hljs {
   color: #a9b7c6;
