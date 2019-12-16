@@ -1,0 +1,478 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+	<meta name="description" content="">
+	<meta name="author" content="Иван Тимашков">
+	<title>Android Apk加壳原理分析 - jltxgcy的专栏 - CSDN博客</title>
+
+	<link href="../css/style.css" rel="stylesheet">
+    <link href="../css/bootstrap.css" rel="stylesheet">
+    <link href="../css/article_style.css" rel="stylesheet">
+    <link href="../css/hightlight-styles/androidstudio.css" rel="stylesheet">
+  </head>
+  <body>
+	<div class="page__inner">
+	  <div class="main main_width-limit">
+		<div class="content">
+	<h1>
+	  Android Apk加壳原理分析         </h1>
+
+
+	<div id="content_views" class="htmledit_views clearfix"><link rel="stylesheet" href="https://csdnimg.cn/release/phoenix/production/wapedit_views_html-763c1c2f28.css" /><p><span style="font-size:14px;">    0x00</span></p>
+	  <p><span style="font-size:14px;">    阅读本文前，建议读者首先阅读Android加壳原理，参考文章<a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow">Android中的Apk的加固(加壳)原理解析和实现</a>。如果没有看过这篇文章，本文理解起来比较困难。</span></p>
+	  <p><span style="font-size:14px;">    0x01</span></p>
+	  <p><span style="font-size:14px;">    下面我们来分析脱壳代码为什么要这样写，核心脱壳代码在ProxyApplication类里面，首先执行成员方法attachBaseContext，然后执行成员方法onCreate。</span></p>
+	  <p><span style="font-size:14px;">    那么<span style="font-size:14px;">attachBaseContext是什么时候被执行的呢，为什么先于onCreate执行呢？那就需要看Android的源码了，我们选用的是Android2.3源码。</span></span></p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;">    我们首先看一张图，这张图表述了从桌面启动一个应用Activity的启动过程。</span></span></p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;">   <img src='https://csdnimg.cn/release/phoenix/write/assets/img_default.png' data-src='https://img-blog.csdn.net/20160119092117410?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center'  alt="" /><br /></span></span></p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;">                       图  1</span></span></p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;">    其中当执行到ApplicationThread.bindApplication时，会向ActivityThreadl类的Handler对象mH发送消息。</span></span></p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;"></span></span></p>
+	  <pre><code class="java">        public final void bindApplication(String processName,
+		  ApplicationInfo appInfo, List&lt;ProviderInfo&gt; providers,
+		  ComponentName instrumentationName, String profileFile,
+		  Bundle instrumentationArgs, IInstrumentationWatcher instrumentationWatcher,
+		  int debugMode, boolean isRestrictedBackupMode, Configuration config,
+		  Map&lt;String, IBinder&gt; services) {
+
+		  if (services != null) {
+		  // Setup the service cache in the ServiceManager
+		  ServiceManager.initServiceCache(services);
+		  }
+
+		  AppBindData data = new AppBindData();
+		  data.processName = processName;
+		  data.appInfo = appInfo;
+		  data.providers = providers;
+		  data.instrumentationName = instrumentationName;
+		  data.profileFile = profileFile;
+		  data.instrumentationArgs = instrumentationArgs;
+		  data.instrumentationWatcher = instrumentationWatcher;
+		  data.debugMode = debugMode;
+		  data.restrictedBackupMode = isRestrictedBackupMode;
+		  data.config = config;
+		  queueOrSendMessage(H.BIND_APPLICATION, data);
+		  }</code></pre>
+	  代码位于frameworks\base\core\java\android\app\ActivityThread.java。<br />
+	  <p>
+	  </p>
+	  <p>
+		<span style="font-size:14px;">
+		  <span style="font-size:14px;"><br/>
+		  </span>
+		</span>
+	  </p>
+	  <p><span style="font-size:14px;"><span style="font-size:14px;">    queueOrSendMessage<span style="font-size:14px;">向ActivityThreadl类的Handler对象mH发送消息。</span></span></span></p>
+	  <p></p>
+	  <pre><code class="java">private final void queueOrSendMessage(int what, Object obj, int arg1, int arg2) {
+		  synchronized (this) {
+		  if (DEBUG_MESSAGES) Slog.v(
+		  TAG, "SCHEDULE " + what + " " + mH.codeToString(what)
+		  + ": " + arg1 + " / " + obj);
+		  Message msg = Message.obtain();
+		  msg.what = what;
+		  msg.obj = obj;
+		  msg.arg1 = arg1;
+		  msg.arg2 = arg2;
+		  mH.sendMessage(msg);
+		  }
+		  }</code></pre><span style="font-size:14px;">    代码位于</span><span style="font-size:14px;">frameworks\base\core\java\android\app\</span><span style="font-size:14px;">ActivityThread.java。</span><p></p><p><span style="font-size:14px;"><br /></span></p><p><span style="font-size:14px;">    handler处理BIND_APPLICATION的流程如下。</span></p><pre><code class="language-java"> private final class H extends Handler {
+		  ......
+		  }
+		  public void handleMessage(Message msg) {
+		  if (DEBUG_MESSAGES) Slog.v(TAG, "&gt;&gt;&gt; handling: " + msg.what);
+		  switch (msg.what) {
+		  ......
+		  case BIND_APPLICATION:
+		  AppBindData data = (AppBindData)msg.obj;
+		  handleBindApplication(data);
+		  break;
+		  ......
+		  }
+
+		  }</code></pre>
+		  <span style="font-size:14px;">代码位于</span>
+		  <span style="font-size:14px;">frameworks\base\core\java\android\app\</span>
+		  <span style="font-size:14px;">ActivityThread.java。</span>
+		  <p></p>
+		  <p>
+			<span style="font-size:14px;"><br /></span></p>
+		  <p><span style="font-size:14px;">    继续看handleBindApplication，其中data就是<span style="font-size:14px;">ApplicationThread.bindApplication生成的AppBindData对象。<br /></span></span></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;"></span></span></p>
+		  <pre><code class="java">    private final void handleBindApplication(AppBindData data) {
+		  mBoundApplication = data;
+		  ......
+		  data.info = getPackageInfoNoCheck(data.appInfo);
+		  ......
+		  Application app = data.info.makeApplication(data.restrictedBackupMode, null);
+		  mInitialApplication = app;
+		  ......
+
+		  try {
+		  mInstrumentation.callApplicationOnCreate(app);
+		  } catch (Exception e) {
+		  if (!mInstrumentation.onException(app, e)) {
+		  throw new RuntimeException(
+		  "Unable to create application " + app.getClass().getName()
+		  + ": " + e.toString(), e);
+		  }
+		  }
+		  }</code></pre>
+		  <span style="font-size:14px;">代码位于</span>
+		  <span style="font-size:14px;">frameworks\base\core\java\android\app\</span>
+		  <span style="font-size:14px;">ActivityThread.java。</span>
+		  <p></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;">    首先把data赋值给了AppBindData对象mBoundApplication，然后通过getPackageInfoNoCheck得到的LoadedApk对象复制给data.info，之后调用data.info.makeApplication生成Application对象，我们下面来分析下<span style="font-size:14px;">data.info.makeApplication这个方法。</span></span></span></p>
+		  <p><br /></p><p><span style="font-size:14px;"><span style="font-size:14px;"></span></span></p>
+		  <pre><code class="java">    public Application makeApplication(boolean forceDefaultAppClass,
+		  Instrumentation instrumentation) {
+		  if (mApplication != null) {
+		  return mApplication;
+		  }
+
+		  Application app = null;
+
+		  String appClass = mApplicationInfo.className;
+		  if (forceDefaultAppClass || (appClass == null)) {
+		  appClass = "android.app.Application";
+		  }
+
+		  try {
+		  java.lang.ClassLoader cl = getClassLoader();
+		  ContextImpl appContext = new ContextImpl();
+		  appContext.init(this, null, mActivityThread);
+		  app = mActivityThread.mInstrumentation.newApplication(
+		  cl, appClass, appContext);
+		  appContext.setOuterContext(app);
+		  } catch (Exception e) {
+		  if (!mActivityThread.mInstrumentation.onException(app, e)) {
+		  throw new RuntimeException(
+		  "Unable to instantiate application " + appClass
+		  + ": " + e.toString(), e);
+		  }
+		  }
+		  mActivityThread.mAllApplications.add(app);
+		  mApplication = app;
+
+		  ......
+
+		  return app;
+		  }</code></pre>    代码位于frameworks\base\core\java\android\app\LoadedApk.java。<p></p><p><span style="font-size:14px;">    首先通过</span><span style="font-size:14px;">mApplicationInfo.className获取application的名字，在</span><a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow" style="font-size:14px;">本例中</a><span style="font-size:14px;">是</span><span style="font-size:14px;">ProxyApplication。然后通过getClassLoader获取了ClassLoader对象，那么我先来分析下getClassLoader的实现。</span></p><p><span style="font-size:14px;"></span></p><pre><code class="language-java">    public ClassLoader getClassLoader() {
+		  synchronized (this) {
+		  if (mClassLoader != null) {
+		  return mClassLoader;
+		  }
+		  ......
+		  }</code></pre>    我们姑且认为<span style="font-size:14px;">ClassLoader对象</span>mClassLoader不为空，返回LoadedApk对象的成员变量mClassLoader。<p></p><p><span style="font-size:14px;">    返回到<span style="font-size:14px;">makeApplication，继续看，首先生成了ContextImpl对象，最终调用了mActivityThread.mInstrumentation.newApplication来生成Application对象，并把生成的Context对象放到这个Application对象中。这部分可参考博客<a href="http://blog.csdn.net/qinjuning/article/details/7310620" rel="nofollow">Android中Context详解 ---- 你所不知道的Context</a>。再附一张Context类图，帮大家理解。</span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><img src='https://csdnimg.cn/release/phoenix/write/assets/img_default.png' data-src='https://img-blog.csdn.net/20160119100557318?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center'  alt="" /><br /></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;">    那么我们讲了这么多，到底是什么时候执行的ProxyApplication类的方法attachBaseContext的呢？答案就在<span style="font-size:14px;">mActivityThread.mInstrumentation.newApplication，我们继续分析此方法。</span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></p><pre><code class="language-java">    public Application newApplication(ClassLoader cl, String className, Context context)
+		  throws InstantiationException, IllegalAccessException, 
+		  ClassNotFoundException {
+		  return newApplication(cl.loadClass(className), context);
+		  }</code></pre>    代码位于frameworks\base\core\java\android\app\Instrumentation.java。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    其中context对象就是我们刚刚生成的，继续分析newApplication方法。</span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></p><pre><code class="language-java">    static public Application newApplication(Class&lt;?&gt; clazz, Context context)
+		  throws InstantiationException, IllegalAccessException, 
+		  ClassNotFoundException {
+		  Application app = (Application)clazz.newInstance();
+		  app.attach(context);
+		  return app;
+		  }</code></pre>    <span style="font-size:14px;">代码位于</span><span style="font-size:14px;">frameworks\base\core\java\android\app\</span><span style="font-size:14px;">Instrumentation.java。</span><br />    这个函数首先生成了一个Application对象app，然后调用了他的方法attach，我们来分析这个方法。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></p><pre><code class="language-java">final void attach(Context context) {
+		  attachBaseContext(context);
+		  }</code></pre>    代码位于frameworks\base\core\java\android\app\Application.java<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    答案在此揭晓，此时调用了<span style="font-size:14px;">ProxyApplication类的方法</span><span style="font-size:14px;">attachBaseContext，注意此时还没有调用<span style="font-size:14px;">ProxyApplication类的方法onCreate。</span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><br /></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    0x02</span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    知道了执行到<span style="font-size:14px;">ProxyApplication类的方法</span><span style="font-size:14px;">attachBaseContext之前的流程，我们接下来重点分析下这个方法。</span><br /></span></span></span></p><pre><code class="language-java">	protected void attachBaseContext(Context base) {
+		  super.attachBaseContext(base);
+		  try {
+		  ......
+		  // 配置动态加载环境
+		  Object currentActivityThread = RefInvoke.invokeStaticMethod(
+		  "android.app.ActivityThread", "currentActivityThread",
+		  new Class[] {}, new Object[] {});//获取主线程对象 http://blog.csdn.net/myarrow/article/details/14223493
+		  String packageName = this.getPackageName();//当前apk的包名
+		  //下面两句不是太理解
+		  HashMap mPackages = (HashMap) RefInvoke.getFieldOjbect(
+		  "android.app.ActivityThread", currentActivityThread,
+		  "mPackages");
+		  WeakReference wr = (WeakReference) mPackages.get(packageName);
+		  //创建被加壳apk的DexClassLoader对象  加载apk内的类和本地代码（c/c++代码）
+		  DexClassLoader dLoader = new DexClassLoader(apkFileName, odexPath,
+		  libPath, (ClassLoader) RefInvoke.getFieldOjbect(
+		  "android.app.LoadedApk", wr.get(), "mClassLoader"));
+		  //base.getClassLoader(); 是不是就等同于 (ClassLoader) RefInvoke.getFieldOjbect()? 有空验证下//?
+		  //把当前进程的DexClassLoader 设置成了被加壳apk的DexClassLoader  ----有点c++中进程环境的意思~~
+		  RefInvoke.setFieldOjbect("android.app.LoadedApk", "mClassLoader",
+		  wr.get(), dLoader);
+
+		  Log.i("demo","classloader:"+dLoader);
+
+		  ......
+
+
+		  } catch (Exception e) {
+		  Log.i("demo", "error:"+Log.getStackTraceString(e));
+		  e.printStackTrace();
+		  }
+		  }</code></pre>    代码位于<a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow" style="font-size:14px;">Android中的Apk的加固(加壳)原理解析和实现</a>。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    省略部分的代码还请大家参考<a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow" style="font-size:14px;">Android中的Apk的加固(加壳)原理解析和实现</a>。</span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    首先通过反射调用了ActivityThread类的currentActivityThread方法，该方法是静态的，返回当前的<span><span style="font-size:14px;">ActivityThread，代码如下：</span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p><pre><code class="language-java">    public static final ActivityThread currentActivityThread() {
+		  return sThreadLocal.get();
+		  }</code></pre>    <span style="font-size:14px;">    代码位于</span><span style="font-size:14px;">frameworks\base\core\java\android\app\</span><span style="font-size:14px;">ActivityThread.java。</span>    <p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    然后再获取ActivityThread的成员变量mPackages，mPackages也位于f<span style="font-size:14px;">rameworks\base\core\java\android\app\</span><span style="font-size:14px;">ActivityThread.java中：</span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p><pre><code class="language-java">    final HashMap&lt;String, WeakReference&lt;LoadedApk&gt;&gt; mPackages
+		  = new HashMap&lt;String, WeakReference&lt;LoadedApk&gt;&gt;();</code></pre>    他是一个HashMap，键是包名，值是LoadedApk的软引用。然后通过当前的包名在HashMap中获取对应LoadedApk的软引用。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    然后根据要加载的apk，也就是实际要执行的apk，生成DexClassLoader对象，其中parentClassLoader就是刚刚获取的LoadedApk对象中的mClassLoader变量。</span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    大家可能会有个疑问，这里获取的LoadedApk对象和<span style="font-size:14px;">data.info对象是一样的么？答案是一样的，代码的关键在<span style="font-size:14px;"><span style="font-size:14px;">handleBindApplication中getPackageInfoNoCheck，代码如下：</span></span></span><br /></span></span></span></span></p><pre><code class="language-java">    private final LoadedApk getPackageInfo(ApplicationInfo aInfo,
+		  ClassLoader baseLoader, boolean securityViolation, boolean includeCode) {
+		  synchronized (mPackages) {
+		  WeakReference&lt;LoadedApk&gt; ref;
+		  if (includeCode) {
+		  ref = mPackages.get(aInfo.packageName);
+		  } else {
+		  ref = mResourcePackages.get(aInfo.packageName);
+		  }
+		  LoadedApk packageInfo = ref != null ? ref.get() : null;
+		  if (packageInfo == null || (packageInfo.mResources != null
+		  &amp;&amp; !packageInfo.mResources.getAssets().isUpToDate())) {
+		  if (localLOGV) Slog.v(TAG, (includeCode ? "Loading code package "
+		  : "Loading resource-only package ") + aInfo.packageName
+		  + " (in " + (mBoundApplication != null
+		  ? mBoundApplication.processName : null)
+		  + ")");
+		  packageInfo =
+		  new LoadedApk(this, aInfo, this, baseLoader,
+		  securityViolation, includeCode &amp;&amp;
+		  (aInfo.flags&amp;ApplicationInfo.FLAG_HAS_CODE) != 0);
+		  if (includeCode) {
+		  mPackages.put(aInfo.packageName,
+		  new WeakReference&lt;LoadedApk&gt;(packageInfo));
+		  } else {
+		  mResourcePackages.put(aInfo.packageName,
+		  new WeakReference&lt;LoadedApk&gt;(packageInfo));
+		  }
+		  }
+		  return packageInfo;
+		  }
+		  }</code></pre><span style="font-size:14px;">    </span><span style="font-size:14px;">代码位于</span><span style="font-size:14px;">frameworks\base\core\java\android\app\</span><span style="font-size:14px;">ActivityThread.java。</span>    <p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    这里生成了一个LoadedApk对象，并以当前包名为键，LoadedApk对象为值存入了mPackages这个HashMap中，并且返回LoadedApk对象，并赋值给data.info。<br /></span></span></span></span></p><pre><code class="language-java">data.info = getPackageInfoNoCheck(data.appInfo);</code></pre> <p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    回到attachBaseContext中，最后把这个新生成DexClassLoader对象赋值给LoadedApk对象的mClassLoader变量，也就是更新了这个<span style="font-size:14px;">mClassLoader变量。</span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><br /></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    0x03</span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    执行完mActivityThread.mInstrumentation.newApplication，返回到makeApplication，继续执行下面两句代码：</span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p><pre><code class="language-java"> mActivityThread.mAllApplications.add(app);
+		  mApplication = app;</code></pre>   <span style="font-size:14px;">    执行完</span><span style="font-size:14px;">data.info.makeApplication，我们返回到</span><span style="font-size:14px;">handleBindApplication(代码请参考上面)，继续执行下面一句代码：</span><p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p><pre><code class="language-java">mInitialApplication = app;</code></pre>    这三行代码对于理解ProxyApplication类的onCreate方法有帮助，此时application是ProxyApplication，我们要把它替换为我们自己的application，<a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow">本例中</a>为MyApplication。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><br /></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    0x04</span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    执行完data.info.makeApplication，我们返回到handleBindApplication(代码请参考上面)，继续执行mInstrumentation.callApplicationOnCreate(app)，此时ProxyApplication类的onCreate方法开始执行。</span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p><pre><code class="language-java">	@Override
+		  public void onCreate() {
+		  {
+		  //loadResources(apkFileName);
+
+		  Log.i("demo", "onCreate");
+		  // 如果源应用配置有Appliction对象，则替换为源应用Applicaiton，以便不影响源程序逻辑。
+		  String appClassName = null;
+		  try {
+		  ApplicationInfo ai = this.getPackageManager()
+		  .getApplicationInfo(this.getPackageName(),
+		  PackageManager.GET_META_DATA);
+		  Bundle bundle = ai.metaData;
+		  if (bundle != null &amp;&amp; bundle.containsKey("APPLICATION_CLASS_NAME")) {
+		  appClassName = bundle.getString("APPLICATION_CLASS_NAME");//className 是配置在xml文件中的。
+		  } else {
+		  Log.i("demo", "have no application class name");
+		  return;
+		  }
+		  } catch (NameNotFoundException e) {
+		  Log.i("demo", "error:"+Log.getStackTraceString(e));
+		  e.printStackTrace();
+		  }
+		  //有值的话调用该Applicaiton
+		  Object currentActivityThread = RefInvoke.invokeStaticMethod(
+		  "android.app.ActivityThread", "currentActivityThread",
+		  new Class[] {}, new Object[] {});
+		  Object mBoundApplication = RefInvoke.getFieldOjbect(
+		  "android.app.ActivityThread", currentActivityThread,
+		  "mBoundApplication");
+		  Object loadedApkInfo = RefInvoke.getFieldOjbect(
+		  "android.app.ActivityThread$AppBindData",
+		  mBoundApplication, "info");
+		  //把当前进程的mApplication 设置成了null
+		  RefInvoke.setFieldOjbect("android.app.LoadedApk", "mApplication",
+		  loadedApkInfo, null);
+		  Object oldApplication = RefInvoke.getFieldOjbect(
+		  "android.app.ActivityThread", currentActivityThread,
+		  "mInitialApplication");
+		  //http://www.codeceo.com/article/android-context.html
+		  ArrayList&lt;Application&gt; mAllApplications = (ArrayList&lt;Application&gt;) RefInvoke
+		  .getFieldOjbect("android.app.ActivityThread",
+		  currentActivityThread, "mAllApplications");
+		  mAllApplications.remove(oldApplication);//删除oldApplication
+
+		  ApplicationInfo appinfo_In_LoadedApk = (ApplicationInfo) RefInvoke
+		  .getFieldOjbect("android.app.LoadedApk", loadedApkInfo,
+		  "mApplicationInfo");
+		  ApplicationInfo appinfo_In_AppBindData = (ApplicationInfo) RefInvoke
+		  .getFieldOjbect("android.app.ActivityThread$AppBindData",
+		  mBoundApplication, "appInfo");
+		  appinfo_In_LoadedApk.className = appClassName;
+		  appinfo_In_AppBindData.className = appClassName;
+		  Application app = (Application) RefInvoke.invokeMethod(
+		  "android.app.LoadedApk", "makeApplication", loadedApkInfo,
+		  new Class[] { boolean.class, Instrumentation.class },
+		  new Object[] { false, null });//执行 makeApplication（false,null）
+		  RefInvoke.setFieldOjbect("android.app.ActivityThread",
+		  "mInitialApplication", currentActivityThread, app);
+
+
+		  ......
+
+		  app.onCreate();
+		  }
+		  }</code></pre>
+		  代码位于
+		  <a href="http://blog.csdn.net/jiangwei0910410003/article/details/48415225" rel="nofollow">Android中的Apk的加固(加壳)原理解析和实现</a>。
+		  <p></p>
+		  <p><span style="font-size:14px;">
+		  <span style="font-size:14px;">
+			<span style="font-size:14px;">
+			  <span>    首先appClassName为MyApplication，然后依然是
+				<span style="font-size:14px;">通过反射调用了ActivityThread类的</span>
+				<span style="font-size:14px;">currentActivityThread方法，该方法是静态的，返回当前的</span>
+				<span style="font-size:14px;">
+				  <span style="font-size:14px;">ActivityThread对象。</span></span></span></span></span></span></p>
+				  <p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;">    再通过反射获取当前ActivityThread对象的mBoundApplication变量，这个<span style="font-size:14px;">mBoundApplication对象还记得么？是在handleBindApplication被赋值的。</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></span></span></span></span></p><pre><code class="language-java">private final void handleBindApplication(AppBindData data) {
+		  mBoundApplication = data;
+		  ......
+		  }</code></pre>
+		  然后再获取
+		  <span style="font-size:14px;">mBoundApplication对象里面的info，这个info实际上就是data.info，是LoadedApk对象。</span><br /><pre><code class="language-java">data.info = getPackageInfoNoCheck(data.appInfo);
+		  ......
+		  Application app = data.info.makeApplication(data.restrictedBackupMode, null);</code></pre>    继续执行，把LoadedApk对象中的mApplication变量设置为null，为什么要这么做呢？我们稍后解释。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    继续执行到如下函数：</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></span></span></span></span></p><pre><code class="language-java">Object oldApplication = RefInvoke.getFieldOjbect(
+		  "android.app.ActivityThread", currentActivityThread,
+		  "mInitialApplication");
+		  //http://www.codeceo.com/article/android-context.html
+		  ArrayList&lt;Application&gt; mAllApplications = (ArrayList&lt;Application&gt;) RefInvoke
+		  .getFieldOjbect("android.app.ActivityThread",
+		  currentActivityThread, "mAllApplications");
+		  mAllApplications.remove(oldApplication);//删除oldApplication</code></pre>    这几句函数实际上就对应0x03中函数，从原来ActivityThread对象中移除了原有的application对象。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    </span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    回到onCreate中继续看，我们先过掉几行代码，直接看<span style="font-size:14px;">makeApplication生成新的application对象。在解释这个对象的生成过程中，我们会讲解在生成此对象前的一些操作的意义。</span></span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    既然要重新生成，那么我们首先看一下makeApplication的实现：</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></span></span></span></span></p><pre><code class="language-java">    public Application makeApplication(boolean forceDefaultAppClass,
+		  Instrumentation instrumentation) {
+		  if (mApplication != null) {
+		  return mApplication;
+		  }
+
+		  Application app = null;
+
+		  String appClass = mApplicationInfo.className;
+		  if (forceDefaultAppClass || (appClass == null)) {
+		  appClass = "android.app.Application";
+		  }
+
+		  try {
+		  java.lang.ClassLoader cl = getClassLoader();
+		  ContextImpl appContext = new ContextImpl();
+		  appContext.init(this, null, mActivityThread);
+		  app = mActivityThread.mInstrumentation.newApplication(
+		  cl, appClass, appContext);
+		  appContext.setOuterContext(app);
+		  } catch (Exception e) {
+		  if (!mActivityThread.mInstrumentation.onException(app, e)) {
+		  throw new RuntimeException(
+		  "Unable to instantiate application " + appClass
+		  + ": " + e.toString(), e);
+		  }
+		  }
+		  mActivityThread.mAllApplications.add(app);
+		  mApplication = app;
+
+		  ......
+
+		  return app;
+		  }</code></pre>
+		  首先mApplication对象需为null，这就是为什么刚刚把
+		  <span style="font-size:14px;">LoadedApk对象中的</span>
+		  <span style="font-size:14px;">mApplication变量设置为null的原因。</span>
+		  <p></p>
+		  <p>
+			<span style="font-size:14px;">
+			  <span style="font-size:14px;">
+				<span style="font-size:14px;">
+				  <span>
+		  <span style="font-size:14px;">
+			<span style="font-size:14px;">
+			  <span style="font-size:14px;">    然后需要获取ApplicationInfo对象mApplicationInfo的成员变量className，因为现在我要启动是被加壳的apk中MyApplication，所以我们要把名字设置为MyApplication。这就是下面几行代码的作用。<br /></span></span></span></span></span></span></span></p>
+		  <pre><code class="java">ApplicationInfo appinfo_In_LoadedApk = (ApplicationInfo) RefInvoke
+		  .getFieldOjbect("android.app.LoadedApk", loadedApkInfo,
+		  "mApplicationInfo");
+		  ApplicationInfo appinfo_In_AppBindData = (ApplicationInfo) RefInvoke
+		  .getFieldOjbect("android.app.ActivityThread$AppBindData",
+		  mBoundApplication, "appInfo");
+		  appinfo_In_LoadedApk.className = appClassName;
+		  appinfo_In_AppBindData.className = appClassName;</code></pre>    代码位于ProxyApplication类的onCreate方法中。<br /><br />    最后返回到onCreate方法中，把新生成的application对象赋值给ActivityThread对象的mInitialApplication变量。<p></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    对了，还有一点忘记说了，在makeApplication时，getClassLoader获得的ClassLoader对象，已经被替换为DexClassLoader对象，这个对象加载的是被加壳的apk。</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><br /></span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    0x05 </span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    那么MyApplication类什么时候执行onCreate呢?答案在ProxyApplication类的onCreate方法最后，会调用app.onCreate()。</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><br /></span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    0x06</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    那么什么时候开启MainActivtiy呢？怎么样开启的呢？</span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    我们再一次看图1，<span style="font-size:14px;">从</span><span style="font-size:14px;">桌面启动一个应用Activity的启动过程，怎么开启的MainActivity呢？</span></span></span></span></span></span></span></span></p><p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"></span></span></span></span></span></span></span></span></p><pre><code class="language-java"> private final void handleLaunchActivity(ActivityClientRecord r, Intent customIntent) {
+		  ......
+		  Activity a = performLaunchActivity(r, customIntent);
+		  ......
+		  }</code></pre>
+		  <pre><code class="java">private final Activity performLaunchActivity(ActivityClientRecord r, Intent customIntent) {
+		  // System.out.println("##### [" + System.currentTimeMillis() + "] ActivityThread.performLaunchActivity(" + r + ")");
+
+		  ActivityInfo aInfo = r.activityInfo;
+		  if (r.packageInfo == null) {
+		  r.packageInfo = getPackageInfo(aInfo.applicationInfo,
+		  Context.CONTEXT_INCLUDE_CODE);
+		  }
+
+		  ComponentName component = r.intent.getComponent();
+		  if (component == null) {
+		  component = r.intent.resolveActivity(
+		  mInitialApplication.getPackageManager());
+		  r.intent.setComponent(component);
+		  }
+
+		  if (r.activityInfo.targetActivity != null) {
+		  component = new ComponentName(r.activityInfo.packageName,
+		  r.activityInfo.targetActivity);
+		  }
+
+		  Activity activity = null;
+		  try {
+		  java.lang.ClassLoader cl = r.packageInfo.getClassLoader();
+		  activity = mInstrumentation.newActivity(
+		  cl, component.getClassName(), r.intent);
+		  r.intent.setExtrasClassLoader(cl);
+		  if (r.state != null) {
+		  r.state.setClassLoader(cl);
+		  }
+		  } catch (Exception e) {
+		  if (!mInstrumentation.onException(activity, e)) {
+		  throw new RuntimeException(
+		  "Unable to instantiate activity " + component
+		  + ": " + e.toString(), e);
+		  }
+		  }
+
+		  try {
+		  ......
+		  mInstrumentation.callActivityOnCreate(activity, r.state);
+		  } catch {}
+
+		  }</code></pre>
+		  <p></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    </span>
+		  <span style="font-size:14px;">代码位于</span>
+		  <span style="font-size:14px;">frameworks\base\core\java\android\app\</span>
+		  <span style="font-size:14px;">ActivityThread.java。</span></span></span></span></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;">    此时获取的Classloader对象<span style="font-size:14px;">已经被替换为DexClassLoader对象，这个对象加载的是被加壳的apk。</span></span></span></span></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span>    但是此时获取的activity信息为什么是MainActivity呢？答案在AndroidManifest.xml里面。</span></span></span></span></p>
+		  <p><span style="font-size:14px;"><span style="font-size:14px;"><span style="font-size:14px;"><span></span></span></span></span></p>
+		  <pre><code class="html">        &lt;activity
+		  android:name="com.example.forceapkobj.MainActivity"
+		  android:label="@string/app_name" &gt;
+		  &lt;intent-filter&gt;
+		  &lt;action android:name="android.intent.action.MAIN" /&gt;
+		  &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+		  &lt;/intent-filter&gt;
+		  &lt;/activity&gt;
+
+		  &lt;activity
+		  android:name="com.example.forceapkobj.SubActivity"&gt;&lt;/activity&gt;</code></pre>    MainActivity启动起来后，被加壳的apk就可以正常工作了。</div>
+	<div class="postTime">	  文章最后发布于: 2016-01-19                </div>
+
+		  <div class="cite">
+	  <span class="creativecommons">
+		<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"></a>
+		<span>版权声明：本文为博主原创文章，遵循<a href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener"> CC 4.0 BY-SA </a>版权协议，转载请附上原文出处链接和本声明。 </span>
+		<div class="article-source-link2222">
+		  本文链接：<a href="https://blog.csdn.net/jltxgcy/article/details/50540309">https://blog.csdn.net/jltxgcy/article/details/50540309</a>
+		</div>
+	  </span>
+	</div>
+
+	</div>
+	  </div>
+	</div>
+	<script src="../js/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+	</body>
