@@ -1,1 +1,18 @@
-T
+<?xml version="1.0" encoding="utf-8"?>
+
+<update>
+
+	<version_code>78</version_code>
+
+	<version_name>7.8</version_name>
+
+	<release_notes>
+
+BugFix
+
+</release_notes>
+
+	<download_link>market://details?id=com.mcal.dexprotect</download_link>
+
+</update>
+
