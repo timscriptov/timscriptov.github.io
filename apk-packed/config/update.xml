@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <update>
-	<version_code>117</version_code>
-	<version_name>1.1.7</version_name>
+	<version_code>125</version_code>
+	<version_name>1.2.5</version_name>
 	<release_notes>
-New: Check illegal code
+Update: ApkSigner
+Fix: Welcome message
 </release_notes>
 	<download_link>market://details?id=com.mcal.kotlin</download_link>
 </update>
