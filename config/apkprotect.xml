@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <update>
+
+<!-- Оно работает? -->
+
     <version_code>99</version_code>
     <version_name>9.9</version_name>
     <release_notes>Fix: Custom Application Name</release_notes>
